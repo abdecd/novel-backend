@@ -13,5 +13,8 @@ public class LoginDTO {
     private String password;
 
     @NotBlank
+    private String verifyCodeId;
+
+    @NotBlank
     private String captcha;
 }

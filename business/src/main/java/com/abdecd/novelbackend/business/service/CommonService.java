@@ -52,7 +52,7 @@ public class CommonService {
         return Pair.of(verifyCodeId, captchaOutputStream);
     }
 
-    public void verifyCaptcha(String captcha, String uuid) {
+    public void verifyCaptcha(String uuid, String captcha) {
         log.info("uuid: {}, captcha: {}", uuid, captcha);
         var key = VERIFY_CODE_PREFIX + uuid;
         if (!StringUtils.hasText(uuid) || Boolean.FALSE.equals(redisTemplate.hasKey(key)))
