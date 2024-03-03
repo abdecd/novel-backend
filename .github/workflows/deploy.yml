@@ -26,7 +26,7 @@ jobs:
         ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
     - name: Build with Maven
-      run: mvn clean package -DskipTests=true
+      run: mvn clean package -Pprod -DskipTests=true
 
     - name: Get JAR base name and timestamp
       id: jar_info
