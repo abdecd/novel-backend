@@ -10,5 +10,6 @@ public class MessageConstant {
     public static final String LOGIN_SUCCESS = "登录成功";
     public static final String CAPTCHA_EXPIRED = "验证码已过期，请重新获取";
     public static final String CAPTCHA_ERROR = "验证码错误";
+    public static final String EMAIL_SEND_FAIL = "邮件发送失败";
     public static final String UNKNOWN_ERROR = "未知错误";
 }
