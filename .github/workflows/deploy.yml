@@ -45,5 +45,5 @@ jobs:
         ssh ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} '
           screen -S novel-backend -X quit
           screen -dmS novel-backend
-          screen -S novel-backend -X stuff "java -jar ~/novel-backend/${{ env.JAR_BASE_NAME }}.jar -Dspring.profiles.active=prod$(printf \\r)"
+          screen -S novel-backend -X stuff "cd ~/novel-backend; java -jar ${{ env.JAR_BASE_NAME }}.jar --spring.profiles.active=prod$(printf \\r)"
         '
