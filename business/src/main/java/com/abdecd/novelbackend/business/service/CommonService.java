@@ -71,9 +71,8 @@ public class CommonService {
             throw new BaseException(MessageConstant.CAPTCHA_ERROR);
     }
 
-    public String verifyEmail(String email) {
-        var uuid = UUID.randomUUID().toString();
-        var key = EMAIL_PREFIX + uuid;
+    public void sendCodeToVerifyEmail(String email) {
+        var key = EMAIL_PREFIX + email;
         // 生成验证码
         StringBuilder code = new StringBuilder(new Random().nextInt(0, 1000000) + "");
         while (code.length() < 6) code.insert(0, "0");
@@ -91,6 +90,13 @@ public class CommonService {
         } catch (Exception e) {
             throw new BaseException(MessageConstant.EMAIL_SEND_FAIL);
         }
-        return uuid;
+    }
+
+    public void verifyEmail(String email, String code) {
+        var key = EMAIL_PREFIX + email;
+        if (!StringUtils.hasText(email) || Boolean.FALSE.equals(redisTemplate.hasKey(key)))
+            throw new BaseException(MessageConstant.CAPTCHA_EXPIRED);
+        if (!Objects.equals(redisTemplate.opsForValue().get(key), code))
+            throw new BaseException(MessageConstant.CAPTCHA_ERROR);
     }
 }

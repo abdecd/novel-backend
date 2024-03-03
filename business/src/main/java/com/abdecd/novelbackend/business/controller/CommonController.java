@@ -54,10 +54,10 @@ public class CommonController {
         // 接口限流
         if (Boolean.TRUE.equals(redisTemplate.hasKey("limitVerifyEmail:" + request.getRemoteAddr())))
             return CompletableFuture.completedFuture(Result.error("请求过于频繁"));
-        var uuid = commonService.verifyEmail(email);
+        commonService.sendCodeToVerifyEmail(email);
         // 成功后进行限流
         redisTemplate.opsForValue().set("limitVerifyEmail:" + request.getRemoteAddr(), "true", 60, TimeUnit.SECONDS);
-        return CompletableFuture.completedFuture(Result.success(uuid));
+        return CompletableFuture.completedFuture(Result.success());
     }
 
     @Async

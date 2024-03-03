@@ -22,7 +22,7 @@ class BusinessApplicationTests {
 
     @Test
     void testCaptcha() {
-        commonService.verifyEmail("");
+        commonService.sendCodeToVerifyEmail("");
     }
 
 }
