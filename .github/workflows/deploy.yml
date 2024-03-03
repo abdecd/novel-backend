@@ -40,6 +40,7 @@ jobs:
     - name: Copy to Server and Run
       run: |
         cd business/target
+        ssh ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} 'mkdir -p ~/novel-backend'
         scp ${{ env.JAR_BASE_NAME }}.jar ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }}:~/novel-backend/${{ env.JAR_BASE_NAME }}.jar
         ssh ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} '
           screen -S novel-backend -X quit
