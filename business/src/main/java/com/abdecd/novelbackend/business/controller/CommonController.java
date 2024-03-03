@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.Email;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Tag(name = "通用接口")
 @Slf4j
@@ -29,6 +31,8 @@ public class CommonController {
     CommonService commonService;
     @Autowired
     FileService fileService;
+    @Autowired
+    StringRedisTemplate redisTemplate;
 
     @Async
     @Operation(summary = "获取验证码图片")
@@ -46,8 +50,14 @@ public class CommonController {
     @Async
     @Operation(summary = "邮箱验证")
     @GetMapping("/verify-email")
-    public CompletableFuture<Result<String>> verifyEmail(@Email String email) {
-        return CompletableFuture.completedFuture(Result.success(commonService.verifyEmail(email)));
+    public CompletableFuture<Result<String>> verifyEmail(@Email String email, HttpServletRequest request) {
+        // 接口限流
+        if (Boolean.TRUE.equals(redisTemplate.hasKey("limitVerifyEmail:" + request.getRemoteAddr())))
+            return CompletableFuture.completedFuture(Result.error("请求过于频繁"));
+        var uuid = commonService.verifyEmail(email);
+        // 成功后进行限流
+        redisTemplate.opsForValue().set("limitVerifyEmail:" + request.getRemoteAddr(), "true", 60, TimeUnit.SECONDS);
+        return CompletableFuture.completedFuture(Result.success(uuid));
     }
 
     @Async
