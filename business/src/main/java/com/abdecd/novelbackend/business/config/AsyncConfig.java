@@ -1,4 +1,4 @@
-package com.abdecd.tokenlogin.config;
+package com.abdecd.novelbackend.business.config;
 
 import com.alibaba.ttl.threadpool.TtlExecutors;
 import org.springframework.context.annotation.Bean;
