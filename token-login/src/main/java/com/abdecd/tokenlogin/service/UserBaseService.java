@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Objects;
 
 @Service
@@ -78,14 +78,18 @@ public class UserBaseService {
     }
 
     public String generateUserToken(User user) {
-        return JwtUtils.getInstance().encodeJWT(allProperties.getJwtTtlSeconds(), Map.of(Constant.JWT_ID, user.getId(), Constant.JWT_PERMISSION, user.getPermission()));
+        var claims = new HashMap<String, String>();
+        claims.put(Constant.JWT_ID, user.getId().toString());
+        claims.put(Constant.JWT_PERMISSION, user.getPermission().toString());
+        return JwtUtils.getInstance().encodeJWT(allProperties.getJwtTtlSeconds(), claims);
     }
 
     @Transactional
     public int signup(String password, byte permission) {
         // 注册
         try {
-            var user = new User()
+            var user = User.ofEmpty()
+                    .setPassword("")
                     .setPermission(permission)
                     .setStatus((byte) 1);
             userMapper.insert(user);

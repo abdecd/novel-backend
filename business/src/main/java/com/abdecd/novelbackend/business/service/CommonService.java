@@ -82,7 +82,7 @@ public class CommonService {
         var message = mailSender.createMimeMessage();
         try {
             var helper = new MimeMessageHelper(message, true);
-            helper.setFrom("\"person\" <" + from + ">");
+            helper.setFrom("\"novel\" <" + from + ">");
             helper.setTo(email);
             helper.setSubject("邮箱验证");
             helper.setText("验证码：" + code + "，有效期：" + ttlProperties.getCaptchaTtlSeconds() / 60 + "分钟。");

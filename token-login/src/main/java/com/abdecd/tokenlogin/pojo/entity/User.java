@@ -16,4 +16,13 @@ public class User {
     private String email;
     private Byte permission;
     private Byte status;
+
+    public static User ofEmpty() {
+        return new User()
+                .setId(null)
+                .setPassword("")
+                .setEmail("")
+                .setPermission((byte) 0)
+                .setStatus((byte) 0);
+    }
 }

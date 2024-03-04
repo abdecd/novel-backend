@@ -13,4 +13,7 @@ token-login:
     - /v3/api-docs/**
     - /user/login
     - /user/signup
+    - /user/forget-password
     - /common/captcha
+    - /common/verify-email
+    - /common/image/**
