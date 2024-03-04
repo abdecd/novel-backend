@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.pojo.dto.common.VerifyEmailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.common.CaptchaVO;
 import com.abdecd.novelbackend.business.service.CommonService;
 import com.abdecd.novelbackend.business.service.FileService;
@@ -9,7 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.Email;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -49,12 +50,12 @@ public class CommonController {
 
     @Async
     @Operation(summary = "邮箱验证")
-    @GetMapping("/verify-email")
-    public CompletableFuture<Result<String>> verifyEmail(@Email String email, HttpServletRequest request) {
+    @PostMapping("/verify-email")
+    public CompletableFuture<Result<String>> verifyEmail(@RequestBody @Valid VerifyEmailDTO verifyEmailDTO, HttpServletRequest request) {
         // 接口限流
         if (Boolean.TRUE.equals(redisTemplate.hasKey("limitVerifyEmail:" + request.getRemoteAddr())))
             return CompletableFuture.completedFuture(Result.error("请求过于频繁"));
-        commonService.sendCodeToVerifyEmail(email);
+        commonService.sendCodeToVerifyEmail(verifyEmailDTO.getEmail());
         // 成功后进行限流
         redisTemplate.opsForValue().set("limitVerifyEmail:" + request.getRemoteAddr(), "true", 60, TimeUnit.SECONDS);
         return CompletableFuture.completedFuture(Result.success());
