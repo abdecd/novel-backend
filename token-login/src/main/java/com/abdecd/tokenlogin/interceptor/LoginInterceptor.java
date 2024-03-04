@@ -1,8 +1,8 @@
-package com.abdecd.novelbackend.business.interceptor;
+package com.abdecd.tokenlogin.interceptor;
 
-import com.abdecd.novelbackend.business.common.util.JwtUtils;
-import com.abdecd.novelbackend.business.context.UserContext;
-import com.abdecd.novelbackend.common.constant.Constant;
+import com.abdecd.tokenlogin.common.constant.Constant;
+import com.abdecd.tokenlogin.common.context.UserContext;
+import com.abdecd.tokenlogin.common.util.JwtUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

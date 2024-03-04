@@ -3,5 +3,14 @@ spring:
     active: dev
 novel:
   ttl:
-    jwt-ttl-seconds: 600
     captcha-ttl-seconds: 300
+token-login:
+  jwt-ttl-seconds: 600
+  exclude-patterns:
+    - /error
+    - /doc.html/**
+    - /swagger-ui.html/**
+    - /v3/api-docs/**
+    - /user/login
+    - /user/signup
+    - /common/captcha

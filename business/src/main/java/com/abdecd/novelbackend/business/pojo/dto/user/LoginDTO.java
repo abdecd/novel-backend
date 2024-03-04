@@ -1,13 +1,12 @@
 package com.abdecd.novelbackend.business.pojo.dto.user;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class LoginDTO {
-    @NotNull
-    private Integer userId;
+    @NotBlank
+    private String username; // 通用
 
     @NotBlank
     private String password;

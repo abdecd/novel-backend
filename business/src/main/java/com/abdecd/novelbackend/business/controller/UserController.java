@@ -42,9 +42,9 @@ public class UserController {
     }
 
     @Operation(summary = "忘记密码")
-    @PostMapping("/reset-password")
-    public Result<String> resetPassword(@RequestBody @Valid ResetPwdDTO resetPwdDTO) {
-        userService.resetPassword(resetPwdDTO);
+    @PostMapping("/forget-password")
+    public Result<String> forgetPassword(@RequestBody @Valid ResetPwdDTO resetPwdDTO) {
+        userService.forgetPassword(resetPwdDTO);
         return Result.success();
     }
 }

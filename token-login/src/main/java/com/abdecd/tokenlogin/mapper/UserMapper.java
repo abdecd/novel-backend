@@ -1,6 +1,6 @@
-package com.abdecd.novelbackend.business.mapper;
+package com.abdecd.tokenlogin.mapper;
 
-import com.abdecd.novelbackend.business.pojo.entity.User;
+import com.abdecd.tokenlogin.pojo.entity.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 

@@ -1,4 +1,4 @@
-package com.abdecd.novelbackend.business.common.properties;
+package com.abdecd.novelbackend.business.common.property;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -8,6 +8,5 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "novel.ttl")
 @Data
 public class TtlProperties {
-    private Integer jwtTtlSeconds;
     private Integer captchaTtlSeconds;
 }

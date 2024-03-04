@@ -1,4 +1,4 @@
-package com.abdecd.novelbackend.business.pojo.entity;
+package com.abdecd.tokenlogin.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
