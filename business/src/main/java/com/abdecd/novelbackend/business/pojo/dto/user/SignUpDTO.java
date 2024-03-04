@@ -4,16 +4,13 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class LoginDTO {
+public class SignUpDTO {
     @NotBlank
-    private String username; // 通用
-
+    private String nickname;
     @NotBlank
     private String password;
-
     @NotBlank
-    private String verifyCodeId;
-
+    private String email;
     @NotBlank
-    private String captcha;
+    private String verifyCode;
 }

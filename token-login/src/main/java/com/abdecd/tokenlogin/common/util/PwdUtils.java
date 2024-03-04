@@ -1,4 +1,4 @@
-package com.abdecd.novelbackend.business.common.util;
+package com.abdecd.tokenlogin.common.util;
 
 import ch.qos.logback.core.encoder.ByteArrayUtil;
 

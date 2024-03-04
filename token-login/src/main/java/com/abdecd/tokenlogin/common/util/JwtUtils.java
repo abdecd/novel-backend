@@ -1,4 +1,4 @@
-package com.abdecd.novelbackend.business.common.util;
+package com.abdecd.tokenlogin.common.util;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -30,7 +30,7 @@ public class JwtUtils {
     }
 //    Algorithm HMAC256 = Algorithm.HMAC256(" ");
 
-    public String encodeJWT(int ttlSeconds, Map<String, Object> claims) {
+    public String encodeJWT(int ttlSeconds, Map<String, String> claims) {
         var expiredDate = Calendar.getInstance();
         expiredDate.add(Calendar.SECOND,ttlSeconds);
         return JWT.create()

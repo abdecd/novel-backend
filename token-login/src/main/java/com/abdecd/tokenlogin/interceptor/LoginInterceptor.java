@@ -1,8 +1,8 @@
-package com.abdecd.novelbackend.business.interceptor;
+package com.abdecd.tokenlogin.interceptor;
 
-import com.abdecd.novelbackend.business.common.util.JwtUtils;
-import com.abdecd.novelbackend.business.context.UserContext;
-import com.abdecd.novelbackend.common.constant.Constant;
+import com.abdecd.tokenlogin.common.constant.Constant;
+import com.abdecd.tokenlogin.common.context.UserContext;
+import com.abdecd.tokenlogin.common.util.JwtUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,7 +23,6 @@ public class LoginInterceptor implements HandlerInterceptor {
             //当前拦截到的不是动态方法，直接放行
             return true;
         }
-        log.info("当前拦截到的请求：{}", request.getRequestURL());
 
         //1、从请求头中获取令牌
         String token = request.getHeader(Constant.JWT_TOKEN_NAME);

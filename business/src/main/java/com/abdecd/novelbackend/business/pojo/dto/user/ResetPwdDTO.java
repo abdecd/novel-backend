@@ -4,16 +4,11 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class LoginDTO {
+public class ResetPwdDTO {
     @NotBlank
-    private String username; // 通用
-
+    private String email;
     @NotBlank
-    private String password;
-
+    private String verifyCode;
     @NotBlank
-    private String verifyCodeId;
-
-    @NotBlank
-    private String captcha;
+    private String newPassword;
 }
