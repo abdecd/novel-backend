@@ -31,7 +31,7 @@ public class UserController {
     public Result<String> login(@RequestBody @Valid LoginDTO loginDTO) {
         commonService.verifyCaptcha(loginDTO.getVerifyCodeId(), loginDTO.getCaptcha());
         var user = userService.login(loginDTO);
-        var token = userService.getUserToken(user);
+        var token = userService.generateUserToken(user);
         return Result.success(token);
     }
 

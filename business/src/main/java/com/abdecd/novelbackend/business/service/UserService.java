@@ -72,7 +72,7 @@ public class UserService {
         return user;
     }
 
-    public String getUserToken(User user) {
+    public String generateUserToken(User user) {
         return JwtUtils.getInstance().encodeJWT(ttlProperties.getJwtTtlSeconds(), Map.of(Constant.JWT_ID, user.getId(), Constant.JWT_PERMISSION, user.getPermission()));
     }
 
