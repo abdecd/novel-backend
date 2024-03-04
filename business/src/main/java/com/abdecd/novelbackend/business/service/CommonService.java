@@ -13,7 +13,6 @@ import org.springframework.data.util.Pair;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -63,12 +62,8 @@ public class CommonService {
     }
 
     public void verifyCaptcha(String uuid, String captcha) {
-        log.info("uuid: {}, captcha: {}", uuid, captcha);
         var key = VERIFY_CODE_PREFIX + uuid;
-        if (!StringUtils.hasText(uuid) || Boolean.FALSE.equals(redisTemplate.hasKey(key)))
-            throw new BaseException(MessageConstant.CAPTCHA_EXPIRED);
-        if (!Objects.equals(redisTemplate.opsForValue().get(key), captcha))
-            throw new BaseException(MessageConstant.CAPTCHA_ERROR);
+        verifyCodeInRedis(key, captcha);
     }
 
     public void sendCodeToVerifyEmail(String email) {
@@ -94,9 +89,17 @@ public class CommonService {
 
     public void verifyEmail(String email, String code) {
         var key = EMAIL_PREFIX + email;
-        if (!StringUtils.hasText(email) || Boolean.FALSE.equals(redisTemplate.hasKey(key)))
-            throw new BaseException(MessageConstant.CAPTCHA_EXPIRED);
-        if (!Objects.equals(redisTemplate.opsForValue().get(key), code))
-            throw new BaseException(MessageConstant.CAPTCHA_ERROR);
+        verifyCodeInRedis(key, code);
+    }
+
+    private void verifyCodeInRedis(String key, String value) {
+        try {
+            if (Boolean.FALSE.equals(redisTemplate.hasKey(key)))
+                throw new BaseException(MessageConstant.CAPTCHA_EXPIRED);
+            if (!Objects.equals(redisTemplate.opsForValue().get(key), value))
+                throw new BaseException(MessageConstant.CAPTCHA_ERROR);
+        } finally {
+            redisTemplate.delete(key);
+        }
     }
 }
