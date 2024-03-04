@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan("com.abdecd.novelbackend.business")
+@MapperScan("com.abdecd.novelbackend.business.mapper")
 public class BusinessApplication {
 
     public static void main(String[] args) {

@@ -3,7 +3,7 @@ package com.abdecd.tokenlogin.common.context;
 import com.alibaba.ttl.TransmittableThreadLocal;
 
 public class UserContext {
-    private static final ThreadLocal<UserContextHolder> userContext = new TransmittableThreadLocal<>();
+    private static final ThreadLocal<UserContextHolder> userContext = TransmittableThreadLocal.withInitial(UserContextHolder::new);
 
     public static void setUserId(Long userId) {
         userContext.get().setUserId(userId);
