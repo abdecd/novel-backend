@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.pojo.dto.user;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -9,7 +10,7 @@ public class SignUpDTO {
     private String nickname;
     @NotBlank
     private String password;
-    @NotBlank
+    @Email
     private String email;
     @NotBlank
     private String verifyCode;
