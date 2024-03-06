@@ -57,6 +57,4 @@ public class NovelController {
         novelService.deleteNovelInfo(deleteNovelInfoDTO.getId());
         return Result.success();
     }
-
-
 }

@@ -32,25 +32,11 @@ public class NovelChapterService {
     }
 
     public NovelChapterVO getNovelChapter(Integer nid, Integer vNum, Integer cNum) {
-        var novelChapter = novelChapterMapper.selectOne(new LambdaQueryWrapper<NovelChapter>()
-                .eq(NovelChapter::getNovelId, nid)
-                .eq(NovelChapter::getVolumeNumber, vNum)
-                .eq(NovelChapter::getChapterNumber, cNum)
-        );
-        var novelContent = novelContentMapper.selectById(novelChapter.getId());
-        var novelChapterVO = new NovelChapterVO();
-        BeanUtils.copyProperties(novelChapter, novelChapterVO);
-        BeanUtils.copyProperties(novelContent, novelChapterVO);// todo 直接联表来优化性能
-        return novelChapterVO;
+        return novelChapterMapper.getNovelChapterVO(nid, vNum, cNum);
     }
 
     public NovelChapterVO getNovelChapter(long cid) {
-        var novelChapter = novelChapterMapper.selectById(cid);
-        var novelContent = novelContentMapper.selectById(cid);
-        var novelChapterVO = new NovelChapterVO();
-        BeanUtils.copyProperties(novelChapter, novelChapterVO);
-        BeanUtils.copyProperties(novelContent, novelChapterVO);
-        return novelChapterVO;
+        return novelChapterMapper.getNovelChapterVOByCid(cid);
     }
 
     public long addNovelChapter(AddNovelChapterDTO addNovelChapterDTO) {
