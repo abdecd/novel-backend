@@ -26,7 +26,7 @@ public class UserController {
     @Resource
     CommonService commonService;
 
-    @Operation(summary = "用户登录")
+    @Operation(summary = "用户登录", description = "data字段返回用户token")
     @PostMapping("/login")
     public Result<String> login(@RequestBody @Valid LoginDTO loginDTO) {
         commonService.verifyCaptcha(loginDTO.getVerifyCodeId(), loginDTO.getCaptcha());
@@ -35,7 +35,7 @@ public class UserController {
         return Result.success(token);
     }
 
-    @Operation(summary = "用户注册")
+    @Operation(summary = "用户注册", description = "data字段返回用户id")
     @PostMapping("/signup")
     public Result<Integer> signup(@RequestBody @Valid SignUpDTO signUpDTO) {
         return Result.success(userService.signup(signUpDTO));

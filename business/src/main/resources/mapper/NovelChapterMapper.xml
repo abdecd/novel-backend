@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.abdecd.novelbackend.business.mapper.NovelChapterMapper">
+    <select id="getNovelChapterVO"
+            resultType="com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO">
+        SELECT
+            nc.id,
+            nc.novel_id,
+            nc.volume_number,
+            nc.chapter_number,
+            nc.title,
+            n.content
+        FROM
+            novel_chapter nc
+        JOIN novel_backend.novel_content n on nc.id = n.novel_chapter_id
+        <where>
+            <if test="nid != null">
+                and nc.novel_id = #{nid}
+            </if>
+            <if test="vNum != null">
+                and nc.volume_number = #{vNum}
+            </if>
+            <if test="cNum != null">
+                and nc.chapter_number = #{cNum}
+            </if>
+        </where>
+    </select>
+    <select id="getNovelChapterVOByCid"
+            resultType="com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO">
+        SELECT
+            nc.id,
+            nc.novel_id,
+            nc.volume_number,
+            nc.chapter_number,
+            nc.title,
+            n.content
+        FROM
+            novel_chapter nc
+        JOIN novel_backend.novel_content n on nc.id = n.novel_chapter_id
+        <where>
+            <if test="cid != null">
+                nc.id = #{cid}
+            </if>
+        </where>
+    </select>
+</mapper>
