@@ -45,9 +45,9 @@ public class NovelController {
     @Operation(summary = "新增小说", description = "data字段返回小说id")
     @RequirePermission(99)
     @PostMapping("add")
-    public Result<Integer> addNovelInfo(@RequestBody @Valid AddNovelInfoDTO addNovelInfoDTO) {
+    public Result<String> addNovelInfo(@RequestBody @Valid AddNovelInfoDTO addNovelInfoDTO) {
         var novelId = novelService.addNovelInfo(addNovelInfoDTO);
-        return Result.success(novelId);
+        return Result.success(novelId+"");
     }
 
     @Operation(summary = "删除小说")
