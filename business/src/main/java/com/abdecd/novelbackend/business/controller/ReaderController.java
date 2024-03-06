@@ -30,6 +30,7 @@ public class ReaderController {
         var reader = readerService.getReaderDetail(uid);
         var readerVO = new ReaderDetailVO();
         if (reader != null) BeanUtils.copyProperties(reader, readerVO);
+        else readerVO = null;
         return Result.success(readerVO);
     }
 
