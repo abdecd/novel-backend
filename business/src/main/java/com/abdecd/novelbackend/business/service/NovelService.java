@@ -9,6 +9,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class NovelService {
     @Autowired
@@ -18,6 +20,14 @@ public class NovelService {
 
     public NovelInfo getNovelInfo(int nid) {
         return novelInfoMapper.selectById(nid);
+    }
+
+    public List<NovelInfo> searchNovelInfoByTitle(String title, Long startId, Integer pageSize) {
+        return novelInfoMapper.searchNovelInfoByTitle(title, startId, pageSize);
+    }
+
+    public List<NovelInfo> searchNovelInfoByAuthor(String author, Long startId, Integer pageSize) {
+        return novelInfoMapper.searchNovelInfoByAuthor(author, startId, pageSize);
     }
 
     @UseFileService(value = "cover", param = UpdateNovelInfoDTO.class)
