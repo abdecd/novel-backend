@@ -2,6 +2,7 @@ package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderDetailVO;
+import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.service.ReaderService;
 import com.abdecd.novelbackend.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Tag(name = "读者接口")
 @RestController
@@ -39,5 +42,16 @@ public class ReaderController {
     public Result<String> updateReaderDetail(UpdateReaderDetailDTO updateReaderDetailDTO) {
         readerService.updateReaderDetail(updateReaderDetailDTO);
         return Result.success();
+    }
+
+    @Operation(summary = "获取用户收藏列表")
+    @GetMapping("favorites")
+    public Result<List<ReaderFavoritesVO>> getReaderFavorites(
+            @NotNull @Schema(description = "用户id") Integer uid,
+            @Schema(description = "起始小说id") Integer startNovelId,
+            @NotNull @Schema(description = "每页数量") Integer pageSize
+    ) {
+        var readerFavorites = readerService.getReaderFavoritesVO(uid, startNovelId, pageSize);
+        return Result.success(readerFavorites);
     }
 }
