@@ -23,6 +23,8 @@ public class LoginInterceptor implements HandlerInterceptor {
             //当前拦截到的不是动态方法，直接放行
             return true;
         }
+        log.info("uri: "+request.getRequestURI());
+        log.info("query: "+request.getQueryString());
 
         //1、从请求头中获取令牌
         String token = request.getHeader(Constant.JWT_TOKEN_NAME);
