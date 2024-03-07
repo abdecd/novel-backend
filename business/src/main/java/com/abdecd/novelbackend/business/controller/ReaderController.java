@@ -4,6 +4,7 @@ import com.abdecd.novelbackend.business.pojo.dto.reader.ReaderFavoritesDTO;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderDetailVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
+import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
 import com.abdecd.novelbackend.business.service.ReaderService;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -67,5 +68,16 @@ public class ReaderController {
     public Result<String> deleteReaderFavorites(@RequestBody @Valid ReaderFavoritesDTO readerFavoritesDTO) {
         readerService.deleteReaderFavorites(UserContext.getUserId(), readerFavoritesDTO.getNovelIds());
         return Result.success();
+    }
+
+    @Operation(summary = "获取用户阅读历史")
+    @GetMapping("history")
+    public Result<List<ReaderHistoryVO>> getReaderHistory(
+            @NotNull @Schema(description = "用户id") Integer uid,
+            @Schema(description = "起始小说id") Integer startNovelId,
+            @NotNull @Schema(description = "每页数量") Integer pageSize
+    ) {
+        var readerHistory = readerService.listReaderHistoryVO(uid, startNovelId, pageSize);
+        return Result.success(readerHistory);
     }
 }

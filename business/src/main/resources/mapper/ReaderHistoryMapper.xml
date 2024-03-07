@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper">
+    <select id="listReaderHistoryVO"
+            resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO">
+        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number,
+               ni.title as novelTitle, ni.author, ni.cover,
+               nc.title as chapterTitle
+        FROM reader_history rh
+        LEFT JOIN novel_info ni ON rh.novel_id = ni.id
+        LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
+        <where>
+            <if test="uid != null">
+                and rh.user_id = #{userId}
+            </if>
+            <if test="startId != null">
+                and rh.novel_id >= #{startNovelId}
+            </if>
+        </where>
+        limit #{pageSize}
+    </select>
+</mapper>
