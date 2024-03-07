@@ -4,6 +4,7 @@ import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
+import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.aspect.RequirePermission;
@@ -56,5 +57,14 @@ public class NovelController {
     public Result<String> deleteNovelInfo(@RequestBody @Valid DeleteNovelInfoDTO deleteNovelInfoDTO) {
         novelService.deleteNovelInfo(deleteNovelInfoDTO.getId());
         return Result.success();
+    }
+
+    @Operation(summary = "获取小说目录")
+    @GetMapping("contents")
+    public Result<ContentsVO> getContents(
+            @NotNull @Schema(description = "小说id") Integer nid
+    ) {
+        var contentsVO = novelService.getContents(nid);// todo 考虑缓存
+        return Result.success(contentsVO);
     }
 }

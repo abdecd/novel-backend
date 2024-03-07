@@ -21,7 +21,7 @@ public class SearchController {
     @Autowired
     private NovelService novelService;
 
-    @Operation(summary = "搜索书籍")
+    @Operation(summary = "搜索书籍", description = "模糊匹配")
     @GetMapping("book")
     public Result<List<NovelInfo>> searchBook(
             @NotNull @Schema(description = "书名") String title,
@@ -31,7 +31,7 @@ public class SearchController {
         return Result.success(novelService.searchNovelInfoByTitle(title, startId, pageSize));
     }
 
-    @Operation(summary = "搜索作者对应的书籍")
+    @Operation(summary = "搜索作者对应的书籍", description = "精确搜索")
     @GetMapping("author")
     public Result<List<NovelInfo>> searchBookByAuthor(
             @NotNull @Schema(description = "作者名") String author,

@@ -5,6 +5,8 @@ import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
+import com.abdecd.novelbackend.business.pojo.entity.NovelVolume;
+import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,10 @@ import java.util.List;
 public class NovelService {
     @Autowired
     private NovelInfoMapper novelInfoMapper;
+    @Autowired
+    private NovelVolumeService novelVolumeService;
+    @Autowired
+    private NovelChapterService novelChapterService;
     @Autowired
     private FileService fileService;
 
@@ -48,5 +54,16 @@ public class NovelService {
     public void deleteNovelInfo(Integer id) {
         fileService.deleteImg(novelInfoMapper.selectById(id).getCover());
         novelInfoMapper.deleteById(id);
+    }
+
+    public ContentsVO getContents(Integer nid) {
+        List<NovelVolume> novelVolume = novelVolumeService.listNovelVolume(nid);
+        var contentsVO = new ContentsVO();
+        for (var novelVolumeItem : novelVolume) {
+            var vNum = novelVolumeItem.getVolumeNumber();
+            var novelChapter = novelChapterService.listNovelChapter(nid, vNum);
+            contentsVO.put(novelVolumeItem.getTitle(), novelChapter);
+        }
+        return contentsVO;
     }
 }
