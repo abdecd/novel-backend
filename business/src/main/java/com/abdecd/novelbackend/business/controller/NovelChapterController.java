@@ -5,9 +5,11 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO;
 import com.abdecd.novelbackend.business.service.NovelChapterService;
 import com.abdecd.novelbackend.business.service.NovelVolumeService;
+import com.abdecd.novelbackend.business.service.ReaderService;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.aspect.RequirePermission;
+import com.abdecd.tokenlogin.common.context.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +30,8 @@ public class NovelChapterController {
     private NovelChapterService novelChapterService;
     @Autowired
     private NovelVolumeService novelVolumeService;
+    @Autowired
+    private ReaderService readerService;
 
     @Operation(summary = "获取小说章节列表")
     @GetMapping("list")
@@ -47,10 +51,18 @@ public class NovelChapterController {
             @NotNull @Schema(description = "章num") Integer cNum
     ) {
         var novelChapter = novelChapterService.getNovelChapter(nid, vNum, cNum);
+        // 更新阅读记录
+        readerService.saveReaderHistory(
+                UserContext.getUserId(),
+                novelChapter.getNovelId(),
+                novelChapter.getVolumeNumber(),
+                novelChapter.getChapterNumber()
+        );
         return Result.success(novelChapter);
     }
 
-    @Operation(summary = "获取小说章节", description = "包括文章内容")
+    @Operation(summary = "获取小说章节(管理员专用)", description = "包括文章内容")
+    @RequirePermission(99)
     @GetMapping("cid")
     public Result<NovelChapterVO> getNovelChapter(
             @NotNull @Schema(description = "小说章节id") Long cid
