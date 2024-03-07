@@ -5,11 +5,11 @@ import com.alibaba.ttl.TransmittableThreadLocal;
 public class UserContext {
     private static final ThreadLocal<UserContextHolder> userContext = TransmittableThreadLocal.withInitial(UserContextHolder::new);
 
-    public static void setUserId(Long userId) {
+    public static void setUserId(Integer userId) {
         userContext.get().setUserId(userId);
     }
 
-    public static Long getUserId() {
+    public static Integer getUserId() {
         return userContext.get().getUserId();
     }
 
@@ -26,14 +26,14 @@ public class UserContext {
     }
 
     public static class UserContextHolder {
-        private Long userId;
+        private Integer userId;
         private Byte permission;
 
-        public Long getUserId() {
+        public Integer getUserId() {
             return userId;
         }
 
-        public void setUserId(Long userId) {
+        public void setUserId(Integer userId) {
             this.userId = userId;
         }
 

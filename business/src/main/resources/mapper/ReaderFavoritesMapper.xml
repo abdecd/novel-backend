@@ -1,6 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.abdecd.novelbackend.business.mapper.ReaderFavoritesMapper">
+    <insert id="insertBatch">
+        INSERT INTO reader_favorites (user_id, novel_id)
+            VALUES
+        <foreach collection="novelIds" item="novelId" separator=",">
+            (#{userId}, #{novelId})
+        </foreach>
+    </insert>
+    <select id="listReaderFavoritesVO"
+            resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO">
+        SELECT rf.id, rf.novel_id, ni.title, ni.author, ni.cover, ni.description
+        FROM reader_favorites rf
+        LEFT JOIN novel_info ni ON rf.novel_id = ni.id
+        <where>
+            <if test="uid != null">
+                and rf.user_id = #{userId}
+            </if>
+            <if test="startId != null">
+                and rf.novel_id >= #{startNovelId}
+            </if>
+        </where>
+        limit #{pageSize}
+    </select>
     <select id="getReaderFavoritesVO"
             resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO">
         SELECT rf.id, rf.novel_id, ni.title, ni.author, ni.cover, ni.description
@@ -8,12 +30,14 @@
         LEFT JOIN novel_info ni ON rf.novel_id = ni.id
         <where>
             <if test="uid != null">
-                and rf.user_id = #{uid}
+                and rf.user_id = #{userId}
             </if>
-            <if test="startId != null">
-                and rf.novel_id >= #{startNovelId}
+            <if test="novelIds != null">
+                and rf.novel_id IN
+                <foreach collection="novelIds" item="novelId" separator="," open="(" close=")">
+                    #{novelId}
+                </foreach>"
             </if>
         </where>
-        limit #{pageSize}
     </select>
 </mapper>

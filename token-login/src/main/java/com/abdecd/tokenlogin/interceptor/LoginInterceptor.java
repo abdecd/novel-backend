@@ -38,7 +38,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         //2、校验令牌
         try {
             Map<String, Object> claims = JwtUtils.getInstance().decodeJWT(token);
-            Long userId = Long.valueOf(claims.get(Constant.JWT_ID).toString());
+            Integer userId = Integer.valueOf(claims.get(Constant.JWT_ID).toString());
             Byte permission = Byte.parseByte(claims.get(Constant.JWT_PERMISSION).toString());
             log.info("userId：{}, permission: {}", userId, permission);
             UserContext.setUserId(userId);
@@ -52,5 +52,11 @@ public class LoginInterceptor implements HandlerInterceptor {
             response.getWriter().close();
             return false;
         }
+    }
+
+    @Override
+    public void afterCompletion(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull Object handler, Exception ex) throws Exception {
+        UserContext.clear();
+        HandlerInterceptor.super.afterCompletion(request, response, handler, ex);
     }
 }
