@@ -49,7 +49,9 @@ public class LocalFileServiceImpl implements FileService {
     public String changeTmpImgToStatic(String fullTmpFilePath) {
         // /img/tmp/xxx  ->  /img/xxx
         if (IMG_PATH.equals("empty")) return "";
+        if (!fullTmpFilePath.startsWith(URL_PREFIX)) return "";
         var tmpFilePath = fullTmpFilePath.substring(URL_PREFIX.length());
+        if (!tmpFilePath.startsWith("/img/tmp/")) return "";
         var oldPath = IMG_PATH + tmpFilePath;
         var newPath = IMG_PATH + "/img" + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"));
         var tmp = new File(oldPath);
@@ -57,6 +59,17 @@ public class LocalFileServiceImpl implements FileService {
         return URL_PREFIX + (tmp.renameTo(new File(newPath)) ?
                 "/img" + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"))
                 : tmpFilePath);
+    }
+
+    @Override
+    public void deleteImg(String path) {
+        if (IMG_PATH.equals("empty")) return;
+        if (!path.startsWith(URL_PREFIX)) return;
+        var tmpFilePath = path.substring(URL_PREFIX.length());
+        if (!tmpFilePath.startsWith("/img/")) return;
+        var oldPath = IMG_PATH + tmpFilePath;
+        var file = new File(oldPath);
+        if (file.exists()) file.delete();
     }
 
     @Override

@@ -35,10 +35,12 @@ public class UserController {
         return Result.success(token);
     }
 
-    @Operation(summary = "用户注册", description = "data字段返回用户id")
+    @Operation(summary = "用户注册", description = "data字段返回用户token")
     @PostMapping("/signup")
-    public Result<Integer> signup(@RequestBody @Valid SignUpDTO signUpDTO) {
-        return Result.success(userService.signup(signUpDTO));
+    public Result<String> signup(@RequestBody @Valid SignUpDTO signUpDTO) {
+        var user = userService.signup(signUpDTO);
+        var token = userService.generateUserToken(user);
+        return Result.success(token);
     }
 
     @Operation(summary = "忘记密码")

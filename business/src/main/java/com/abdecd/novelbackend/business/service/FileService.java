@@ -26,11 +26,19 @@ public interface FileService {
     }
 
     /**
-     * 临时图片转正
+     * 临时图片转正 不成功返回空字符串
      * @param tmpPath url
      * @return url
      */
     default String changeTmpImgToStatic(String tmpPath) {
+        throw new RuntimeException("未实现");
+    }
+
+    /**
+     * 图片删除
+     * @param path url
+     */
+    default void deleteImg(String path) {
         throw new RuntimeException("未实现");
     }
 

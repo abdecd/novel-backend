@@ -60,7 +60,7 @@ public class UserService {
     }
 
     @Transactional
-    public int signup(SignUpDTO signUpDTO) {
+    public User signup(SignUpDTO signUpDTO) {
         // 验证邮箱
         commonService.verifyEmail(signUpDTO.getEmail(), signUpDTO.getVerifyCode());
         // 注册
@@ -75,7 +75,7 @@ public class UserService {
                 .setAvatar("")
                 .setSignature("")
         );
-        return userId;
+        return userMapper.selectById(userId);
     }
 
     public void forgetPassword(ResetPwdDTO resetPwdDTO) {

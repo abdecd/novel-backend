@@ -9,10 +9,6 @@ import org.hibernate.validator.constraints.Length;
 @Data
 public class UpdateReaderDetailDTO {
     @NotNull
-    @Schema(description = "用户id")
-    private Integer userId;
-
-    @NotNull
     @Length(min = DTOConstant.PERSON_NAME_LENGTH_MIN, max = DTOConstant.PERSON_NAME_LENGTH_MAX)
     @Schema(description = "用户昵称")
     private String nickname;

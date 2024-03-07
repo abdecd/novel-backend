@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.abdecd.novelbackend.business.mapper.NovelInfoMapper">
+    <select id="searchNovelInfoByTitle" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
+        SELECT id, title, author, description, cover
+        FROM novel_info
+        <where>
+            <if test="title != null">
+                and title LIKE CONCAT('%', #{title}, '%')
+            </if>
+            <if test="startId != null">
+                and id >= #{startId}
+            </if>
+        </where>
+        limit #{pageSize}
+    </select>
+    <select id="searchNovelInfoByAuthor" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
+        SELECT id, title, author, description, cover
+        FROM novel_info
+        <where>
+            <if test="author != null">
+                and author = #{author}
+            </if>
+            <if test="startId != null">
+                and id >= #{startId}
+            </if>
+        </where>
+        limit #{pageSize}
+    </select>
+</mapper>
