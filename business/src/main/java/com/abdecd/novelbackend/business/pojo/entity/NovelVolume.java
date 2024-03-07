@@ -11,5 +11,4 @@ public class NovelVolume {
     private Integer novelId;
     private Integer volumeNumber;
     private String title;
-    private String cover;
 }

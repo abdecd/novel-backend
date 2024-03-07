@@ -17,8 +17,4 @@ public class AddNovelVolumeDTO {
     @NotBlank
     @Length(max = DTOConstant.STRING_LENGTH_MAX)
     private String title;
-
-    @NotBlank
-    @Length(max = DTOConstant.STRING_LENGTH_MAX)
-    private String cover;
 }

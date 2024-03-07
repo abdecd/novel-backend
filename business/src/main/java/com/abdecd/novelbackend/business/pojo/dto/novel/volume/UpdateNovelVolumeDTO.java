@@ -15,7 +15,4 @@ public class UpdateNovelVolumeDTO {
 
     @Length(max = DTOConstant.STRING_LENGTH_MAX)
     private String title;
-
-    @Length(max = DTOConstant.STRING_LENGTH_MAX)
-    private String cover;
 }
