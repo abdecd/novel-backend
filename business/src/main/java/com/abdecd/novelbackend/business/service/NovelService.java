@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.service;
 
+import com.abdecd.novelbackend.business.aspect.UseFileService;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
@@ -19,42 +20,18 @@ public class NovelService {
         return novelInfoMapper.selectById(nid);
     }
 
+    @UseFileService(value = "cover", param = UpdateNovelInfoDTO.class)
     public void updateNovelInfo(UpdateNovelInfoDTO updateNovelInfoDTO) {
-        // 图片转正
-        String img;
-        if ((img = updateNovelInfoDTO.getCover()) != null) {
-            img = fileService.changeTmpImgToStatic(img);
-            // 转正成功，换新链接
-            if (!img.isEmpty()) updateNovelInfoDTO.setCover(img);
-            else img = null;
-        }
         var novelInfo = new NovelInfo();
         BeanUtils.copyProperties(updateNovelInfoDTO, novelInfo);
-        try {
-            novelInfoMapper.updateById(novelInfo);
-        } catch (Exception e) {
-            if (img != null) fileService.deleteImg(img);
-            throw e;
-        }
+        novelInfoMapper.updateById(novelInfo);
     }
 
+    @UseFileService(value = "cover", param = AddNovelInfoDTO.class)
     public Integer addNovelInfo(AddNovelInfoDTO addNovelInfoDTO) {
-        // 图片转正
-        String img;
-        if ((img = addNovelInfoDTO.getCover()) != null) {
-            img = fileService.changeTmpImgToStatic(img);
-            // 转正成功，换新链接
-            if (!img.isEmpty()) addNovelInfoDTO.setCover(img);
-            else img = null;
-        }
         var novelInfo = new NovelInfo();
         BeanUtils.copyProperties(addNovelInfoDTO, novelInfo);
-        try {
-            novelInfoMapper.insert(novelInfo);
-        } catch (Exception e) {
-            if (img != null) fileService.deleteImg(img);
-            throw e;
-        }
+        novelInfoMapper.insert(novelInfo);
         return novelInfo.getId();
     }
 
