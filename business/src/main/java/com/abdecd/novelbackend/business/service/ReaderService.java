@@ -5,6 +5,7 @@ import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderFavoritesMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
+import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderFavorites;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
@@ -16,6 +17,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -79,5 +81,15 @@ public class ReaderService {
                 .in(ReaderHistory::getId, (Object[]) ids)
                 .set(ReaderHistory::getStatus, StatusConstant.DISABLE)
         );
+    }
+
+    @Cacheable(value = "novelRankList#32", key = "#startTime + #endTime")
+    public List<NovelInfo> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
+        return readerHistoryMapper.getRankList(startTime, endTime);
+    }
+
+    @Cacheable(value = "novelRankListByTagName#32", key = "#tagName + #startTime + #endTime")
+    public List<NovelInfo> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
+        return readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
     }
 }

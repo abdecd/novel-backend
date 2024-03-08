@@ -20,4 +20,35 @@
         </where>
         limit #{pageSize}
     </select>
+    <select id="getRankList" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
+        SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
+        from (
+            SELECT rh.novel_id, COUNT(1) as count
+            FROM reader_history rh
+            WHERE rh.timestamp &gt;= #{startTime} and rh.timestamp &lt; #{endTime}
+            GROUP BY rh.novel_id
+            ORDER BY count DESC
+            limit 100
+        ) as t1
+        LEFT JOIN novel_info ni ON t1.novel_id = ni.id
+    </select>
+    <select id="getRankListByTagName" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
+        WITH novels AS (
+            SELECT nat.novel_id
+            FROM novel_tags nt
+                 JOIN novel_and_tags nat ON nt.id = nat.tag_id
+            WHERE nt.tag_name = #{tagName}
+        )
+        SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
+        FROM (
+             SELECT rh.novel_id, COUNT(1) as count
+             FROM novels
+                 JOIN reader_history rh ON novels.novel_id = rh.novel_id
+             WHERE rh.timestamp &gt;= #{startTime} and rh.timestamp &lt; #{endTime}
+             GROUP BY rh.novel_id
+             ORDER BY count DESC
+             limit 100
+         ) as t1
+         LEFT JOIN novel_info ni ON t1.novel_id = ni.id
+    </select>
 </mapper>

@@ -3,6 +3,7 @@ package com.abdecd.novelbackend.business.controller;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
+import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.business.service.NovelService;
@@ -11,11 +12,14 @@ import com.abdecd.tokenlogin.aspect.RequirePermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Tag(name = "小说接口")
 @RestController
@@ -66,5 +70,17 @@ public class NovelController {
     ) {
         var contentsVO = novelService.getContents(nid);// todo 考虑缓存
         return Result.success(contentsVO);
+    }
+
+    @Operation(summary = "获取小说排行榜")
+    @GetMapping("ranklist")
+    public Result<List<NovelInfo>> getRankList(
+            @NotNull @Schema(description = "时间类型，day日榜week周榜month月榜") String timeType,
+            @Nullable @Schema(description = "小说类型") String tagName,
+            @NotNull @Schema(description = "页码") Integer page,
+            @NotNull @Schema(description = "每页数量") Integer pageSize
+    ) {
+        var novelList = novelService.getRankList(timeType, tagName, page, pageSize);
+        return Result.success(novelList);
     }
 }
