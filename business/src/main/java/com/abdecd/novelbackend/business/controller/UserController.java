@@ -11,10 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "用户接口")
 @Slf4j
@@ -32,6 +29,13 @@ public class UserController {
         commonService.verifyCaptcha(loginDTO.getVerifyCodeId(), loginDTO.getCaptcha());
         var user = userService.login(loginDTO);
         var token = userService.generateUserToken(user);
+        return Result.success(token);
+    }
+
+    @Operation(summary = "用户续登", description = "data字段返回用户token")
+    @GetMapping("/login/refresh")
+    public Result<String> loginRefresh() {
+        var token = userService.refreshUserToken();
         return Result.success(token);
     }
 

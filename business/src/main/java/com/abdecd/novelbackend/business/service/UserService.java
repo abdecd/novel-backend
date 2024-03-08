@@ -87,4 +87,8 @@ public class UserService {
         );
         userBaseService.forgetPassword(user.getId(), resetPwdDTO.getNewPassword());
     }
+
+    public String refreshUserToken() {
+        return userBaseService.refreshUserToken();
+    }
 }
