@@ -33,10 +33,10 @@ public class PwdUtils {
         return gen.generateKeyPair();
     }
 
-    public static String getEncryptedPwd(String encodedPwd) {
+    public static String getEncryptedPwd(String encryptedPwd) {
         Cipher cipher;
         try {
-            byte[] pwdBytes = Base64.getDecoder().decode(encodedPwd);
+            byte[] pwdBytes = Base64.getDecoder().decode(encryptedPwd);
             cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding"); // 使用RSA-OAEP算法
             OAEPParameterSpec oaepParams = new OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT);
             cipher.init(Cipher.DECRYPT_MODE, privateKey, oaepParams);
@@ -49,7 +49,17 @@ public class PwdUtils {
 
     private static final String[] SALT = {"sfdsyt7aat", "dfjiowef4", "-=fjonv.sdr", "qoxirmenw", "28d3c9d3s", "jiox*j4n/3", "mewq;jiowreijx", "jwiosixuqxs", ".vldpw[dxmsfd"};
 
-    public static String encodePwd(String username, String pwd) throws NoSuchAlgorithmException {
+//    public static String encodePwd(String username, String pwd) throws NoSuchAlgorithmException {
+//        var sha256 = MessageDigest.getInstance("SHA-256");
+//        var saltHash = (pwd + username).hashCode() + 113;
+//        var index = Math.abs(saltHash % 9);
+//        var saltedPwd = pwd.substring(0, pwd.length() - 2) + SALT[index] + pwd.substring(pwd.length() - 2);
+//        var hash = sha256.digest(saltedPwd.getBytes(StandardCharsets.UTF_8));
+//        return ByteArrayUtil.toHexString(hash);
+//    }
+
+    public static String encodePwd(String username, String encryptedPwd) throws NoSuchAlgorithmException {
+        var pwd = getEncryptedPwd(encryptedPwd);
         var sha256 = MessageDigest.getInstance("SHA-256");
         var saltHash = (pwd + username).hashCode() + 113;
         var index = Math.abs(saltHash % 9);
