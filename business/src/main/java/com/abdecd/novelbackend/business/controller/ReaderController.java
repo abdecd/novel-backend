@@ -76,17 +76,17 @@ public class ReaderController {
     @GetMapping("history")
     public Result<List<ReaderHistoryVO>> getReaderHistory(
             @NotNull @Schema(description = "用户id") Integer uid,
-            @Nullable @Schema(description = "起始小说id") Integer startNovelId,
+            @Nullable @Schema(description = "起始记录id(倒序)") Integer startId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var readerHistory = readerService.listReaderHistoryVO(uid, startNovelId, pageSize);
+        var readerHistory = readerService.listReaderHistoryVO(uid, startId, pageSize);
         return Result.success(readerHistory);
     }
 
     @Operation(summary = "删除用户阅读历史")
     @PostMapping("history/delete")
     public Result<String> deleteReaderHistory(@RequestBody @Valid DeleteReaderHistoryDTO deleteReaderHistoryDTO) {
-        readerService.deleteReaderHistory(UserContext.getUserId(), deleteReaderHistoryDTO.getNovelIds());
+        readerService.deleteReaderHistory(UserContext.getUserId(), deleteReaderHistoryDTO.getIds());
         return Result.success();
     }
 }

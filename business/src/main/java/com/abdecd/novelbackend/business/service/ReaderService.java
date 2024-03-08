@@ -18,6 +18,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -58,39 +59,24 @@ public class ReaderService {
     }
 
     public void saveReaderHistory(Integer userId, Integer novelId, Integer volumeNumber, Integer chapterNumber) {
-        // 先检查是否有该记录
-        var readerHistory = readerHistoryMapper.selectOne(new LambdaQueryWrapper<ReaderHistory>()
-                .eq(ReaderHistory::getUserId, userId)
-                .eq(ReaderHistory::getNovelId, novelId)
+        readerHistoryMapper.insert(new ReaderHistory()
+                .setUserId(userId)
+                .setNovelId(novelId)
+                .setVolumeNumber(volumeNumber)
+                .setChapterNumber(chapterNumber)
+                .setStatus(StatusConstant.ENABLE)
+                .setTimestamp(LocalDateTime.now())
         );
-        if (readerHistory != null) {
-            readerHistoryMapper.updateById(new ReaderHistory()
-                    .setId(readerHistory.getId())
-                    .setUserId(userId)
-                    .setNovelId(novelId)
-                    .setVolumeNumber(volumeNumber)
-                    .setChapterNumber(chapterNumber)
-                    .setStatus(StatusConstant.ENABLE)
-            );
-        } else {
-            readerHistoryMapper.insert(new ReaderHistory()
-                    .setUserId(userId)
-                    .setNovelId(novelId)
-                    .setVolumeNumber(volumeNumber)
-                    .setChapterNumber(chapterNumber)
-                    .setStatus(StatusConstant.ENABLE)
-            );
-        }
     }
 
-    public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Integer startNovelId, Integer pageSize) {
-        return readerHistoryMapper.listReaderHistoryVO(uid, startNovelId, pageSize, StatusConstant.ENABLE);
+    public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Integer startId, Integer pageSize) {
+        return readerHistoryMapper.listReaderHistoryVO(uid, startId, pageSize, StatusConstant.ENABLE);
     }
 
-    public void deleteReaderHistory(Integer userId, Integer[] novelIds) {
+    public void deleteReaderHistory(Integer userId, Integer[] ids) {
         readerHistoryMapper.update(new LambdaUpdateWrapper<ReaderHistory>()
                 .eq(ReaderHistory::getUserId, userId)
-                .in(ReaderHistory::getNovelId, (Object[]) novelIds)
+                .in(ReaderHistory::getId, (Object[]) ids)
                 .set(ReaderHistory::getStatus, StatusConstant.DISABLE)
         );
     }

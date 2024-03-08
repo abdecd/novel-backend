@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.time.LocalDateTime;
+
 @Data
 @Accessors(chain = true)
 @TableName("reader_history")
@@ -17,4 +19,5 @@ public class ReaderHistory {
     private Integer volumeNumber;
     private Integer chapterNumber;
     private Byte status;
+    private LocalDateTime timestamp;
 }

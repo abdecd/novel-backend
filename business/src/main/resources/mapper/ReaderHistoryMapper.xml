@@ -3,7 +3,7 @@
 <mapper namespace="com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper">
     <select id="listReaderHistoryVO"
             resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO">
-        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number,
+        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp
                ni.title as novelTitle, ni.author, ni.cover,
                nc.title as chapterTitle
         FROM reader_history rh
@@ -13,8 +13,8 @@
             <if test="userId != null">
                 and rh.user_id = #{userId}
             </if>
-            <if test="startNovelId != null">
-                and rh.novel_id >= #{startNovelId}
+            <if test="startId != null">
+                and rh.id &lt;= #{startId}
             </if>
             and status = #{enableStatus}
         </where>
