@@ -117,7 +117,7 @@ public class UserBaseService {
     }
 
     public String getPublicKey() {
-        return Base64.getEncoder().encodeToString(PwdUtils.pubKey.getEncoded());
+        return Base64.getEncoder().encodeToString(PwdUtils.publicKey.getEncoded());
     }
 
     private void throwException(Class<? extends RuntimeException> exceptionClass, String errMessage) {

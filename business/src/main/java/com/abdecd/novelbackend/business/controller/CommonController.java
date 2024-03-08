@@ -5,6 +5,7 @@ import com.abdecd.novelbackend.business.pojo.vo.common.CaptchaVO;
 import com.abdecd.novelbackend.business.service.CommonService;
 import com.abdecd.novelbackend.business.service.FileService;
 import com.abdecd.novelbackend.common.result.Result;
+import com.abdecd.tokenlogin.service.UserBaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -34,6 +35,8 @@ public class CommonController {
     FileService fileService;
     @Autowired
     StringRedisTemplate redisTemplate;
+    @Autowired
+    private UserBaseService userBaseService;
 
     @Async
     @Operation(summary = "获取验证码图片")
@@ -84,5 +87,11 @@ public class CommonController {
             log.warn("查看失败", e);
             return CompletableFuture.completedFuture(Result.error("查看失败"));
         }
+    }
+
+    @Operation(summary = "获得公钥")
+    @GetMapping("public-key")
+    public Result<String> getPublicKey() {
+        return Result.success(userBaseService.getPublicKey());
     }
 }

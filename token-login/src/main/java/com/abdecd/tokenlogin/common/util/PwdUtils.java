@@ -6,16 +6,17 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.security.spec.MGF1ParameterSpec;
 import java.util.Base64;
 
 public class PwdUtils {
-    // 随机生成一对密钥（包含公钥和私钥）
     private static final KeyPair keyPair = generateKeyPair();
-    // 获取 公钥 和 私钥
-    public static final PublicKey pubKey = keyPair.getPublic();
-    private static final PrivateKey priKey = keyPair.getPrivate();
+    public static final PublicKey publicKey = keyPair.getPublic();
+    private static final PrivateKey privateKey = keyPair.getPrivate();
 
     private static KeyPair generateKeyPair() {
         // 获取指定算法的密钥对生成器
@@ -29,19 +30,19 @@ public class PwdUtils {
         // 初始化密钥对生成器（密钥长度要适中, 太短不安全, 太长加密/解密速度慢）
         gen.initialize(2048);
 
-        // 随机生成一对密钥（包含公钥和私钥）
         return gen.generateKeyPair();
     }
 
-    public static String getCipheredPwd(String encodedPwd) {
+    public static String getEncryptedPwd(String encodedPwd) {
         Cipher cipher;
         try {
             byte[] pwdBytes = Base64.getDecoder().decode(encodedPwd);
-            cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.DECRYPT_MODE,priKey);
+            cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding"); // 使用RSA-OAEP算法
+            OAEPParameterSpec oaepParams = new OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT);
+            cipher.init(Cipher.DECRYPT_MODE, privateKey, oaepParams);
             return new String(cipher.doFinal(pwdBytes), StandardCharsets.UTF_8);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException |
-                 BadPaddingException e) {
+                 BadPaddingException | InvalidAlgorithmParameterException e) {
             throw new RuntimeException(e);
         }
     }
