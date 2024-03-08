@@ -1,6 +1,7 @@
 package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.aspect.UseFileService;
+import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
@@ -29,6 +30,8 @@ public class NovelService {
     private FileService fileService;
     @Autowired
     private ReaderService readerService;
+    @Autowired
+    private NovelAndTagsMapper novelAndTagsMapper;
 
     public NovelInfo getNovelInfo(int nid) {
         return novelInfoMapper.selectById(nid);
@@ -104,5 +107,9 @@ public class NovelService {
             list = readerService.getRankListByTagName(tagName, startTime, endTime);
         }
         return list.subList((page - 1) * pageSize, page * pageSize);
+    }
+
+    public List<NovelInfo> getRelatedList(Integer nid) {
+        return novelAndTagsMapper.getRelatedList(nid);
     }
 }

@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,6 +83,31 @@ public class NovelController {
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
         var novelList = novelService.getRankList(timeType, tagName, page, pageSize);
+        return Result.success(novelList);
+    }
+
+    @Operation(summary = "获取轮播小说列表")
+    @GetMapping("carousel")
+    public Result<List<NovelInfo>> getCarouselList() {
+        var novelList = novelService.getRankList("month", null, 1, 5);
+        return Result.success(novelList);
+    }
+
+    @Operation(summary = "获取推荐小说列表")
+    @GetMapping("recommend")
+    public Result<List<NovelInfo>> getRecommendList(
+            @NotNull @Schema(description = "数量") @Min(1) @Max(30) Integer num
+    ) {// todo
+        var novelList = novelService.getRankList("month", null, 1, num);
+        return Result.success(novelList);
+    }
+
+    @Operation(summary = "获取相关小说推荐")
+    @GetMapping("related")
+    public Result<List<NovelInfo>> getRelatedList(
+            @NotNull @Schema(description = "小说id") Integer nid
+    ) {
+        var novelList = novelService.getRelatedList(nid);
         return Result.success(novelList);
     }
 }
