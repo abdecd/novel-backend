@@ -10,6 +10,7 @@ import com.abdecd.novelbackend.business.pojo.entity.ReaderFavorites;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
+import com.abdecd.novelbackend.common.constant.StatusConstant;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.BeanUtils;
@@ -68,6 +69,7 @@ public class ReaderService {
                     .setNovelId(novelId)
                     .setVolumeNumber(volumeNumber)
                     .setChapterNumber(chapterNumber)
+                    .setStatus(StatusConstant.ENABLE)
             );
         } else {
             readerHistoryMapper.insert(new ReaderHistory()
@@ -75,11 +77,12 @@ public class ReaderService {
                     .setNovelId(novelId)
                     .setVolumeNumber(volumeNumber)
                     .setChapterNumber(chapterNumber)
+                    .setStatus(StatusConstant.ENABLE)
             );
         }
     }
 
     public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Integer startNovelId, Integer pageSize) {
-        return readerHistoryMapper.listReaderHistoryVO(uid, startNovelId, pageSize);
+        return readerHistoryMapper.listReaderHistoryVO(uid, startNovelId, pageSize, StatusConstant.ENABLE);
     }
 }

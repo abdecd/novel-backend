@@ -16,4 +16,5 @@ public class ReaderHistory {
     private Integer novelId;
     private Integer volumeNumber;
     private Integer chapterNumber;
+    private Byte status;
 }

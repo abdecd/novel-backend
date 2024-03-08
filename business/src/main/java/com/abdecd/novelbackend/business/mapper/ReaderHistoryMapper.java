@@ -9,5 +9,5 @@ import java.util.List;
 
 @Mapper
 public interface ReaderHistoryMapper extends BaseMapper<ReaderHistory> {
-    List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, Integer startNovelId, Integer pageSize);
+    List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, Integer startNovelId, Integer pageSize, Byte enableStatus);
 }
