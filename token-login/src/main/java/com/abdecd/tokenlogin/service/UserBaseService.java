@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -113,6 +114,10 @@ public class UserBaseService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("unknown error");
         }
+    }
+
+    public String getPublicKey() {
+        return Base64.getEncoder().encodeToString(PwdUtils.pubKey.getEncoded());
     }
 
     private void throwException(Class<? extends RuntimeException> exceptionClass, String errMessage) {
