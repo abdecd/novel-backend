@@ -42,9 +42,9 @@ jobs:
         cd business/target
         ssh ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} 'mkdir -p ~/novel-backend'
         scp ${{ env.JAR_BASE_NAME }}.jar ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }}:~/novel-backend/${{ env.JAR_BASE_NAME }}.jar
+        ssh ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} 'screen -S novel-backend -X quit'
+        sleep 10
         ssh ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} '
-          screen -S novel-backend -X quit
-          sleep 10
           screen -dmS novel-backend
           screen -S novel-backend -X stuff "cd ~/novel-backend; java -jar ${{ env.JAR_BASE_NAME }}.jar --spring.profiles.active=prod$(printf \\r)"
         '

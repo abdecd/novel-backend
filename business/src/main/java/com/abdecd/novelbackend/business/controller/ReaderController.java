@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.pojo.dto.reader.DeleteReaderHistoryDTO;
 import com.abdecd.novelbackend.business.pojo.dto.reader.ReaderFavoritesDTO;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderDetailVO;
@@ -11,6 +12,7 @@ import com.abdecd.tokenlogin.common.context.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.BeanUtils;
@@ -49,7 +51,7 @@ public class ReaderController {
     @GetMapping("favorites")
     public Result<List<ReaderFavoritesVO>> getReaderFavorites(
             @NotNull @Schema(description = "用户id") Integer uid,
-            @Schema(description = "起始小说id") Integer startNovelId,
+            @Nullable @Schema(description = "起始小说id") Integer startNovelId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
         var readerFavorites = readerService.listReaderFavoritesVO(uid, startNovelId, pageSize);
@@ -74,10 +76,17 @@ public class ReaderController {
     @GetMapping("history")
     public Result<List<ReaderHistoryVO>> getReaderHistory(
             @NotNull @Schema(description = "用户id") Integer uid,
-            @Schema(description = "起始小说id") Integer startNovelId,
+            @Nullable @Schema(description = "起始小说id") Integer startNovelId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
         var readerHistory = readerService.listReaderHistoryVO(uid, startNovelId, pageSize);
         return Result.success(readerHistory);
+    }
+
+    @Operation(summary = "删除用户阅读历史")
+    @PostMapping("history/delete")
+    public Result<String> deleteReaderHistory(@RequestBody @Valid DeleteReaderHistoryDTO deleteReaderHistoryDTO) {
+        readerService.deleteReaderHistory(UserContext.getUserId(), deleteReaderHistoryDTO.getNovelIds());
+        return Result.success();
     }
 }

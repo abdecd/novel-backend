@@ -1,6 +1,7 @@
 package com.abdecd.tokenlogin.service;
 
 import com.abdecd.tokenlogin.common.constant.Constant;
+import com.abdecd.tokenlogin.common.context.UserContext;
 import com.abdecd.tokenlogin.common.property.AllProperties;
 import com.abdecd.tokenlogin.common.util.JwtUtils;
 import com.abdecd.tokenlogin.common.util.PwdUtils;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -84,6 +86,13 @@ public class UserBaseService {
         return JwtUtils.getInstance().encodeJWT(allProperties.getJwtTtlSeconds(), claims);
     }
 
+    public String refreshUserToken() {
+        var claims = new HashMap<String, String>();
+        claims.put(Constant.JWT_ID, UserContext.getUserId().toString());
+        claims.put(Constant.JWT_PERMISSION, UserContext.getPermission().toString());
+        return JwtUtils.getInstance().encodeJWT(allProperties.getJwtTtlSeconds(), claims);
+    }
+
     @Transactional
     public int signup(String password, byte permission) {
         // 注册
@@ -113,6 +122,13 @@ public class UserBaseService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("unknown error");
         }
+    }
+
+    /**
+     * 返回Base64编码的公钥
+     */
+    public String getPublicKey() {
+        return Base64.getEncoder().encodeToString(PwdUtils.publicKey.getEncoded());
     }
 
     private void throwException(Class<? extends RuntimeException> exceptionClass, String errMessage) {

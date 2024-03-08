@@ -6,6 +6,7 @@ import com.abdecd.novelbackend.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,7 +26,7 @@ public class SearchController {
     @GetMapping("book")
     public Result<List<NovelInfo>> searchBook(
             @NotNull @Schema(description = "书名") String title,
-            @Schema(description = "起始小说id") Long startId,
+            @Nullable @Schema(description = "起始小说id") Long startId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
         return Result.success(novelService.searchNovelInfoByTitle(title, startId, pageSize));
@@ -35,7 +36,7 @@ public class SearchController {
     @GetMapping("author")
     public Result<List<NovelInfo>> searchBookByAuthor(
             @NotNull @Schema(description = "作者名") String author,
-            @Schema(description = "起始小说id") Long startId,
+            @Nullable @Schema(description = "起始小说id") Long startId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
         return Result.success(novelService.searchNovelInfoByAuthor(author, startId, pageSize));
