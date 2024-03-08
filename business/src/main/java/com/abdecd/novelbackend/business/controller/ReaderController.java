@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.pojo.dto.reader.DeleteReaderHistoryDTO;
 import com.abdecd.novelbackend.business.pojo.dto.reader.ReaderFavoritesDTO;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderDetailVO;
@@ -79,5 +80,12 @@ public class ReaderController {
     ) {
         var readerHistory = readerService.listReaderHistoryVO(uid, startNovelId, pageSize);
         return Result.success(readerHistory);
+    }
+
+    @Operation(summary = "删除用户阅读历史")
+    @PostMapping("history/delete")
+    public Result<String> deleteReaderHistory(@RequestBody @Valid DeleteReaderHistoryDTO deleteReaderHistoryDTO) {
+        readerService.deleteReaderHistory(UserContext.getUserId(), deleteReaderHistoryDTO.getNovelIds());
+        return Result.success();
     }
 }

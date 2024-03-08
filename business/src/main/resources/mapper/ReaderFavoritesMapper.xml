@@ -14,10 +14,10 @@
         FROM reader_favorites rf
         LEFT JOIN novel_info ni ON rf.novel_id = ni.id
         <where>
-            <if test="uid != null">
+            <if test="userId != null">
                 and rf.user_id = #{userId}
             </if>
-            <if test="startId != null">
+            <if test="startNovelId != null">
                 and rf.novel_id >= #{startNovelId}
             </if>
         </where>
@@ -29,7 +29,7 @@
         FROM reader_favorites rf
         LEFT JOIN novel_info ni ON rf.novel_id = ni.id
         <where>
-            <if test="uid != null">
+            <if test="userId != null">
                 and rf.user_id = #{userId}
             </if>
             <if test="novelIds != null">

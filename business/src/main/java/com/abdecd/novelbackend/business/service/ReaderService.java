@@ -13,6 +13,7 @@ import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,7 +53,7 @@ public class ReaderService {
     public void deleteReaderFavorites(Integer userId, Integer[] novelIds) {
         readerFavoritesMapper.delete(new LambdaQueryWrapper<ReaderFavorites>()
                 .eq(ReaderFavorites::getUserId, userId)
-                .in(ReaderFavorites::getNovelId, (Object) novelIds)
+                .in(ReaderFavorites::getNovelId, (Object[]) novelIds)
         );
     }
 
@@ -84,5 +85,13 @@ public class ReaderService {
 
     public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Integer startNovelId, Integer pageSize) {
         return readerHistoryMapper.listReaderHistoryVO(uid, startNovelId, pageSize, StatusConstant.ENABLE);
+    }
+
+    public void deleteReaderHistory(Integer userId, Integer[] novelIds) {
+        readerHistoryMapper.update(new LambdaUpdateWrapper<ReaderHistory>()
+                .eq(ReaderHistory::getUserId, userId)
+                .in(ReaderHistory::getNovelId, (Object[]) novelIds)
+                .set(ReaderHistory::getStatus, StatusConstant.DISABLE)
+        );
     }
 }
