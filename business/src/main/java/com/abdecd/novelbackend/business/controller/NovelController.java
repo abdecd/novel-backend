@@ -7,6 +7,7 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.business.service.NovelService;
+import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.aspect.RequirePermission;
 import io.swagger.v3.oas.annotations.Operation;
@@ -74,35 +75,35 @@ public class NovelController {
         return Result.success(contentsVO);
     }
 
-    @Operation(summary = "获取小说排行榜")
+    @Operation(summary = "获取小说排行榜", description = "最多100本")
     @GetMapping("ranklist")
-    public Result<List<NovelInfo>> getRankList(
+    public Result<PageVO<NovelInfo>> getRankList(
             @NotNull @Schema(description = "时间类型，day日榜week周榜month月榜") String timeType,
             @Nullable @Schema(description = "小说类型") String tagName,
             @NotNull @Schema(description = "页码") Integer page,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var novelList = novelService.getRankList(timeType, tagName, page, pageSize);
+        var novelList = novelService.pageRankList(timeType, tagName, page, pageSize);
         return Result.success(novelList);
     }
 
     @Operation(summary = "获取轮播小说列表")
     @GetMapping("carousel")
     public Result<List<NovelInfo>> getCarouselList() {
-        var novelList = novelService.getRankList("month", null, 1, 5);
-        return Result.success(novelList);
+        var novelPageVO = novelService.pageRankList("month", null, 1, 5);
+        return Result.success(novelPageVO.getRecords());
     }
 
     @Operation(summary = "获取推荐小说列表")
     @GetMapping("recommend")
-    public Result<List<NovelInfo>> getRecommendList(
+    public Result<PageVO<NovelInfo>> getRecommendList(
             @NotNull @Schema(description = "数量") @Min(1) @Max(30) Integer num
     ) {// todo
-        var novelList = novelService.getRankList("month", null, 1, num);
+        var novelList = novelService.pageRankList("day", null, 1, num);
         return Result.success(novelList);
     }
 
-    @Operation(summary = "获取相关小说推荐")
+    @Operation(summary = "获取相关小说推荐", description = "返回3本")
     @GetMapping("related")
     public Result<List<NovelInfo>> getRelatedList(
             @NotNull @Schema(description = "小说id") Integer nid

@@ -22,4 +22,15 @@ public interface ReaderHistoryMapper extends BaseMapper<ReaderHistory> {
      * 获取前100名
      */
     List<NovelInfo> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime);
+
+    /**
+     * 随机前100名
+     */
+    List<NovelInfo> getRandomRankList();
+
+    /**
+     * 随机前100名
+     */
+    List<NovelInfo> getRandomRankListByTagName(String tagName);
+
 }

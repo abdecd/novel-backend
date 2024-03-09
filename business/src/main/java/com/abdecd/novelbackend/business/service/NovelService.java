@@ -8,6 +8,7 @@ import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.entity.NovelVolume;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
+import com.abdecd.novelbackend.common.result.PageVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -84,7 +85,7 @@ public class NovelService {
      * @param pageSize 每页数量
      * @return :
      */
-    public List<NovelInfo> getRankList(String timeType, String tagName, Integer page, Integer pageSize) {
+    public PageVO<NovelInfo> pageRankList(String timeType, String tagName, Integer page, Integer pageSize) {
         var now = LocalDate.now();
         LocalDateTime startTime = now.atTime(4, 0);
         LocalDateTime endTime = now.atTime(4, 0);
@@ -106,7 +107,9 @@ public class NovelService {
         } else {
             list = readerService.getRankListByTagName(tagName, startTime, endTime);
         }
-        return list.subList((page - 1) * pageSize, page * pageSize);
+        return new PageVO<NovelInfo>()
+                .setTotal(100)
+                .setRecords(list.subList((page - 1) * pageSize, page * pageSize));
     }
 
     public List<NovelInfo> getRelatedList(Integer nid) {

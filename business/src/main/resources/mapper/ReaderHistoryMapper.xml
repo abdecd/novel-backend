@@ -51,4 +51,24 @@
          ) as t1
          LEFT JOIN novel_info ni ON t1.novel_id = ni.id
     </select>
+    <select id="getRandomRankList" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
+        SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
+        FROM novel_info ni
+        ORDER BY RAND()
+        LIMIT 100
+    </select>
+    <select id="getRandomRankListByTagName"
+            resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
+        WITH novels AS (
+            SELECT nat.novel_id
+            FROM novel_tags nt
+                 JOIN novel_and_tags nat ON nt.id = nat.tag_id
+            WHERE nt.tag_name = #{tagName}
+            ORDER BY RAND()
+            LIMIT 100
+        )
+        SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
+        FROM novels
+            LEFT JOIN novel_info ni ON novels.novel_id = ni.id
+    </select>
 </mapper>

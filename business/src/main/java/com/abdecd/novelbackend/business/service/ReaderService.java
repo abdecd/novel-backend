@@ -85,11 +85,15 @@ public class ReaderService {
 
     @Cacheable(value = "novelRankList#32", key = "#startTime + #endTime")
     public List<NovelInfo> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
-        return readerHistoryMapper.getRankList(startTime, endTime);
+        var list = readerHistoryMapper.getRankList(startTime, endTime);
+        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankList();
+        return list;
     }
 
     @Cacheable(value = "novelRankListByTagName#32", key = "#tagName + #startTime + #endTime")
     public List<NovelInfo> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
-        return readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
+        var list = readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
+        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankListByTagName(tagName);
+        return list;
     }
 }
