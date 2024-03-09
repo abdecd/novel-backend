@@ -50,6 +50,7 @@ public class NovelChapterController {
             @NotNull @Schema(description = "卷num") Integer vNum,
             @NotNull @Schema(description = "章num") Integer cNum
     ) {
+        // todo 使用 http 缓存
         var novelChapter = novelChapterService.getNovelChapter(nid, vNum, cNum);
         // 更新阅读记录
         readerService.saveReaderHistory(
@@ -58,16 +59,6 @@ public class NovelChapterController {
                 novelChapter.getVolumeNumber(),
                 novelChapter.getChapterNumber()
         );
-        return Result.success(novelChapter);
-    }
-
-    @Operation(summary = "获取小说章节(管理员专用)", description = "包括文章内容")
-    @RequirePermission(99)
-    @GetMapping("cid")
-    public Result<NovelChapterVO> getNovelChapter(
-            @NotNull @Schema(description = "小说章节id") Long cid
-    ) {
-        var novelChapter = novelChapterService.getNovelChapter(cid);
         return Result.success(novelChapter);
     }
 
@@ -90,28 +81,11 @@ public class NovelChapterController {
         return CompletableFuture.completedFuture(Result.success(cid+""));
     }
 
-    @Async
-    @Operation(summary = "修改小说章节")
-    @RequirePermission(99)
-    @PostMapping("update/cid")
-    public CompletableFuture<Result<String>> updateNovelChapter(@RequestBody @Valid UpdateNovelChapterWithCidDTO updateNovelChapterWithCidDTO) {
-        var cid = novelChapterService.updateNovelChapter(updateNovelChapterWithCidDTO);
-        return CompletableFuture.completedFuture(Result.success(cid+""));
-    }
-
     @Operation(summary = "删除小说章节")
     @RequirePermission(99)
     @PostMapping("delete")
     public Result<String> deleteNovelChapter(@RequestBody @Valid DeleteNovelChapterDTO deleteNovelChapterDTO) {
         novelChapterService.deleteNovelChapter(deleteNovelChapterDTO);
-        return Result.success();
-    }
-
-    @Operation(summary = "删除小说章节")
-    @RequirePermission(99)
-    @PostMapping("delete/cid")
-    public Result<String> deleteNovelChapter(@RequestBody @Valid DeleteNovelChapterWithCidDTO deleteNovelChapterWithCidDTO) {
-        novelChapterService.deleteNovelChapter(deleteNovelChapterWithCidDTO.getId());
         return Result.success();
     }
 }

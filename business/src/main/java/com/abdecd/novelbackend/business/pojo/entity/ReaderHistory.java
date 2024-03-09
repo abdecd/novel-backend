@@ -6,15 +6,18 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+import java.time.LocalDateTime;
+
 @Data
 @Accessors(chain = true)
 @TableName("reader_history")
 public class ReaderHistory {
     @TableId(type = IdType.AUTO)
-    private Integer id;
+    private Long id;
     private Integer userId;
     private Integer novelId;
     private Integer volumeNumber;
     private Integer chapterNumber;
     private Byte status;
+    private LocalDateTime timestamp;
 }

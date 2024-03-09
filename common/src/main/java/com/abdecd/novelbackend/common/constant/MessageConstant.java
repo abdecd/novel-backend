@@ -13,4 +13,5 @@ public class MessageConstant {
     public static final String EMAIL_SEND_FAIL = "邮件发送失败";
     public static final String UNKNOWN_ERROR = "未知错误";
     public static final String NOVEL_VOLUME_NOT_FOUND = "对应小说卷不存在";
+    public static final String INDEX_OUT_OF_BOUNDS = "参数越界";
 }

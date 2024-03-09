@@ -7,6 +7,7 @@ import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderDetailVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
 import com.abdecd.novelbackend.business.service.ReaderService;
+import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,12 +50,12 @@ public class ReaderController {
 
     @Operation(summary = "获取用户收藏列表")
     @GetMapping("favorites")
-    public Result<List<ReaderFavoritesVO>> getReaderFavorites(
+    public Result<PageVO<ReaderFavoritesVO>> getReaderFavorites(
             @NotNull @Schema(description = "用户id") Integer uid,
             @Nullable @Schema(description = "起始小说id") Integer startNovelId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var readerFavorites = readerService.listReaderFavoritesVO(uid, startNovelId, pageSize);
+        var readerFavorites = readerService.pageReaderFavoritesVO(uid, startNovelId, pageSize);
         return Result.success(readerFavorites);
     }
 
@@ -75,18 +76,28 @@ public class ReaderController {
     @Operation(summary = "获取用户阅读历史")
     @GetMapping("history")
     public Result<List<ReaderHistoryVO>> getReaderHistory(
-            @NotNull @Schema(description = "用户id") Integer uid,
-            @Nullable @Schema(description = "起始小说id") Integer startNovelId,
+            @Nullable @Schema(description = "起始记录id(倒序)") Long startId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var readerHistory = readerService.listReaderHistoryVO(uid, startNovelId, pageSize);
+        var readerHistory = readerService.listReaderHistoryVO(UserContext.getUserId(), startId, pageSize);
+        return Result.success(readerHistory);
+    }
+
+    @Operation(summary = "获取用户特定小说阅读记录")
+    @GetMapping("history/novel")
+    public Result<List<ReaderHistoryVO>> getReaderHistoryByNovel(
+            @NotNull @Schema(description = "小说id") Integer novelId,
+            @Nullable @Schema(description = "起始记录id(倒序)") Long startId,
+            @NotNull @Schema(description = "每页数量") Integer pageSize
+    ) {
+        var readerHistory = readerService.listReaderHistoryByNovel(UserContext.getUserId(), novelId, startId, pageSize);
         return Result.success(readerHistory);
     }
 
     @Operation(summary = "删除用户阅读历史")
     @PostMapping("history/delete")
     public Result<String> deleteReaderHistory(@RequestBody @Valid DeleteReaderHistoryDTO deleteReaderHistoryDTO) {
-        readerService.deleteReaderHistory(UserContext.getUserId(), deleteReaderHistoryDTO.getNovelIds());
+        readerService.deleteReaderHistory(UserContext.getUserId(), deleteReaderHistoryDTO.getIds());
         return Result.success();
     }
 }
