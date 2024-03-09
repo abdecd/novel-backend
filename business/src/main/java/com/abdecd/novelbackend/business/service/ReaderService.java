@@ -82,6 +82,10 @@ public class ReaderService {
         return readerHistoryMapper.listReaderHistoryVO(uid, startId, pageSize, StatusConstant.ENABLE);
     }
 
+    public ReaderHistoryVO getReaderHistoryByNovel(Integer userId, Integer novelId) {
+        return readerHistoryMapper.getReaderHistoryByNovel(userId, novelId);
+    }
+
     public void deleteReaderHistory(Integer userId, Integer[] ids) {
         readerHistoryMapper.update(new LambdaUpdateWrapper<ReaderHistory>()
                 .eq(ReaderHistory::getUserId, userId)

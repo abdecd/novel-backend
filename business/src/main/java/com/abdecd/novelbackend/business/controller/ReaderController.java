@@ -84,6 +84,15 @@ public class ReaderController {
         return Result.success(readerHistory);
     }
 
+    @Operation(summary = "获取用户特定小说上次阅读记录")
+    @GetMapping("history/novel")
+    public Result<ReaderHistoryVO> getReaderHistoryByNovel(
+            @NotNull @Schema(description = "小说id") Integer novelId
+    ) {
+        var readerHistory = readerService.getReaderHistoryByNovel(UserContext.getUserId(), novelId);
+        return Result.success(readerHistory);
+    }
+
     @Operation(summary = "删除用户阅读历史")
     @PostMapping("history/delete")
     public Result<String> deleteReaderHistory(@RequestBody @Valid DeleteReaderHistoryDTO deleteReaderHistoryDTO) {

@@ -20,6 +20,25 @@
         </where>
         limit #{pageSize}
     </select>
+    <select id="getReaderHistoryByNovel"
+            resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO">
+        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp
+        ni.title as novelTitle, ni.author, ni.cover,
+        nc.title as chapterTitle
+        FROM reader_history rh
+        LEFT JOIN novel_info ni ON rh.novel_id = ni.id
+        LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
+        <where>
+            <if test="userId != null">
+                and rh.user_id = #{userId}
+            </if>
+            <if test="novelId != null">
+                and rh.novel_id = #{novelId}
+            </if>
+            and status = #{enableStatus}
+        </where>
+        limit 1
+    </select>
     <select id="getRankList" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
         SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
         from (

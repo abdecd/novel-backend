@@ -13,6 +13,8 @@ import java.util.List;
 public interface ReaderHistoryMapper extends BaseMapper<ReaderHistory> {
     List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, Integer startId, Integer pageSize, Byte enableStatus);
 
+    ReaderHistoryVO getReaderHistoryByNovel(Integer userId, Integer novelId);
+
     /**
      * 获取前100名
      */
