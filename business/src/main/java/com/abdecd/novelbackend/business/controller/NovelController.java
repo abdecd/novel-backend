@@ -3,8 +3,8 @@ package com.abdecd.novelbackend.business.controller;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
-import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
+import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.business.service.NovelExtService;
 import com.abdecd.novelbackend.business.service.NovelService;
@@ -33,11 +33,11 @@ public class NovelController {
 
     @Operation(summary = "获取小说信息")
     @GetMapping("")
-    public Result<NovelInfo> getNovelInfo(
+    public Result<NovelInfoVO> getNovelInfo(
             @NotNull @Schema(description = "小说id") Integer nid
     ) {
-        var novelInfo = novelService.getNovelInfo(nid);
-        return Result.success(novelInfo);
+        var novelInfoVO = novelService.getNovelInfoVO(nid);
+        return Result.success(novelInfoVO);
     }
 
     @Operation(summary = "获取可用tags")
@@ -81,7 +81,7 @@ public class NovelController {
 
     @Operation(summary = "获取小说排行榜", description = "最多100本")
     @GetMapping("ranklist")
-    public Result<PageVO<NovelInfo>> getRankList(
+    public Result<PageVO<NovelInfoVO>> getRankList(
             @NotNull @Schema(description = "时间类型，day日榜week周榜month月榜") String timeType,
             @Nullable @Schema(description = "小说类型") String tagName,
             @NotNull @Schema(description = "页码") Integer page,
@@ -93,21 +93,21 @@ public class NovelController {
 
     @Operation(summary = "获取轮播小说列表", description = "最多5本")
     @GetMapping("carousel")
-    public Result<List<NovelInfo>> getCarouselList() {
+    public Result<List<NovelInfoVO>> getCarouselList() {
         var novelPageVO = novelExtService.pageRankList("month", null, 1, 5);
         return Result.success(novelPageVO.getRecords());
     }
 
     @Operation(summary = "获取推荐小说列表", description = "最多10本")
     @GetMapping("recommend")
-    public Result<List<NovelInfo>> getRecommendList() {
+    public Result<List<NovelInfoVO>> getRecommendList() {
         var novelList = novelExtService.getRecommendList();
         return Result.success(novelList);
     }
 
     @Operation(summary = "获取相关小说推荐", description = "最多3本")
     @GetMapping("related")
-    public Result<List<NovelInfo>> getRelatedList(
+    public Result<List<NovelInfoVO>> getRelatedList(
             @NotNull @Schema(description = "小说id") Integer nid
     ) {
         var novelList = novelService.getRelatedList(nid);

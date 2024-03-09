@@ -93,20 +93,6 @@ public class ReaderService {
         );
     }
 
-    @Cacheable(value = "novelRankList#32", key = "#startTime.toString() + ':' + #endTime.toString()")
-    public List<NovelInfo> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
-        var list = readerHistoryMapper.getRankList(startTime, endTime);
-        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankList();
-        return list;
-    }
-
-    @Cacheable(value = "novelRankListByTagName#32", key = "#tagName + ':' + #startTime.toString() + ':' + #endTime.toString()")
-    public List<NovelInfo> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
-        var list = readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
-        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankListByTagName(tagName);
-        return list;
-    }
-
     @Cacheable(value = "readerFavoriteTagIds#1", key = "#userId")
     public List<Integer> getReaderFavoriteTagIds(Integer userId) {
         return readerHistoryMapper.getReaderFavoriteTagIds(userId);

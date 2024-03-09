@@ -10,6 +10,7 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelAndTags;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.entity.NovelVolume;
+import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.BeanUtils;
@@ -42,9 +43,15 @@ public class NovelService {
     @Autowired
     private NovelTagsMapper novelTagsMapper;
 
-    @Cacheable(value = "novelInfo", key = "#nid")
-    public NovelInfo getNovelInfo(int nid) {
-        return novelInfoMapper.selectById(nid);
+    @Cacheable(value = "novelInfoVO", key = "#nid")
+    public NovelInfoVO getNovelInfoVO(int nid) {
+        var novelInfo = novelInfoMapper.selectById(nid);
+        var tagIds = readerService.getTagIdsByNovelId(nid);
+        var tags = novelTagsMapper.selectBatchIds(tagIds);
+        var novelInfoVO = new NovelInfoVO();
+        BeanUtils.copyProperties(novelInfo, novelInfoVO);
+        novelInfoVO.setTags(tags);
+        return novelInfoVO;
     }
 
     @Cacheable(value = "getNovelIds")
@@ -56,7 +63,7 @@ public class NovelService {
 
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
-            @CacheEvict(value = "novelInfo", key = "#updateNovelInfoDTO.id"),
+            @CacheEvict(value = "novelInfoVO", key = "#updateNovelInfoDTO.id"),
             @CacheEvict(value = "getNovelIds"),
             @CacheEvict(value = "getTagIdsByNovelId", key = "#updateNovelInfoDTO.id")
     })
@@ -103,7 +110,7 @@ public class NovelService {
 
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
-            @CacheEvict(value = "novelInfo", key = "#id"),
+            @CacheEvict(value = "novelInfoVO", key = "#id"),
             @CacheEvict(value = "getNovelIds"),
             @CacheEvict(value = "getTagIdsByNovelId", key = "#id")
     })
@@ -123,7 +130,7 @@ public class NovelService {
         return contentsVO;
     }
 
-    public List<NovelInfo> getRelatedList(Integer nid) {
+    public List<NovelInfoVO> getRelatedList(Integer nid) {
         var tagIds = readerService.getTagIdsByNovelId(nid);
         HashSet<Integer> novelIdsSet = new HashSet<>();
         for (var tagId : tagIds) {
@@ -134,7 +141,7 @@ public class NovelService {
         if (novelIds.size() >= 3) novelIds = novelIds.subList(0, 3);
         return novelIds
                 .stream().parallel()
-                .map(this::getNovelInfo)
+                .map(this::getNovelInfoVO)
                 .toList();
     }
 

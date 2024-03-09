@@ -1,10 +1,18 @@
 package com.abdecd.novelbackend.business.service;
 
+import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
+import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
+import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
+import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -24,17 +32,29 @@ public class NovelExtService {
     private NovelService novelService;
     @Autowired
     private NovelInfoMapper novelInfoMapper;
+    @Autowired
+    private ReaderHistoryMapper readerHistoryMapper;
 
-    public PageVO<NovelInfo> searchNovelInfoByTitle(String title, Long startId, Integer pageSize) {
-        var total = novelInfoMapper.countSearchNovelInfoByTitle(title);
-        var list = novelInfoMapper.searchNovelInfoByTitle(title, startId, pageSize);
-        return new PageVO<>(total, list);
+    public PageVO<NovelInfoVO> searchNovelInfoByTitle(String title, Integer page, Integer pageSize) {
+        var idPage = novelInfoMapper.selectPage(new Page<>(page, pageSize), new LambdaQueryWrapper<NovelInfo>()
+                .select(NovelInfo::getId)
+                .like(NovelInfo::getTitle, title)
+        );
+        var list = idPage.getRecords().stream().parallel()
+                .map(novelInfo -> novelService.getNovelInfoVO(novelInfo.getId()))
+                .toList();
+        return new PageVO<>(Math.toIntExact(idPage.getTotal()), list);
     }
 
-    public PageVO<NovelInfo> searchNovelInfoByAuthor(String author, Long startId, Integer pageSize) {
-        var total = novelInfoMapper.countSearchNovelInfoByAuthor(author);
-        var list = novelInfoMapper.searchNovelInfoByAuthor(author, startId, pageSize);
-        return new PageVO<>(total, list);
+    public PageVO<NovelInfoVO> searchNovelInfoByAuthor(String author, Integer page, Integer pageSize) {
+        var idPage = novelInfoMapper.selectPage(new Page<>(page, pageSize), new LambdaQueryWrapper<NovelInfo>()
+                .select(NovelInfo::getId)
+                .like(NovelInfo::getAuthor, author)
+        );
+        var list = idPage.getRecords().stream().parallel()
+                .map(novelInfo -> novelService.getNovelInfoVO(novelInfo.getId()))
+                .toList();
+        return new PageVO<>(Math.toIntExact(idPage.getTotal()), list);
     }
 
     /**
@@ -45,7 +65,7 @@ public class NovelExtService {
      * @param pageSize 每页数量
      * @return :
      */
-    public PageVO<NovelInfo> pageRankList(String timeType, String tagName, Integer page, Integer pageSize) {
+    public PageVO<NovelInfoVO> pageRankList(String timeType, String tagName, Integer page, Integer pageSize) {
         var now = LocalDate.now();
         LocalDateTime startTime = now.atTime(4, 0);
         LocalDateTime endTime = now.atTime(4, 0);
@@ -61,21 +81,43 @@ public class NovelExtService {
             case "month" -> now.with(TemporalAdjusters.firstDayOfMonth()).atTime(4, 0);
             default -> endTime;
         };
-        List<NovelInfo> list;
+        List<NovelInfoVO> list;
+        var self = SpringContextUtil.getBean(NovelExtService.class);
         if (tagName == null) {
-            list = readerService.getRankList(startTime, endTime);
+            list = self.getRankList(startTime, endTime);
         } else {
-            list = readerService.getRankListByTagName(tagName, startTime, endTime);
+            list = self.getRankListByTagName(tagName, startTime, endTime);
         }
-        return new PageVO<NovelInfo>()
-                .setTotal(100)
-                .setRecords(list.subList((page - 1) * pageSize, page * pageSize));
+        try {
+            return new PageVO<NovelInfoVO>()
+                    .setTotal(100)
+                    .setRecords(list.subList((page - 1) * pageSize, page * pageSize));
+        } catch (IndexOutOfBoundsException e) {
+            throw new BaseException(MessageConstant.INDEX_OUT_OF_BOUNDS);
+        }
     }
 
+    @Cacheable(value = "novelRankList#32", key = "#startTime.toString() + ':' + #endTime.toString()")
+    public List<NovelInfoVO> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
+        var list = readerHistoryMapper.getRankList(startTime, endTime);
+        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankList();
+        return new ArrayList<>(list.stream().parallel()
+                .map(novelId -> novelService.getNovelInfoVO(novelId))
+                .toList());
+    }
 
-    public List<NovelInfo> getRecommendList() {
+    @Cacheable(value = "novelRankListByTagName#32", key = "#tagName + ':' + #startTime.toString() + ':' + #endTime.toString()")
+    public List<NovelInfoVO> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
+        var list = readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
+        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankListByTagName(tagName);
+        return new ArrayList<>(list.stream().parallel()
+                .map(novelId -> novelService.getNovelInfoVO(novelId))
+                .toList());
+    }
+
+    public List<NovelInfoVO> getRecommendList() {
         var tagIds = readerService.getReaderFavoriteTagIds(UserContext.getUserId());
-        List<NovelInfo> list = new ArrayList<>();
+        List<NovelInfoVO> list = new ArrayList<>();
         List<Integer> weigthList = Arrays.asList(5, 3, 2);
         for (int i = 0; i < weigthList.size(); i++) {
             List<Integer> novelIds;
@@ -87,7 +129,7 @@ public class NovelExtService {
             Collections.shuffle(novelIds);
             var tmpList = novelIds.subList(0, weigthList.get(i))
                     .stream().parallel()
-                    .map(novelId -> novelService.getNovelInfo(novelId))
+                    .map(novelId -> novelService.getNovelInfoVO(novelId))
                     .toList();
             list.addAll(tmpList);
         }
