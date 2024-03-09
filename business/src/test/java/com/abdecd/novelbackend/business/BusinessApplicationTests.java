@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.UUID;
+import java.time.LocalDate;
 
 @SpringBootTest
 class BusinessApplicationTests {
@@ -17,7 +17,7 @@ class BusinessApplicationTests {
 
     @Test
     void contextLoads() {
-        System.out.println(UUID.randomUUID());
+        System.out.println(LocalDate.now().atTime(4, 0));
     }
 
     @Test

@@ -4,9 +4,10 @@ import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
+import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
+import com.abdecd.novelbackend.business.service.NovelExtService;
 import com.abdecd.novelbackend.business.service.NovelService;
-import com.abdecd.novelbackend.business.service.ReaderService;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.aspect.RequirePermission;
@@ -28,7 +29,7 @@ public class NovelController {
     @Autowired
     private NovelService novelService;
     @Autowired
-    private ReaderService readerService;
+    private NovelExtService novelExtService;
 
     @Operation(summary = "获取小说信息")
     @GetMapping("")
@@ -37,6 +38,12 @@ public class NovelController {
     ) {
         var novelInfo = novelService.getNovelInfo(nid);
         return Result.success(novelInfo);
+    }
+
+    @Operation(summary = "获取可用tags")
+    @GetMapping("available-tags")
+    public Result<List<NovelTags>> getAvailableTags() {
+        return Result.success(novelService.getAvailableTags());
     }
 
     @Operation(summary = "修改小说信息")
@@ -68,7 +75,7 @@ public class NovelController {
     public Result<ContentsVO> getContents(
             @NotNull @Schema(description = "小说id") Integer nid
     ) {
-        var contentsVO = novelService.getContents(nid);// todo 考虑缓存
+        var contentsVO = novelService.getContents(nid);
         return Result.success(contentsVO);
     }
 
@@ -80,21 +87,21 @@ public class NovelController {
             @NotNull @Schema(description = "页码") Integer page,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var novelList = novelService.pageRankList(timeType, tagName, page, pageSize);
+        var novelList = novelExtService.pageRankList(timeType, tagName, page, pageSize);
         return Result.success(novelList);
     }
 
     @Operation(summary = "获取轮播小说列表", description = "最多5本")
     @GetMapping("carousel")
     public Result<List<NovelInfo>> getCarouselList() {
-        var novelPageVO = novelService.pageRankList("month", null, 1, 5);
+        var novelPageVO = novelExtService.pageRankList("month", null, 1, 5);
         return Result.success(novelPageVO.getRecords());
     }
 
     @Operation(summary = "获取推荐小说列表", description = "最多10本")
     @GetMapping("recommend")
     public Result<List<NovelInfo>> getRecommendList() {
-        var novelList = readerService.getRecommendList();
+        var novelList = novelExtService.getRecommendList();
         return Result.success(novelList);
     }
 

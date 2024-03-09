@@ -27,4 +27,7 @@ public class AddNovelInfoDTO {
     @Length(max = DTOConstant.STRING_LENGTH_MAX)
     @Schema(description = "小说描述")
     String description;
+
+    @Schema(description = "小说tags")
+    Integer[] tagIds;
 }

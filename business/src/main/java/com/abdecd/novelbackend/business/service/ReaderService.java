@@ -14,7 +14,6 @@ import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -22,8 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -35,11 +32,7 @@ public class ReaderService {
     @Autowired
     private ReaderHistoryMapper readerHistoryMapper;
     @Autowired
-    private ReaderService readerService;
-    @Autowired
     private NovelAndTagsMapper novelAndTagsMapper;
-    @Resource
-    private NovelService novelService;
 
     public ReaderDetail getReaderDetail(Integer uid) {
         return readerDetailMapper.selectById(uid);
@@ -100,14 +93,14 @@ public class ReaderService {
         );
     }
 
-    @Cacheable(value = "novelRankList#32", key = "#startTime + #endTime")
+    @Cacheable(value = "novelRankList#32", key = "#startTime.toString() + ':' + #endTime.toString()")
     public List<NovelInfo> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
         var list = readerHistoryMapper.getRankList(startTime, endTime);
         if (list.isEmpty()) list = readerHistoryMapper.getRandomRankList();
         return list;
     }
 
-    @Cacheable(value = "novelRankListByTagName#32", key = "#tagName + #startTime + #endTime")
+    @Cacheable(value = "novelRankListByTagName#32", key = "#tagName + ':' + #startTime.toString() + ':' + #endTime.toString()")
     public List<NovelInfo> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
         var list = readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
         if (list.isEmpty()) list = readerHistoryMapper.getRandomRankListByTagName(tagName);
@@ -121,29 +114,15 @@ public class ReaderService {
 
     @Cacheable(value = "getNovelIdsByTagId", key = "#tagId")
     public List<Integer> getNovelIdsByTagId(Integer tagId) {
-         return novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
+         return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
                  .eq(NovelAndTags::getTagId, tagId)
-         ).stream().map(NovelAndTags::getNovelId).toList();
+         ).stream().map(NovelAndTags::getNovelId).toList());
     }
 
-    public List<NovelInfo> getRecommendList() {
-        var tagIds = readerService.getReaderFavoriteTagIds(UserContext.getUserId());
-        List<NovelInfo> list = new ArrayList<>();
-        List<Integer> weigthList = Arrays.asList(5, 3, 2);
-        for (int i = 0; i < weigthList.size(); i++) {
-            List<Integer> novelIds;
-            try {
-                novelIds = readerService.getNovelIdsByTagId(tagIds.get(i));
-            } catch (IndexOutOfBoundsException e) {
-                novelIds = novelService.getNovelIds();
-            }
-            Collections.shuffle(novelIds);
-            var tmpList = novelIds.subList(0, weigthList.get(i))
-                    .stream().parallel()
-                    .map(novelId -> novelService.getNovelInfo(novelId))
-                    .toList();
-            list.addAll(tmpList);
-        }
-        return list;
+    @Cacheable(value = "getTagIdsByNovelId", key = "#novelId")
+    public List<Integer> getTagIdsByNovelId(Integer novelId) {
+        return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
+                .eq(NovelAndTags::getNovelId, novelId)
+        ).stream().map(NovelAndTags::getTagId).toList());
     }
 }

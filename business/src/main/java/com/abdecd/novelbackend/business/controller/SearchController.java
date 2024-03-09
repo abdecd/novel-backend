@@ -1,7 +1,7 @@
 package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
-import com.abdecd.novelbackend.business.service.NovelService;
+import com.abdecd.novelbackend.business.service.NovelExtService;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("search")
 public class SearchController {
     @Autowired
-    private NovelService novelService;
+    private NovelExtService novelExtService;
 
     @Operation(summary = "搜索书籍", description = "模糊匹配")
     @GetMapping("book")
@@ -28,7 +28,7 @@ public class SearchController {
             @Nullable @Schema(description = "起始小说id") Long startId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        return Result.success(novelService.searchNovelInfoByTitle(title, startId, pageSize));
+        return Result.success(novelExtService.searchNovelInfoByTitle(title, startId, pageSize));
     }
 
     @Operation(summary = "搜索作者对应的书籍", description = "精确搜索")
@@ -38,6 +38,6 @@ public class SearchController {
             @Nullable @Schema(description = "起始小说id") Long startId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        return Result.success(novelService.searchNovelInfoByAuthor(author, startId, pageSize));
+        return Result.success(novelExtService.searchNovelInfoByAuthor(author, startId, pageSize));
     }
 }
