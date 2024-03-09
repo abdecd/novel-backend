@@ -27,4 +27,22 @@
         </where>
         limit #{pageSize}
     </select>
+    <select id="countSearchNovelInfoByTitle" resultType="java.lang.Integer">
+        SELECT COUNT(id)
+        FROM novel_info
+        <where>
+            <if test="title != null">
+                and title LIKE CONCAT('%', #{title}, '%')
+            </if>
+        </where>
+    </select>
+    <select id="countSearchNovelInfoByAuthor" resultType="java.lang.Integer">
+        SELECT COUNT(id)
+        FROM novel_info
+        <where>
+            <if test="author != null">
+                and author = #{author}
+            </if>
+        </where>
+    </select>
 </mapper>

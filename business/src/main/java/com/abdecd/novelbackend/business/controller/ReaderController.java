@@ -7,6 +7,7 @@ import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderDetailVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
 import com.abdecd.novelbackend.business.service.ReaderService;
+import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,12 +50,12 @@ public class ReaderController {
 
     @Operation(summary = "获取用户收藏列表")
     @GetMapping("favorites")
-    public Result<List<ReaderFavoritesVO>> getReaderFavorites(
+    public Result<PageVO<ReaderFavoritesVO>> getReaderFavorites(
             @NotNull @Schema(description = "用户id") Integer uid,
             @Nullable @Schema(description = "起始小说id") Integer startNovelId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var readerFavorites = readerService.listReaderFavoritesVO(uid, startNovelId, pageSize);
+        var readerFavorites = readerService.pageReaderFavoritesVO(uid, startNovelId, pageSize);
         return Result.success(readerFavorites);
     }
 

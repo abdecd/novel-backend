@@ -11,4 +11,8 @@ public interface NovelInfoMapper extends BaseMapper<NovelInfo> {
     List<NovelInfo> searchNovelInfoByTitle(String title, Long startId, Integer pageSize);
 
     List<NovelInfo> searchNovelInfoByAuthor(String author, Long startId, Integer pageSize);
+
+    Integer countSearchNovelInfoByTitle(String title);
+
+    Integer countSearchNovelInfoByAuthor(String author);
 }

@@ -12,6 +12,7 @@ import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
+import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -44,8 +45,12 @@ public class ReaderService {
         readerDetailMapper.updateById(readerDetail);
     }
 
-    public List<ReaderFavoritesVO> listReaderFavoritesVO(Integer uid, Integer startNovelId, Integer pageSize) {
-        return readerFavoritesMapper.listReaderFavoritesVO(uid, startNovelId, pageSize);
+    public PageVO<ReaderFavoritesVO> pageReaderFavoritesVO(Integer uid, Integer startNovelId, Integer pageSize) {
+        var total = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
+                .eq(ReaderFavorites::getUserId, uid)
+        );
+        var list = readerFavoritesMapper.listReaderFavoritesVO(uid, startNovelId, pageSize);
+        return new PageVO<>(Math.toIntExact(total), list);
     }
 
     public List<ReaderFavoritesVO> addReaderFavorites(Integer userId, Integer[] novelIds) {

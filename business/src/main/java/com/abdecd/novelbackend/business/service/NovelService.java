@@ -38,12 +38,16 @@ public class NovelService {
         return novelInfoMapper.selectById(nid);
     }
 
-    public List<NovelInfo> searchNovelInfoByTitle(String title, Long startId, Integer pageSize) {
-        return novelInfoMapper.searchNovelInfoByTitle(title, startId, pageSize);
+    public PageVO<NovelInfo> searchNovelInfoByTitle(String title, Long startId, Integer pageSize) {
+        var total = novelInfoMapper.countSearchNovelInfoByTitle(title);
+        var list = novelInfoMapper.searchNovelInfoByTitle(title, startId, pageSize);
+        return new PageVO<>(total, list);
     }
 
-    public List<NovelInfo> searchNovelInfoByAuthor(String author, Long startId, Integer pageSize) {
-        return novelInfoMapper.searchNovelInfoByAuthor(author, startId, pageSize);
+    public PageVO<NovelInfo> searchNovelInfoByAuthor(String author, Long startId, Integer pageSize) {
+        var total = novelInfoMapper.countSearchNovelInfoByAuthor(author);
+        var list = novelInfoMapper.searchNovelInfoByAuthor(author, startId, pageSize);
+        return new PageVO<>(total, list);
     }
 
     @UseFileService(value = "cover", param = UpdateNovelInfoDTO.class)

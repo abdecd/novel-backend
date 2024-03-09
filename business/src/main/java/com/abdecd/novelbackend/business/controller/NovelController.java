@@ -103,7 +103,7 @@ public class NovelController {
         return Result.success(novelList);
     }
 
-    @Operation(summary = "获取相关小说推荐", description = "返回3本")
+    @Operation(summary = "获取相关小说推荐")
     @GetMapping("related")
     public Result<List<NovelInfo>> getRelatedList(
             @NotNull @Schema(description = "小说id") Integer nid
