@@ -1,14 +1,12 @@
 package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.aspect.UseFileService;
+import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderFavoritesMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
-import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
-import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
-import com.abdecd.novelbackend.business.pojo.entity.ReaderFavorites;
-import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
+import com.abdecd.novelbackend.business.pojo.entity.*;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
@@ -16,6 +14,7 @@ import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -24,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -34,6 +34,12 @@ public class ReaderService {
     private ReaderFavoritesMapper readerFavoritesMapper;
     @Autowired
     private ReaderHistoryMapper readerHistoryMapper;
+    @Autowired
+    private ReaderService readerService;
+    @Autowired
+    private NovelAndTagsMapper novelAndTagsMapper;
+    @Resource
+    private NovelService novelService;
 
     public ReaderDetail getReaderDetail(Integer uid) {
         return readerDetailMapper.selectById(uid);
@@ -108,16 +114,35 @@ public class ReaderService {
         return list;
     }
 
+    @Cacheable(value = "readerFavoriteTagIds#1", key = "#userId")
+    public List<Integer> getReaderFavoriteTagIds(Integer userId) {
+        return readerHistoryMapper.getReaderFavoriteTagIds(userId);
+    }
+
+    @Cacheable(value = "getNovelIdsByTagId", key = "#tagId")
+    public List<Integer> getNovelIdsByTagId(Integer tagId) {
+         return novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
+                 .eq(NovelAndTags::getTagId, tagId)
+         ).stream().map(NovelAndTags::getNovelId).toList();
+    }
+
     public List<NovelInfo> getRecommendList() {
-        var tagIds = readerHistoryMapper.getReaderFavoriteTagIds(UserContext.getUserId());
+        var tagIds = readerService.getReaderFavoriteTagIds(UserContext.getUserId());
         List<NovelInfo> list = new ArrayList<>();
         List<Integer> weigthList = Arrays.asList(5, 3, 2);
         for (int i = 0; i < weigthList.size(); i++) {
+            List<Integer> novelIds;
             try {
-                list.addAll(readerHistoryMapper.getRandomRecommendListByTagId(tagIds.get(i), weigthList.get(i)));
+                novelIds = readerService.getNovelIdsByTagId(tagIds.get(i));
             } catch (IndexOutOfBoundsException e) {
-                list.addAll(readerHistoryMapper.getRandomRecommendList(weigthList.get(i)));
+                novelIds = novelService.getNovelIds();
             }
+            Collections.shuffle(novelIds);
+            var tmpList = novelIds.subList(0, weigthList.get(i))
+                    .stream().parallel()
+                    .map(novelId -> novelService.getNovelInfo(novelId))
+                    .toList();
+            list.addAll(tmpList);
         }
         return list;
     }

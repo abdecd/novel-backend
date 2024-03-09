@@ -9,14 +9,19 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.entity.NovelVolume;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.common.result.PageVO;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -34,8 +39,16 @@ public class NovelService {
     @Autowired
     private NovelAndTagsMapper novelAndTagsMapper;
 
+    @Cacheable(value = "novelInfo", key = "#nid")
     public NovelInfo getNovelInfo(int nid) {
         return novelInfoMapper.selectById(nid);
+    }
+
+    @Cacheable(value = "getNovelIds")
+    public List<Integer> getNovelIds() {
+        return novelInfoMapper.selectList(new LambdaQueryWrapper<NovelInfo>())
+                .stream().map(NovelInfo::getId)
+                .toList();
     }
 
     public PageVO<NovelInfo> searchNovelInfoByTitle(String title, Long startId, Integer pageSize) {
@@ -50,6 +63,11 @@ public class NovelService {
         return new PageVO<>(total, list);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
+            @CacheEvict(value = "novelInfo", key = "#updateNovelInfoDTO.id"),
+            @CacheEvict(value = "getNovelIds")
+    })
     @UseFileService(value = "cover", param = UpdateNovelInfoDTO.class)
     public void updateNovelInfo(UpdateNovelInfoDTO updateNovelInfoDTO) {
         var novelInfo = new NovelInfo();
@@ -57,6 +75,10 @@ public class NovelService {
         novelInfoMapper.updateById(novelInfo);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
+            @CacheEvict(value = "getNovelIds")
+    })
     @UseFileService(value = "cover", param = AddNovelInfoDTO.class)
     public Integer addNovelInfo(AddNovelInfoDTO addNovelInfoDTO) {
         var novelInfo = new NovelInfo();
@@ -65,6 +87,11 @@ public class NovelService {
         return novelInfo.getId();
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
+            @CacheEvict(value = "novelInfo", key = "#id"),
+            @CacheEvict(value = "getNovelIds")
+    })
     public void deleteNovelInfo(Integer id) {
         fileService.deleteImg(novelInfoMapper.selectById(id).getCover());
         novelInfoMapper.deleteById(id);
@@ -117,6 +144,11 @@ public class NovelService {
     }
 
     public List<NovelInfo> getRelatedList(Integer nid) {
-        return novelAndTagsMapper.getRelatedList(nid);
+        var novelIds = readerService.getNovelIdsByTagId(nid);
+        Collections.shuffle(novelIds);
+        return novelIds.subList(0, 3)
+                .stream().parallel()
+                .map(this::getNovelInfo)
+                .toList();
     }
 }

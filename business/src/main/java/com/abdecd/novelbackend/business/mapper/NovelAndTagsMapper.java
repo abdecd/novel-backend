@@ -1,11 +1,9 @@
 package com.abdecd.novelbackend.business.mapper;
 
-import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
+import com.abdecd.novelbackend.business.pojo.entity.NovelAndTags;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
-import java.util.List;
-
 @Mapper
-public interface NovelAndTagsMapper {
-    List<NovelInfo> getRelatedList(Integer novelId);
+public interface NovelAndTagsMapper extends BaseMapper<NovelAndTags> {
 }

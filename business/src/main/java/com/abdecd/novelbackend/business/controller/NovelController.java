@@ -4,7 +4,6 @@ import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
-import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.business.service.ReaderService;
@@ -17,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,13 +32,11 @@ public class NovelController {
 
     @Operation(summary = "获取小说信息")
     @GetMapping("")
-    public Result<NovelInfoVO> getNovelInfo(
+    public Result<NovelInfo> getNovelInfo(
             @NotNull @Schema(description = "小说id") Integer nid
     ) {
         var novelInfo = novelService.getNovelInfo(nid);
-        var novelInfoVO = new NovelInfoVO();
-        if (novelInfo != null) BeanUtils.copyProperties(novelInfo, novelInfoVO);
-        return Result.success(novelInfoVO);
+        return Result.success(novelInfo);
     }
 
     @Operation(summary = "修改小说信息")

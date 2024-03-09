@@ -36,6 +36,4 @@ public interface ReaderHistoryMapper extends BaseMapper<ReaderHistory> {
     List<NovelInfo> getRandomRankListByTagName(String tagName);
 
     List<Integer> getReaderFavoriteTagIds(Integer userId);
-    List<NovelInfo> getRandomRecommendListByTagId(Integer tagId, Integer count);
-    List<NovelInfo> getRandomRecommendList(Integer count);
 }

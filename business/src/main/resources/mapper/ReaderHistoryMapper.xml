@@ -101,31 +101,6 @@
                  LEFT JOIN novel_and_tags nat ON t1.novel_id = nat.novel_id
         GROUP BY nat.tag_id
         ORDER BY COUNT(nat.tag_id) DESC
-        LIMIT 3
-    </select>
-    <select id="getRandomRecommendListByTagId" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
-        WITH t1 AS (
-            SELECT nat.novel_id
-            FROM novel_and_tags nat
-            <where>
-                <if test="tagId != null">
-                    AND nat.tag_id = #{tagId}
-                </if>
-            </where>
-        )
-        SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
-        FROM (
-                SELECT t1.novel_id
-                FROM t1
-                WHERE t1.novel_id >= FLOOR((SELECT MAX(novel_id) FROM t1)-(SELECT MIN(novel_id) FROM t1)) * RAND() + (SELECT MIN(novel_id) FROM t1)
-                LIMIT #{count}
-            ) t2
-            LEFT JOIN novel_info ni ON t2.novel_id = ni.id
-    </select>
-    <select id="getRandomRecommendList" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
-        SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
-        FROM novel_info ni
-        WHERE ni.id >= FLOOR(RAND() * 10 * ( SELECT MAX( id ) FROM novel_info ))
-        LIMIT #{count}
+        LIMIT 2
     </select>
 </mapper>
