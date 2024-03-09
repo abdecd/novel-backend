@@ -8,5 +8,5 @@ import lombok.Data;
 public class DeleteReaderHistoryDTO {
     @NotNull
     @Schema(description = "历史记录ids")
-    Integer[] ids;
+    Long[] ids;
 }

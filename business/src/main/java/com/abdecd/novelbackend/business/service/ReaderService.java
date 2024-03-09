@@ -77,15 +77,15 @@ public class ReaderService {
         );
     }
 
-    public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Integer startId, Integer pageSize) {
+    public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Long startId, Integer pageSize) {
         return readerHistoryMapper.listReaderHistoryVO(uid, startId, pageSize, StatusConstant.ENABLE);
     }
 
-    public ReaderHistoryVO getReaderHistoryByNovel(Integer userId, Integer novelId) {
-        return readerHistoryMapper.getReaderHistoryByNovel(userId, novelId);
+    public List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Long startId, Integer pageSize) {
+        return readerHistoryMapper.listReaderHistoryByNovel(userId, novelId, startId, pageSize, StatusConstant.ENABLE);
     }
 
-    public void deleteReaderHistory(Integer userId, Integer[] ids) {
+    public void deleteReaderHistory(Integer userId, Long[] ids) {
         readerHistoryMapper.update(new LambdaUpdateWrapper<ReaderHistory>()
                 .eq(ReaderHistory::getUserId, userId)
                 .in(ReaderHistory::getId, (Object[]) ids)

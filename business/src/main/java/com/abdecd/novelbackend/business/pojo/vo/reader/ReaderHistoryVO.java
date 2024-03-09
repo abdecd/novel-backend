@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class ReaderHistoryVO {
-    private Integer id;
+    private Long id;
     private Integer novelId;
     private Integer volumeNumber;
     private Integer chapterNumber;

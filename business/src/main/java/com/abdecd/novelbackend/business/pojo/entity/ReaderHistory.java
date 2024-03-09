@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @TableName("reader_history")
 public class ReaderHistory {
     @TableId(type = IdType.AUTO)
-    private Integer id;
+    private Long id;
     private Integer userId;
     private Integer novelId;
     private Integer volumeNumber;

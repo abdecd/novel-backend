@@ -76,20 +76,21 @@ public class ReaderController {
     @Operation(summary = "获取用户阅读历史")
     @GetMapping("history")
     public Result<List<ReaderHistoryVO>> getReaderHistory(
-            @NotNull @Schema(description = "用户id") Integer uid,
-            @Nullable @Schema(description = "起始记录id(倒序)") Integer startId,
+            @Nullable @Schema(description = "起始记录id(倒序)") Long startId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var readerHistory = readerService.listReaderHistoryVO(uid, startId, pageSize);
+        var readerHistory = readerService.listReaderHistoryVO(UserContext.getUserId(), startId, pageSize);
         return Result.success(readerHistory);
     }
 
-    @Operation(summary = "获取用户特定小说上次阅读记录")
+    @Operation(summary = "获取用户特定小说阅读记录")
     @GetMapping("history/novel")
-    public Result<ReaderHistoryVO> getReaderHistoryByNovel(
-            @NotNull @Schema(description = "小说id") Integer novelId
+    public Result<List<ReaderHistoryVO>> getReaderHistoryByNovel(
+            @NotNull @Schema(description = "小说id") Integer novelId,
+            @Nullable @Schema(description = "起始记录id(倒序)") Long startId,
+            @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var readerHistory = readerService.getReaderHistoryByNovel(UserContext.getUserId(), novelId);
+        var readerHistory = readerService.listReaderHistoryByNovel(UserContext.getUserId(), novelId, startId, pageSize);
         return Result.success(readerHistory);
     }
 

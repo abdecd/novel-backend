@@ -10,9 +10,9 @@ import java.util.List;
 
 @Mapper
 public interface ReaderHistoryMapper extends BaseMapper<ReaderHistory> {
-    List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, Integer startId, Integer pageSize, Byte enableStatus);
+    List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, Long startId, Integer pageSize, Byte enableStatus);
 
-    ReaderHistoryVO getReaderHistoryByNovel(Integer userId, Integer novelId);
+    List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Long startId, Integer pageSize, Byte enableStatus);
 
     /**
      * 获取前100名
