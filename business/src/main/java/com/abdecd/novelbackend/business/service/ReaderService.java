@@ -22,6 +22,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -99,6 +101,20 @@ public class ReaderService {
     public List<NovelInfo> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
         var list = readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
         if (list.isEmpty()) list = readerHistoryMapper.getRandomRankListByTagName(tagName);
+        return list;
+    }
+
+    public List<NovelInfo> getRecommendList() {
+        var tagIds = readerHistoryMapper.getReaderFavoriteTagIds(UserContext.getUserId());
+        List<NovelInfo> list = new ArrayList<>();
+        List<Integer> weigthList = Arrays.asList(5, 3, 2);
+        for (int i = 0; i < weigthList.size(); i++) {
+            try {
+                list.addAll(readerHistoryMapper.getRandomRecommendListByTagId(tagIds.get(i), weigthList.get(i)));
+            } catch (IndexOutOfBoundsException e) {
+                list.addAll(readerHistoryMapper.getRandomRecommendList(weigthList.get(i)));
+            }
+        }
         return list;
     }
 }

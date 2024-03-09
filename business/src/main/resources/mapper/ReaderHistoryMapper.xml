@@ -54,21 +54,59 @@
     <select id="getRandomRankList" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
         SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
         FROM novel_info ni
-        ORDER BY RAND()
+        WHERE ni.id >= FLOOR(RAND() * 10 * ( SELECT MAX( id ) FROM novel_info ))
         LIMIT 100
     </select>
     <select id="getRandomRankListByTagName"
             resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
-        WITH novels AS (
+        WITH t1 AS (
             SELECT nat.novel_id
             FROM novel_tags nt
                  JOIN novel_and_tags nat ON nt.id = nat.tag_id
             WHERE nt.tag_name = #{tagName}
-            ORDER BY RAND()
-            LIMIT 100
         )
         SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
-        FROM novels
+        FROM (
+                SELECT t1.novel_id
+                FROM t1
+                ORDER BY RAND()
+                LIMIT 100
+            ) novels
             LEFT JOIN novel_info ni ON novels.novel_id = ni.id
+    </select>
+    <select id="getReaderFavoriteTagIds" resultType="java.lang.Integer">
+        SELECT nat.tag_id
+        FROM (SELECT novel_id
+              FROM reader_history rh
+              WHERE rh.user_id = #{userId}) t1
+                 LEFT JOIN novel_and_tags nat ON t1.novel_id = nat.novel_id
+        GROUP BY nat.tag_id
+        ORDER BY COUNT(nat.tag_id) DESC
+        LIMIT 3
+    </select>
+    <select id="getRandomRecommendListByTagId" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
+        WITH t1 AS (
+            SELECT nat.novel_id
+            FROM novel_and_tags nat
+            <where>
+                <if test="tagId != null">
+                    AND nat.tag_id = #{tagId}
+                </if>
+            </where>
+        )
+        SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
+        FROM (
+                SELECT t1.novel_id
+                FROM t1
+                WHERE t1.novel_id >= FLOOR((SELECT MAX(novel_id) FROM t1)-(SELECT MIN(novel_id) FROM t1)) * RAND() + (SELECT MIN(novel_id) FROM t1)
+                LIMIT #{count}
+            ) t2
+            LEFT JOIN novel_info ni ON t2.novel_id = ni.id
+    </select>
+    <select id="getRandomRecommendList" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
+        SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
+        FROM novel_info ni
+        WHERE ni.id >= FLOOR(RAND() * 10 * ( SELECT MAX( id ) FROM novel_info ))
+        LIMIT #{count}
     </select>
 </mapper>
