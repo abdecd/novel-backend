@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper">
     <select id="getRelatedList" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
-        CREATE TEMPORARY TABLE novel AS (
+        WITH novel AS (
             SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
             FROM (
                      SELECT nat.tag_id
@@ -12,12 +12,10 @@
                 JOIN novel_and_tags nat ON tid.tag_id = nat.tag_id
                 JOIN novel_info ni on ni.id = nat.novel_id
             WHERE ni.id != #{novelId}
-        );
-        SET @total_rows = (SELECT COUNT(1) FROM novel);
-        SET @random_index = FLOOR(RAND() * (@total_rows - 3));
-
+        )
         SELECT novel.id, novel.title, novel.author, novel.cover, novel.description
         FROM novel
-        LIMIT @random_index, 3;
+        ORDER BY RAND()
+        LIMIT 3
     </select>
 </mapper>

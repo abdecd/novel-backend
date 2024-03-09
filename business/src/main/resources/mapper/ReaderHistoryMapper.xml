@@ -54,7 +54,7 @@
     <select id="getRandomRankList" resultType="com.abdecd.novelbackend.business.pojo.entity.NovelInfo">
         SELECT ni.id, ni.title, ni.author, ni.cover, ni.description
         FROM novel_info ni
-        WHERE ni.id >= FLOOR(RAND() * 10 * ( SELECT MAX( id ) FROM novel_info ))
+        ORDER BY RAND()
         LIMIT 100
     </select>
     <select id="getRandomRankListByTagName"
