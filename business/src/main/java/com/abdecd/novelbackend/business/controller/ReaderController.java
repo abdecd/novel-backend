@@ -52,10 +52,10 @@ public class ReaderController {
     @Operation(summary = "获取用户收藏列表")
     @GetMapping("favorites")
     public Result<PageVO<ReaderFavoritesVO>> getReaderFavorites(
-            @Nullable @Schema(description = "起始id(倒序)") Integer startId,
+            @NotNull @Schema(description = "页码") Integer page,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var readerFavorites = readerService.pageReaderFavoritesVO(UserContext.getUserId(), startId, pageSize);
+        var readerFavorites = readerService.pageReaderFavoritesVO(UserContext.getUserId(), page, pageSize);
         return Result.success(readerFavorites);
     }
 

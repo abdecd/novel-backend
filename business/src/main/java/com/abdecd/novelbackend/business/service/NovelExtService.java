@@ -18,7 +18,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -122,11 +121,14 @@ public class NovelExtService {
         return list;
     }
 
-    public List<NovelInfoVO> getRecommendList() {
+    public List<NovelInfoVO> getRecommendList(Integer num) {
         List<Integer> tagIds = new ArrayList<>();
         if (UserContext.getUserId() != null) tagIds = readerService.getReaderFavoriteTagIds(UserContext.getUserId());
         List<NovelInfoVO> list = new ArrayList<>();
-        List<Integer> weigthList = Arrays.asList(5, 3, 2);
+        List<Integer> weigthList = new ArrayList<>();
+        weigthList.add((int) Math.ceil((double) num / 2));
+        weigthList.add(num / 3);
+        weigthList.add(num - weigthList.get(0) - weigthList.get(1));
         for (int i = 0; i < weigthList.size(); i++) {
             List<Integer> novelIds;
             try {

@@ -17,6 +17,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -92,26 +94,31 @@ public class NovelController {
         return Result.success(novelList);
     }
 
-    @Operation(summary = "获取轮播小说列表", description = "最多5本")
+    @Operation(summary = "获取轮播小说列表")
     @GetMapping("carousel")
-    public Result<List<NovelInfoVO>> getCarouselList() {
-        var novelPageVO = novelExtService.pageRankList("month", null, 1, 5);
+    public Result<List<NovelInfoVO>> getCarouselList(
+            @NotNull @Schema(description = "数量") @Min(1) @Max(20) Integer num
+    ) {
+        var novelPageVO = novelExtService.pageRankList("month", null, 1, num);
         return Result.success(novelPageVO.getRecords());
     }
 
-    @Operation(summary = "获取推荐小说列表", description = "最多10本")
+    @Operation(summary = "获取推荐小说列表")
     @GetMapping("recommend")
-    public Result<List<NovelInfoVO>> getRecommendList() {
-        var novelList = novelExtService.getRecommendList();
+    public Result<List<NovelInfoVO>> getRecommendList(
+            @NotNull @Schema(description = "数量") @Min(1) @Max(20) Integer num
+    ) {
+        var novelList = novelExtService.getRecommendList(num);
         return Result.success(novelList);
     }
 
-    @Operation(summary = "获取相关小说推荐", description = "最多3本")
+    @Operation(summary = "获取相关小说推荐")
     @GetMapping("related")
     public Result<List<NovelInfoVO>> getRelatedList(
-            @NotNull @Schema(description = "小说id") Integer nid
+            @NotNull @Schema(description = "小说id") Integer nid,
+            @NotNull @Schema(description = "数量") @Min(1) @Max(10) Integer num
     ) {
-        var novelList = novelService.getRelatedList(nid);
+        var novelList = novelService.getRelatedList(nid, num);
         return Result.success(novelList);
     }
 }

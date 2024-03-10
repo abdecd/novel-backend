@@ -155,7 +155,7 @@ public class NovelService {
         return contentsVO;
     }
 
-    public List<NovelInfoVO> getRelatedList(Integer nid) {
+    public List<NovelInfoVO> getRelatedList(Integer nid, Integer num) {
         var tagIds = readerService.getTagIdsByNovelId(nid);
         if (tagIds.isEmpty()) return new ArrayList<>();
 
@@ -168,7 +168,7 @@ public class NovelService {
         novelIds.remove((Object) nid);
         Collections.shuffle(novelIds);
 
-        if (novelIds.size() >= 3) novelIds = novelIds.subList(0, 3);
+        if (novelIds.size() >= num) novelIds = novelIds.subList(0, num);
         return novelIds
                 .stream().parallel()
                 .map(this::getNovelInfoVO)
