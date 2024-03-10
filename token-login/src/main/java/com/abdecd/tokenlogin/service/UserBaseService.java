@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
@@ -45,11 +44,11 @@ public class UserBaseService {
         }
 
         //密码比对
-        String hashPwd;
+        String hashPwd = "";
         try {
             hashPwd = PwdUtils.encodePwd(user.getId().toString(), password);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("unknown error");
+        } catch (RuntimeException e) {
+            throwException(exceptionClass, e.getMessage());
         }
         if (!hashPwd.equals(user.getPassword())) {
             //密码错误
@@ -94,7 +93,7 @@ public class UserBaseService {
     }
 
     @Transactional
-    public int signup(String password, byte permission) {
+    public int signup(String password, byte permission, Class<? extends RuntimeException> exceptionClass) {
         // 注册
         try {
             var user = User.ofEmpty()
@@ -107,20 +106,23 @@ public class UserBaseService {
                     .setPassword(PwdUtils.encodePwd(userId.toString(), password))
             );
             return userId;
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("unknown error");
+        } catch (RuntimeException e) {
+            throwException(exceptionClass, e.getMessage());
         }
+        return -1; // never reach
     }
 
-    public void forgetPassword(Integer id, String newPassword) {
-        // 重置密码
+    /**
+     * 重置密码
+     */
+    public void forgetPassword(Integer id, String newPassword, Class<? extends RuntimeException> exceptionClass) {
         try {
             userMapper.updateById(new User()
                     .setId(id)
                     .setPassword(PwdUtils.encodePwd(id.toString(), newPassword))
             );
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("unknown error");
+        } catch (RuntimeException e) {
+            throwException(exceptionClass, e.getMessage());
         }
     }
 

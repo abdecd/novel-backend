@@ -64,7 +64,7 @@ public class UserService {
         // 验证邮箱
         commonService.verifyEmail(signUpDTO.getEmail(), signUpDTO.getVerifyCode());
         // 注册
-        var userId = userBaseService.signup(signUpDTO.getPassword(), (byte) 1);
+        var userId = userBaseService.signup(signUpDTO.getPassword(), (byte) 1, BaseException.class);
         userMapper.updateById(new User()
                 .setId(userId)
                 .setEmail(signUpDTO.getEmail())
@@ -85,7 +85,7 @@ public class UserService {
         var user = userMapper.selectOne(new LambdaQueryWrapper<User>()
                 .eq(User::getEmail, resetPwdDTO.getEmail())
         );
-        userBaseService.forgetPassword(user.getId(), resetPwdDTO.getNewPassword());
+        userBaseService.forgetPassword(user.getId(), resetPwdDTO.getNewPassword(), BaseException.class);
     }
 
     public String refreshUserToken() {

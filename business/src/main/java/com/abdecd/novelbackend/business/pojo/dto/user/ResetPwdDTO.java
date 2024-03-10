@@ -19,6 +19,6 @@ public class ResetPwdDTO {
     private String verifyCode;
 
     @NotBlank
-    @Length(max = DTOConstant.STRING_LENGTH_MAX)
+    @Length(max = DTOConstant.PASSWORD_LENGTH_MAX)
     private String newPassword;
 }

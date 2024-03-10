@@ -39,7 +39,7 @@ public class CommonService {
     TtlProperties ttlProperties;
 
     private static final String VERIFY_CODE_PREFIX = "verifyCode:";
-    private static final String EMAIL_PREFIX = "email:";
+    private static final String EMAIL_PREFIX = "emailVerifyCode:";
 
     public Pair<String, byte[]> generateCaptcha() {
         byte[] captchaOutputStream;

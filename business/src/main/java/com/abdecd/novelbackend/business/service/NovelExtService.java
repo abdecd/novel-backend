@@ -127,7 +127,8 @@ public class NovelExtService {
                 novelIds = novelService.getNovelIds();
             }
             Collections.shuffle(novelIds);
-            var tmpList = novelIds.subList(0, weigthList.get(i))
+            if (novelIds.size() > weigthList.get(i)) novelIds = novelIds.subList(0, weigthList.get(i));
+            var tmpList = novelIds
                     .stream().parallel()
                     .map(novelId -> novelService.getNovelInfoVO(novelId))
                     .toList();

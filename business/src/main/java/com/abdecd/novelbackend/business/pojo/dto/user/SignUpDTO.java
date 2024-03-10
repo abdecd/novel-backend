@@ -14,7 +14,7 @@ public class SignUpDTO {
     private String nickname;
 
     @NotBlank
-    @Length(max = DTOConstant.STRING_LENGTH_MAX)
+    @Length(max = DTOConstant.PASSWORD_LENGTH_MAX)
     private String password;
 
     @Email
