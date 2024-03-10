@@ -22,6 +22,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,12 +54,16 @@ public class ReaderService {
         readerDetailMapper.updateById(readerDetail);
     }
 
-    public PageVO<ReaderFavoritesVO> pageReaderFavoritesVO(Integer uid, Integer startId, Integer pageSize) {
-        var total = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
-                .eq(ReaderFavorites::getUserId, uid)
-        );
-        var list = readerFavoritesMapper.listReaderFavoritesVO(uid, startId, pageSize);// todo 考虑缓存
+    public PageVO<ReaderFavoritesVO> pageReaderFavoritesVO(Integer uid, Integer page, Integer pageSize) {
+        var readerService = SpringContextUtil.getBean(ReaderService.class);
         var novelService = SpringContextUtil.getBean(NovelService.class);
+        var list = readerService.listReaderFavoritesVO(uid);
+        var total = list.size();
+        try {
+            list = list.subList((page - 1) * pageSize, page * pageSize);
+        } catch (IndexOutOfBoundsException e) {
+            list = new ArrayList<>();
+        }
         var resultList = list.stream().parallel()
                 .peek(vo -> {
                     var novelInfoVO = novelService.getNovelInfoVO(vo.getNovelId());
@@ -68,9 +73,15 @@ public class ReaderService {
                     vo.setId(recordId);
                 })
                 .toList();
-        return new PageVO<>(Math.toIntExact(total), resultList);
+        return new PageVO<>(total, resultList);
     }
 
+    @Cacheable(value = "listReaderFavoritesVO", key = "#userId")
+    public List<ReaderFavoritesVO> listReaderFavoritesVO(Integer userId) {
+        return readerFavoritesMapper.listReaderFavoritesVO(userId);
+    }
+
+    @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
     public void addReaderFavorites(Integer userId, Integer[] novelIds) {
         var count = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
                 .eq(ReaderFavorites::getUserId, userId)
@@ -80,6 +91,7 @@ public class ReaderService {
         readerFavoritesMapper.insertBatch(userId, novelIds);
     }
 
+    @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
     public void deleteReaderFavorites(Integer userId, Integer[] novelIds) {
         readerFavoritesMapper.delete(new LambdaQueryWrapper<ReaderFavorites>()
                 .eq(ReaderFavorites::getUserId, userId)

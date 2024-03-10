@@ -9,7 +9,7 @@ import java.util.List;
 
 @Mapper
 public interface ReaderFavoritesMapper extends BaseMapper<ReaderFavorites> {
-    List<ReaderFavoritesVO> listReaderFavoritesVO(Integer userId, Integer startId, Integer pageSize);
+    List<ReaderFavoritesVO> listReaderFavoritesVO(Integer userId);
 
     void insertBatch(Integer userId, Integer[] novelIds);
 }

@@ -16,11 +16,7 @@
             <if test="userId != null">
                 and rf.user_id = #{userId}
             </if>
-            <if test="startId != null">
-                and rf.id &lt;= #{startId}
-            </if>
         </where>
         order by rf.id desc
-        limit #{pageSize}
     </select>
 </mapper>

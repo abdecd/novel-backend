@@ -1,12 +1,10 @@
 package com.abdecd.novelbackend.business.service;
 
-import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
-import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -96,7 +94,9 @@ public class NovelExtService {
                         .toList()
                     );
         } catch (IndexOutOfBoundsException e) {
-            throw new BaseException(MessageConstant.INDEX_OUT_OF_BOUNDS);
+            return new PageVO<NovelInfoVO>()
+                    .setTotal(list.size())
+                    .setRecords(new ArrayList<>());
         }
     }
 
