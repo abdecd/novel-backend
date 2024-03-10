@@ -11,7 +11,7 @@
     <select id="listReaderFavoritesVO"
             resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO">
         SELECT rf.id, rf.novel_id
-        FROM reader_favorites rf
+        FROM reader_favorites rf USE INDEX(user_id_novel)
         <where>
             <if test="userId != null">
                 and rf.user_id = #{userId}
@@ -20,6 +20,7 @@
                 and rf.id &lt;= #{startId}
             </if>
         </where>
+        order by rf.id desc
         limit #{pageSize}
     </select>
 </mapper>
