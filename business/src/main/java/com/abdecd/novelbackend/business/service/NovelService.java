@@ -1,6 +1,7 @@
 package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.aspect.UseFileService;
+import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.mapper.NovelTagsMapper;
@@ -22,7 +23,9 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class NovelService {
@@ -66,7 +69,6 @@ public class NovelService {
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
             @CacheEvict(value = "novelInfoVO", key = "#updateNovelInfoDTO.id"),
-            @CacheEvict(value = "getNovelIds"),
             @CacheEvict(value = "getTagIdsByNovelId", key = "#updateNovelInfoDTO.id")
     })
     @Transactional
@@ -92,7 +94,7 @@ public class NovelService {
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
             @CacheEvict(value = "novelInfoVO", key = "#result"),
-            @CacheEvict(value = "getNovelIds")
+            @CacheEvict(value = "getNovelIds", allEntries = true)
     })
     @Transactional
     @UseFileService(value = "cover", param = AddNovelInfoDTO.class)
@@ -115,16 +117,17 @@ public class NovelService {
     public void deleteNovelInfo(Integer id) {
         var novelInfo = novelInfoMapper.selectById(id);
         if (novelInfo == null) return;
-        deleteNovelInfoReally(novelInfo);
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        novelService.deleteNovelInfoReally(novelInfo);
     }
 
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
             @CacheEvict(value = "novelInfoVO", key = "#novelInfo.id"),
-            @CacheEvict(value = "getNovelIds"),
+            @CacheEvict(value = "getNovelIds", allEntries = true),
             @CacheEvict(value = "getTagIdsByNovelId", key = "#novelInfo.id"),
-            @CacheEvict(value = "novelRankList", allEntries = true),
-            @CacheEvict(value = "novelRankListByTagName", allEntries = true)
+            @CacheEvict(value = "novelRankList#32", allEntries = true),
+            @CacheEvict(value = "novelRankListByTagName#32", allEntries = true)
     })
     @Transactional
     public void deleteNovelInfoReally(NovelInfo novelInfo) {
