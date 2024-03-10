@@ -10,6 +10,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.UUID;
 
 public class JwtUtils {
     private static final JwtUtils instance = new JwtUtils();
@@ -28,7 +29,7 @@ public class JwtUtils {
             throw new RuntimeException(e);
         }
     }
-//    Algorithm HMAC256 = Algorithm.HMAC256(" ");
+    Algorithm HMAC256 = Algorithm.HMAC256(UUID.randomUUID()+"");
 
     public String encodeJWT(int ttlSeconds, Map<String, String> claims) {
         var expiredDate = Calendar.getInstance();
@@ -36,12 +37,12 @@ public class JwtUtils {
         return JWT.create()
                 .withClaim("claims",claims)
                 .withExpiresAt(expiredDate.getTime())
-                .sign(RSA256);
+                .sign(HMAC256);
     }
 
     public Map<String, Object> decodeJWT(String token) {
         return JWT
-                .require(RSA256)
+                .require(HMAC256)
                 .build()
                 .verify(token)
                 .getClaims()

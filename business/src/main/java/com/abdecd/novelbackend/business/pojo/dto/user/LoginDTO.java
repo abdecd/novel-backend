@@ -14,7 +14,7 @@ public class LoginDTO {
     private String username;
 
     @NotBlank
-    @Length(max = DTOConstant.STRING_LENGTH_MAX)
+    @Length(max = DTOConstant.PASSWORD_LENGTH_MAX)
     private String password;
 
     @NotBlank

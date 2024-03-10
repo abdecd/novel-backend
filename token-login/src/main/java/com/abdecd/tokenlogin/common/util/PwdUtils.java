@@ -43,27 +43,46 @@ public class PwdUtils {
             return new String(cipher.doFinal(pwdBytes), StandardCharsets.UTF_8);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException |
                  BadPaddingException | InvalidAlgorithmParameterException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("decrypt error");
         }
     }
 
-    private static final String[] SALT = {"sfdsyt7aat", "dfjiowef4", "-=fjonv.sdr", "qoxirmenw", "28d3c9d3s", "jiox*j4n/3", "mewq;jiowreijx", "jwiosixuqxs", ".vldpw[dxmsfd"};
+    private static final String SALT = "eFdsPt7aatdfjiowef4-qoXiCmenw28d3c9d3sjiox*j4n/3mewq;jiowreiSFLddLDCjxjSixuqxs.Vldpw[dxmsfd";
 
-//    public static String encodePwd(String username, String pwd) throws NoSuchAlgorithmException {
-//        var sha256 = MessageDigest.getInstance("SHA-256");
-//        var saltHash = (pwd + username).hashCode() + 113;
-//        var index = Math.abs(saltHash % 9);
-//        var saltedPwd = pwd.substring(0, pwd.length() - 2) + SALT[index] + pwd.substring(pwd.length() - 2);
+    private static String getSaltedPwd(String username, String pwd) {
+        var saltIndex1 = 10 + Math.abs((username.hashCode() + 113) % 37);
+        var saltIndex2 = SALT.length() - Math.abs((pwd.hashCode() + 113) % 37);
+        String salt;
+        if (saltIndex2 - saltIndex1 > 43) {
+            salt = SALT.substring(saltIndex1, saltIndex2);
+        } else {
+            salt = SALT.substring(saltIndex2) + SALT.substring(0, saltIndex1);
+        }
+        if (saltIndex2 > 72) salt = salt.toUpperCase();
+        return pwd.substring(0, pwd.length() - 2) + salt + pwd.substring(pwd.length() - 2);
+    }
+
+//    public static String encodePwd(String username, String pwd) throws RuntimeException {
+//        MessageDigest sha256;
+//        try {
+//            sha256 = MessageDigest.getInstance("SHA-256");
+//        } catch (NoSuchAlgorithmException e) {
+//            throw new RuntimeException("unknown error");
+//        }
+//        var saltedPwd = getSaltedPwd(username, pwd);
 //        var hash = sha256.digest(saltedPwd.getBytes(StandardCharsets.UTF_8));
 //        return ByteArrayUtil.toHexString(hash);
 //    }
 
-    public static String encodePwd(String username, String encryptedPwd) throws NoSuchAlgorithmException {
+    public static String encodePwd(String username, String encryptedPwd) throws RuntimeException {
         var pwd = getEncryptedPwd(encryptedPwd);
-        var sha256 = MessageDigest.getInstance("SHA-256");
-        var saltHash = (pwd + username).hashCode() + 113;
-        var index = Math.abs(saltHash % 9);
-        var saltedPwd = pwd.substring(0, pwd.length() - 2) + SALT[index] + pwd.substring(pwd.length() - 2);
+        MessageDigest sha256;
+        try {
+            sha256 = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("unknown error");
+        }
+        var saltedPwd = getSaltedPwd(username, pwd);
         var hash = sha256.digest(saltedPwd.getBytes(StandardCharsets.UTF_8));
         return ByteArrayUtil.toHexString(hash);
     }

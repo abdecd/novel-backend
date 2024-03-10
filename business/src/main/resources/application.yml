@@ -5,7 +5,7 @@ novel:
   ttl:
     captcha-ttl-seconds: 300
 token-login:
-  jwt-ttl-seconds: 600
+  jwt-ttl-seconds: 259200 # 3天
   exclude-patterns:
     - /error
     - /doc.html/**
