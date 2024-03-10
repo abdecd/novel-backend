@@ -41,7 +41,9 @@ public class MyErrorController extends BasicErrorController {
         Map<String, Object> model = Collections
                 .unmodifiableMap(getErrorAttributes(request, getErrorAttributeOptions(request, MediaType.TEXT_HTML)));
         try {
-            objectMapper.writeValue(response.getOutputStream(), Result.error(status.value(), (String) model.get("error")));
+            String errMsg = (String) model.get("error");
+            if (errMsg.equals("Internal Server Error")) errMsg = "unknown error";
+            objectMapper.writeValue(response.getOutputStream(), Result.error(status.value(), errMsg));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -52,9 +54,11 @@ public class MyErrorController extends BasicErrorController {
     public ResponseEntity<Map<String, Object>> error(HttpServletRequest request) {
         Map<String, Object> body = getErrorAttributes(request, getErrorAttributeOptions(request, MediaType.ALL));
 
+        var errMsg = body.get("error");
+        if (errMsg.equals("Internal Server Error")) errMsg = "unknown error";
         Map<String, Object> resultBody = new HashMap<>(16);
         resultBody.put("code", body.get("status"));
-        resultBody.put("msg", body.get("error"));
+        resultBody.put("msg", errMsg);
         resultBody.put("data", "");
         return new ResponseEntity<>(resultBody, HttpStatus.OK);
     }

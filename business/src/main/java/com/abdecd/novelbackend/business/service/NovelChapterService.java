@@ -9,7 +9,6 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.entity.NovelContent;
 import com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -48,26 +47,31 @@ public class NovelChapterService {
 
     @CacheEvict(value = "novelChapterList", key = "#updateNovelChapterDTO.novelId + ':' + #updateNovelChapterDTO.volumeNumber")
     @Transactional
-    public long updateNovelChapter(UpdateNovelChapterDTO updateNovelChapterDTO) {
+    public void updateNovelChapter(UpdateNovelChapterDTO updateNovelChapterDTO) {
         var novelChapter = novelChapterMapper.selectOne(new LambdaQueryWrapper<NovelChapter>()
                 .eq(NovelChapter::getNovelId, updateNovelChapterDTO.getNovelId())
                 .eq(NovelChapter::getVolumeNumber, updateNovelChapterDTO.getVolumeNumber())
                 .eq(NovelChapter::getChapterNumber, updateNovelChapterDTO.getChapterNumber())
         );
+        if (novelChapter == null) return;
         var cid = novelChapter.getId();
         // 更新novelChapter
         BeanUtils.copyProperties(updateNovelChapterDTO, novelChapter);
         novelChapterMapper.updateById(novelChapter);
         // 更新novelContent
-        novelContentMapper.update(new LambdaUpdateWrapper<NovelContent>()
-                .eq(NovelContent::getNovelChapterId, cid)
-                .set(NovelContent::getContent, updateNovelChapterDTO.getContent())
-        );
-        return cid;
+        if (updateNovelChapterDTO.getContent() != null) {
+            novelContentMapper.delete(new LambdaQueryWrapper<NovelContent>()
+                    .eq(NovelContent::getNovelChapterId, cid)
+            );
+            novelContentMapper.insert(new NovelContent()
+                    .setNovelChapterId(cid)
+                    .setContent(updateNovelChapterDTO.getContent())
+            );
+        }
     }
 
     @Transactional
-    protected void deleteNovelChapter(long id) {
+    public void deleteNovelChapter(long id) {
         novelChapterMapper.deleteById(id);
         novelContentMapper.deleteById(id);
     }

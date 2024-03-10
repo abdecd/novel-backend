@@ -18,3 +18,7 @@ token-login:
     - /common/verify-email
     - /common/image/**
     - /common/public-key
+    - /novel/carousel
+    - /novel/ranklist
+    - /novel/recommend
+    - /novel/related

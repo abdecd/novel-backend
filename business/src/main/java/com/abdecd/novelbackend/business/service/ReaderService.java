@@ -1,14 +1,20 @@
 package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.aspect.UseFileService;
+import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderFavoritesMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
-import com.abdecd.novelbackend.business.pojo.entity.*;
+import com.abdecd.novelbackend.business.pojo.entity.NovelAndTags;
+import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
+import com.abdecd.novelbackend.business.pojo.entity.ReaderFavorites;
+import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
+import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -16,8 +22,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,19 +54,44 @@ public class ReaderService {
         readerDetailMapper.updateById(readerDetail);
     }
 
-    public PageVO<ReaderFavoritesVO> pageReaderFavoritesVO(Integer uid, Integer startNovelId, Integer pageSize) {
-        var total = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
-                .eq(ReaderFavorites::getUserId, uid)
+    public PageVO<ReaderFavoritesVO> pageReaderFavoritesVO(Integer uid, Integer page, Integer pageSize) {
+        var readerService = SpringContextUtil.getBean(ReaderService.class);
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        var list = readerService.listReaderFavoritesVO(uid);
+        var total = list.size();
+        try {
+            list = list.subList((page - 1) * pageSize, page * pageSize);
+        } catch (IndexOutOfBoundsException e) {
+            list = new ArrayList<>();
+        }
+        var resultList = list.stream().parallel()
+                .peek(vo -> {
+                    var novelInfoVO = novelService.getNovelInfoVO(vo.getNovelId());
+                    var recordId = vo.getId();
+                    BeanUtils.copyProperties(novelInfoVO, vo);
+                    vo.setNovelId(novelInfoVO.getId());
+                    vo.setId(recordId);
+                })
+                .toList();
+        return new PageVO<>(total, resultList);
+    }
+
+    @Cacheable(value = "listReaderFavoritesVO", key = "#userId")
+    public List<ReaderFavoritesVO> listReaderFavoritesVO(Integer userId) {
+        return readerFavoritesMapper.listReaderFavoritesVO(userId);
+    }
+
+    @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
+    public void addReaderFavorites(Integer userId, Integer[] novelIds) {
+        var count = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
+                .eq(ReaderFavorites::getUserId, userId)
+                .in(ReaderFavorites::getNovelId, (Object[]) novelIds)
         );
-        var list = readerFavoritesMapper.listReaderFavoritesVO(uid, startNovelId, pageSize);
-        return new PageVO<>(Math.toIntExact(total), list);
-    }
-
-    public List<ReaderFavoritesVO> addReaderFavorites(Integer userId, Integer[] novelIds) {
+        if (count > 0) throw new BaseException(MessageConstant.FAVORITES_EXIST);
         readerFavoritesMapper.insertBatch(userId, novelIds);
-        return readerFavoritesMapper.getReaderFavoritesVO(userId, novelIds);
     }
 
+    @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
     public void deleteReaderFavorites(Integer userId, Integer[] novelIds) {
         readerFavoritesMapper.delete(new LambdaQueryWrapper<ReaderFavorites>()
                 .eq(ReaderFavorites::getUserId, userId)
@@ -66,7 +99,16 @@ public class ReaderService {
         );
     }
 
+    @Transactional
     public void saveReaderHistory(Integer userId, Integer novelId, Integer volumeNumber, Integer chapterNumber) {
+        // 删掉同样的旧记录
+        readerHistoryMapper.delete(new LambdaQueryWrapper<ReaderHistory>()
+                .eq(ReaderHistory::getUserId, userId)
+                .eq(ReaderHistory::getNovelId, novelId)
+                .eq(ReaderHistory::getVolumeNumber, volumeNumber)
+                .eq(ReaderHistory::getChapterNumber, chapterNumber)
+        );
+        // 插入新记录
         readerHistoryMapper.insert(new ReaderHistory()
                 .setUserId(userId)
                 .setNovelId(novelId)

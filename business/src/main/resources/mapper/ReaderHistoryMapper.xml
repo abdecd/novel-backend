@@ -6,7 +6,7 @@
         SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp,
                ni.title as novelTitle, ni.author, ni.cover,
                nc.title as chapterTitle
-        FROM reader_history rh
+        FROM reader_history rh USE INDEX (user_id_novelId)
         LEFT JOIN novel_info ni ON rh.novel_id = ni.id
         LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
         <where>
@@ -26,7 +26,7 @@
         SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp,
         ni.title as novelTitle, ni.author, ni.cover,
         nc.title as chapterTitle
-        FROM reader_history rh
+        FROM reader_history rh USE INDEX (user_id_novelId)
         LEFT JOIN novel_info ni ON rh.novel_id = ni.id
         LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
         <where>
@@ -88,10 +88,12 @@
     </select>
     <select id="getReaderFavoriteTagIds" resultType="java.lang.Integer">
         SELECT nat.tag_id
-        FROM (SELECT novel_id
-              FROM reader_history rh
-              WHERE rh.user_id = #{userId}) t1
-                 LEFT JOIN novel_and_tags nat ON t1.novel_id = nat.novel_id
+        FROM (
+                SELECT novel_id
+                FROM reader_history rh
+                WHERE rh.user_id = #{userId}
+            ) t1
+            LEFT JOIN novel_and_tags nat ON t1.novel_id = nat.novel_id
         GROUP BY nat.tag_id
         ORDER BY COUNT(nat.tag_id) DESC
         LIMIT 2

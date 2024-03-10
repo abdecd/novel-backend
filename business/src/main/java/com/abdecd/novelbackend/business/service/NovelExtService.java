@@ -1,12 +1,10 @@
 package com.abdecd.novelbackend.business.service;
 
-import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
-import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -81,7 +79,7 @@ public class NovelExtService {
             case "month" -> now.with(TemporalAdjusters.firstDayOfMonth()).atTime(4, 0);
             default -> endTime;
         };
-        List<NovelInfoVO> list;
+        List<Integer> list;
         var self = SpringContextUtil.getBean(NovelExtService.class);
         if (tagName == null) {
             list = self.getRankList(startTime, endTime);
@@ -90,33 +88,43 @@ public class NovelExtService {
         }
         try {
             return new PageVO<NovelInfoVO>()
-                    .setTotal(100)
-                    .setRecords(list.subList((page - 1) * pageSize, page * pageSize));
+                    .setTotal(list.size())
+                    .setRecords(list.subList((page - 1) * pageSize, page * pageSize).stream().parallel()
+                        .map(novelId -> novelService.getNovelInfoVO(novelId))
+                        .toList()
+                    );
         } catch (IndexOutOfBoundsException e) {
-            throw new BaseException(MessageConstant.INDEX_OUT_OF_BOUNDS);
+            return new PageVO<NovelInfoVO>()
+                    .setTotal(list.size())
+                    .setRecords(new ArrayList<>());
         }
     }
 
     @Cacheable(value = "novelRankList#32", key = "#startTime.toString() + ':' + #endTime.toString()")
-    public List<NovelInfoVO> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
+    public List<Integer> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
         var list = readerHistoryMapper.getRankList(startTime, endTime);
-        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankList();
-        return new ArrayList<>(list.stream().parallel()
-                .map(novelId -> novelService.getNovelInfoVO(novelId))
-                .toList());
+        if (list.size() < 100) {
+            var addList = readerHistoryMapper.getRandomRankList();
+            if (addList.size() > 100 - list.size()) addList = addList.subList(0, 100 - list.size());
+            list.addAll(addList);
+        }
+        return list;
     }
 
     @Cacheable(value = "novelRankListByTagName#32", key = "#tagName + ':' + #startTime.toString() + ':' + #endTime.toString()")
-    public List<NovelInfoVO> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
+    public List<Integer> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
         var list = readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
-        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankListByTagName(tagName);
-        return new ArrayList<>(list.stream().parallel()
-                .map(novelId -> novelService.getNovelInfoVO(novelId))
-                .toList());
+        if (list.size() < 100) {
+            var addList = readerHistoryMapper.getRandomRankListByTagName(tagName);
+            if (addList.size() > 100 - list.size()) addList = addList.subList(0, 100 - list.size());
+            list.addAll(addList);
+        }
+        return list;
     }
 
     public List<NovelInfoVO> getRecommendList() {
-        var tagIds = readerService.getReaderFavoriteTagIds(UserContext.getUserId());
+        List<Integer> tagIds = new ArrayList<>();
+        if (UserContext.getUserId() != null) tagIds = readerService.getReaderFavoriteTagIds(UserContext.getUserId());
         List<NovelInfoVO> list = new ArrayList<>();
         List<Integer> weigthList = Arrays.asList(5, 3, 2);
         for (int i = 0; i < weigthList.size(); i++) {

@@ -1,7 +1,10 @@
 package com.abdecd.novelbackend.business.pojo.vo.reader;
 
+import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 public class ReaderFavoritesVO {
@@ -12,4 +15,5 @@ public class ReaderFavoritesVO {
     private String author;
     private String cover;
     private String description;
+    private List<NovelTags> tags;
 }

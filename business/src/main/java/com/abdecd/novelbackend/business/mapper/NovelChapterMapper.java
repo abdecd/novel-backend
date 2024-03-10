@@ -8,5 +8,4 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface NovelChapterMapper extends BaseMapper<NovelChapter> {
     NovelChapterVO getNovelChapterVO(Integer nid, Integer vNum, Integer cNum);
-    NovelChapterVO getNovelChapterVOByCid(Long cid);
 }
