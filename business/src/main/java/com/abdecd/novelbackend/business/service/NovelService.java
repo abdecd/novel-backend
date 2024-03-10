@@ -6,6 +6,7 @@ import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.mapper.NovelTagsMapper;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
+import com.abdecd.novelbackend.business.pojo.dto.novel.volume.DeleteNovelVolumeDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelAndTags;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
@@ -46,8 +47,12 @@ public class NovelService {
     @Cacheable(value = "novelInfoVO", key = "#nid")
     public NovelInfoVO getNovelInfoVO(int nid) {
         var novelInfo = novelInfoMapper.selectById(nid);
+        if (novelInfo == null) return null;
+
         var tagIds = readerService.getTagIdsByNovelId(nid);
-        var tags = novelTagsMapper.selectBatchIds(tagIds);
+        List<NovelTags> tags = new ArrayList<>();
+        if (tagIds != null) tags = novelTagsMapper.selectBatchIds(tagIds);
+
         var novelInfoVO = new NovelInfoVO();
         BeanUtils.copyProperties(novelInfo, novelInfoVO);
         novelInfoVO.setTags(tags);
@@ -74,8 +79,8 @@ public class NovelService {
         var novelInfo = new NovelInfo();
         BeanUtils.copyProperties(updateNovelInfoDTO, novelInfo);
         novelInfoMapper.updateById(novelInfo);
-        // 更新tags
-        if (updateNovelInfoDTO.getTagIds().length == 0) return;
+        // 更新tags 必须有才更
+        if (updateNovelInfoDTO.getTagIds() == null || updateNovelInfoDTO.getTagIds().length == 0) return;
         novelAndTagsMapper.delete(new LambdaQueryWrapper<NovelAndTags>()
                 .eq(NovelAndTags::getNovelId, updateNovelInfoDTO.getId())
         );
@@ -89,6 +94,7 @@ public class NovelService {
 
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
+            @CacheEvict(value = "novelInfoVO", key = "#result"),
             @CacheEvict(value = "getNovelIds")
     })
     @Transactional
@@ -108,15 +114,34 @@ public class NovelService {
         return novelInfo.getId();
     }
 
+    @Transactional
+    public void deleteNovelInfo(Integer id) {
+        var novelInfo = novelInfoMapper.selectById(id);
+        if (novelInfo == null) return;
+        deleteNovelInfoReally(novelInfo);
+    }
+
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
-            @CacheEvict(value = "novelInfoVO", key = "#id"),
+            @CacheEvict(value = "novelInfoVO", key = "#novelInfo.id"),
             @CacheEvict(value = "getNovelIds"),
-            @CacheEvict(value = "getTagIdsByNovelId", key = "#id")
+            @CacheEvict(value = "getTagIdsByNovelId", key = "#novelInfo.id"),
+            @CacheEvict(value = "novelRankList", allEntries = true),
+            @CacheEvict(value = "novelRankListByTagName", allEntries = true)
     })
-    public void deleteNovelInfo(Integer id) {
-        fileService.deleteImg(novelInfoMapper.selectById(id).getCover());
-        novelInfoMapper.deleteById(id);
+    @Transactional
+    public void deleteNovelInfoReally(NovelInfo novelInfo) {
+        fileService.deleteImg(novelInfo.getCover());
+        // 章节内容没有外键约束, 手动删除
+        var volumeList = novelVolumeService.listNovelVolume(novelInfo.getId());
+        for (var volume : volumeList) {
+            var volumeNumber = volume.getVolumeNumber();
+            novelVolumeService.deleteNovelVolume(new DeleteNovelVolumeDTO()
+                    .setNovelId(novelInfo.getId())
+                    .setVolumeNumber(volumeNumber)
+            );
+        }
+        novelInfoMapper.deleteById(novelInfo.getId());
     }
 
     public ContentsVO getContents(Integer nid) {
@@ -125,19 +150,21 @@ public class NovelService {
         for (var novelVolumeItem : novelVolume) {
             var vNum = novelVolumeItem.getVolumeNumber();
             var novelChapter = novelChapterService.listNovelChapter(nid, vNum);
-            contentsVO.put(novelVolumeItem.getTitle(), novelChapter);
+            contentsVO.put(novelVolumeItem.getVolumeNumber() + "::" + novelVolumeItem.getTitle(), novelChapter);
         }
         return contentsVO;
     }
 
     public List<NovelInfoVO> getRelatedList(Integer nid) {
         var tagIds = readerService.getTagIdsByNovelId(nid);
-        HashSet<Integer> novelIdsSet = new HashSet<>();
+        List<Integer> novelIdsList = new ArrayList<>();
         for (var tagId : tagIds) {
-            novelIdsSet.addAll(readerService.getNovelIdsByTagId(tagId));// todo 重复的 有多个tag符合 应该提高权重
+            novelIdsList.addAll(readerService.getNovelIdsByTagId(tagId));
         }
-        List<Integer> novelIds = new ArrayList<>(novelIdsSet);
-        Collections.shuffle(novelIds);
+        Collections.shuffle(novelIdsList);
+        List<Integer> novelIds = new ArrayList<>(new HashSet<>(novelIdsList));
+        novelIds.remove((Object) nid);
+
         if (novelIds.size() >= 3) novelIds = novelIds.subList(0, 3);
         return novelIds
                 .stream().parallel()

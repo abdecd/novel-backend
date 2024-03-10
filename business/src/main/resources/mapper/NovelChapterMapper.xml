@@ -12,7 +12,7 @@
             n.content
         FROM
             novel_chapter nc
-        JOIN novel_backend.novel_content n on nc.id = n.novel_chapter_id
+        JOIN novel_content n on nc.id = n.novel_chapter_id
         <where>
             <if test="nid != null">
                 and nc.novel_id = #{nid}

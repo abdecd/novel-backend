@@ -46,7 +46,8 @@ public class NovelVolumeController {
     @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("add")
     public Result<String> addNovelVolume(@RequestBody @Valid AddNovelVolumeDTO addNovelVolumeDTO) {
-        return Result.success(novelVolumeService.addNovelVolume(addNovelVolumeDTO)+"");
+        novelVolumeService.addNovelVolume(addNovelVolumeDTO);
+        return Result.success();
     }
 
     @Operation(summary = "修改小说卷")

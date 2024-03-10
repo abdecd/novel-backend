@@ -3,6 +3,7 @@ package com.abdecd.novelbackend.business.pojo.dto.novel;
 import com.abdecd.novelbackend.common.constant.DTOConstant;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 import org.hibernate.validator.constraints.Length;
 
@@ -28,6 +29,7 @@ public class AddNovelInfoDTO {
     @Schema(description = "小说描述")
     String description;
 
+    @NotEmpty
     @Schema(description = "小说tags")
     Integer[] tagIds;
 }

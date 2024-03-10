@@ -56,7 +56,7 @@ public class NovelChapterController {
         // todo 使用 http 缓存
         var novelChapter = novelChapterService.getNovelChapter(nid, vNum, cNum);
         // 更新阅读记录
-        readerService.saveReaderHistory(
+        if (novelChapter != null) readerService.saveReaderHistory(
                 UserContext.getUserId(),
                 novelChapter.getNovelId(),
                 novelChapter.getVolumeNumber(),
@@ -80,8 +80,8 @@ public class NovelChapterController {
     @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("update")
     public CompletableFuture<Result<String>> updateNovelChapter(@RequestBody @Valid UpdateNovelChapterDTO updateNovelChapterDTO) {
-        var cid = novelChapterService.updateNovelChapter(updateNovelChapterDTO);
-        return CompletableFuture.completedFuture(Result.success(cid+""));
+        novelChapterService.updateNovelChapter(updateNovelChapterDTO);
+        return CompletableFuture.completedFuture(Result.success());
     }
 
     @Operation(summary = "删除小说章节")

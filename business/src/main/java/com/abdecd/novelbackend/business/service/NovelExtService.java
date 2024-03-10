@@ -81,7 +81,7 @@ public class NovelExtService {
             case "month" -> now.with(TemporalAdjusters.firstDayOfMonth()).atTime(4, 0);
             default -> endTime;
         };
-        List<NovelInfoVO> list;
+        List<Integer> list;
         var self = SpringContextUtil.getBean(NovelExtService.class);
         if (tagName == null) {
             list = self.getRankList(startTime, endTime);
@@ -90,35 +90,36 @@ public class NovelExtService {
         }
         try {
             return new PageVO<NovelInfoVO>()
-                    .setTotal(100)
-                    .setRecords(list.subList((page - 1) * pageSize, page * pageSize));
+                    .setTotal(list.size())
+                    .setRecords(list.subList((page - 1) * pageSize, page * pageSize).stream().parallel()
+                        .map(novelId -> novelService.getNovelInfoVO(novelId))
+                        .toList()
+                    );
         } catch (IndexOutOfBoundsException e) {
             throw new BaseException(MessageConstant.INDEX_OUT_OF_BOUNDS);
         }
     }
 
     @Cacheable(value = "novelRankList#32", key = "#startTime.toString() + ':' + #endTime.toString()")
-    public List<NovelInfoVO> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
+    public List<Integer> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
         var list = readerHistoryMapper.getRankList(startTime, endTime);
         if (list.size() < 100) {
             var addList = readerHistoryMapper.getRandomRankList();
-            list.addAll(addList.subList(0, 100 - list.size()));
+            if (addList.size() > 100 - list.size()) addList = addList.subList(0, 100 - list.size());
+            list.addAll(addList);
         }
-        return new ArrayList<>(list.stream().parallel()
-                .map(novelId -> novelService.getNovelInfoVO(novelId))
-                .toList());
+        return list;
     }
 
     @Cacheable(value = "novelRankListByTagName#32", key = "#tagName + ':' + #startTime.toString() + ':' + #endTime.toString()")
-    public List<NovelInfoVO> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
+    public List<Integer> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
         var list = readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
         if (list.size() < 100) {
             var addList = readerHistoryMapper.getRandomRankListByTagName(tagName);
-            list.addAll(addList.subList(0, 100 - list.size()));
+            if (addList.size() > 100 - list.size()) addList = addList.subList(0, 100 - list.size());
+            list.addAll(addList);
         }
-        return new ArrayList<>(list.stream().parallel()
-                .map(novelId -> novelService.getNovelInfoVO(novelId))
-                .toList());
+        return list;
     }
 
     public List<NovelInfoVO> getRecommendList() {

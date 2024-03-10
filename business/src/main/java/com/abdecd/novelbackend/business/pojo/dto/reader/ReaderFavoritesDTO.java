@@ -1,10 +1,10 @@
 package com.abdecd.novelbackend.business.pojo.dto.reader;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class ReaderFavoritesDTO {
-    @NotNull
+    @NotBlank
     private Integer[] novelIds;
 }
