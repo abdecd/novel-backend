@@ -22,10 +22,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class NovelService {
@@ -157,13 +154,16 @@ public class NovelService {
 
     public List<NovelInfoVO> getRelatedList(Integer nid) {
         var tagIds = readerService.getTagIdsByNovelId(nid);
-        List<Integer> novelIdsList = new ArrayList<>();
-        for (var tagId : tagIds) {
-            novelIdsList.addAll(readerService.getNovelIdsByTagId(tagId));
+        if (tagIds.isEmpty()) return new ArrayList<>();
+
+        List<Integer> novelIdsList = new ArrayList<>(readerService.getNovelIdsByTagId(tagIds.getFirst()));
+        for (int i = 1; i < tagIds.size(); i++) {
+            var tmp = readerService.getNovelIdsByTagId(tagIds.get(i));
+            novelIdsList = novelIdsList.stream().parallel().filter(tmp::contains).toList();
         }
-        Collections.shuffle(novelIdsList);
-        List<Integer> novelIds = new ArrayList<>(new HashSet<>(novelIdsList));
+        List<Integer> novelIds = new ArrayList<>(novelIdsList);
         novelIds.remove((Object) nid);
+        Collections.shuffle(novelIds);
 
         if (novelIds.size() >= 3) novelIds = novelIds.subList(0, 3);
         return novelIds

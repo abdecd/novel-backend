@@ -123,7 +123,8 @@ public class NovelExtService {
     }
 
     public List<NovelInfoVO> getRecommendList() {
-        var tagIds = readerService.getReaderFavoriteTagIds(UserContext.getUserId());
+        List<Integer> tagIds = new ArrayList<>();
+        if (UserContext.getUserId() != null) tagIds = readerService.getReaderFavoriteTagIds(UserContext.getUserId());
         List<NovelInfoVO> list = new ArrayList<>();
         List<Integer> weigthList = Arrays.asList(5, 3, 2);
         for (int i = 0; i < weigthList.size(); i++) {
