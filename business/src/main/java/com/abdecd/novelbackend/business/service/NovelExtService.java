@@ -100,7 +100,10 @@ public class NovelExtService {
     @Cacheable(value = "novelRankList#32", key = "#startTime.toString() + ':' + #endTime.toString()")
     public List<NovelInfoVO> getRankList(LocalDateTime startTime, LocalDateTime endTime) {
         var list = readerHistoryMapper.getRankList(startTime, endTime);
-        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankList();
+        if (list.size() < 100) {
+            var addList = readerHistoryMapper.getRandomRankList();
+            list.addAll(addList.subList(0, 100 - list.size()));
+        }
         return new ArrayList<>(list.stream().parallel()
                 .map(novelId -> novelService.getNovelInfoVO(novelId))
                 .toList());
@@ -109,7 +112,10 @@ public class NovelExtService {
     @Cacheable(value = "novelRankListByTagName#32", key = "#tagName + ':' + #startTime.toString() + ':' + #endTime.toString()")
     public List<NovelInfoVO> getRankListByTagName(String tagName, LocalDateTime startTime, LocalDateTime endTime) {
         var list = readerHistoryMapper.getRankListByTagName(tagName, startTime, endTime);
-        if (list.isEmpty()) list = readerHistoryMapper.getRandomRankListByTagName(tagName);
+        if (list.size() < 100) {
+            var addList = readerHistoryMapper.getRandomRankListByTagName(tagName);
+            list.addAll(addList.subList(0, 100 - list.size()));
+        }
         return new ArrayList<>(list.stream().parallel()
                 .map(novelId -> novelService.getNovelInfoVO(novelId))
                 .toList());

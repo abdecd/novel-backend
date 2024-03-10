@@ -1,15 +1,20 @@
 package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.aspect.UseFileService;
+import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderFavoritesMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
-import com.abdecd.novelbackend.business.pojo.entity.*;
+import com.abdecd.novelbackend.business.pojo.entity.NovelAndTags;
+import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
+import com.abdecd.novelbackend.business.pojo.entity.ReaderFavorites;
+import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
+import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -19,6 +24,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -66,6 +72,11 @@ public class ReaderService {
     }
 
     public void addReaderFavorites(Integer userId, Integer[] novelIds) {
+        var count = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
+                .eq(ReaderFavorites::getUserId, userId)
+                .in(ReaderFavorites::getNovelId, (Object[]) novelIds)
+        );
+        if (count > 0) throw new BaseException(MessageConstant.FAVORITES_EXIST);
         readerFavoritesMapper.insertBatch(userId, novelIds);
     }
 
@@ -76,7 +87,16 @@ public class ReaderService {
         );
     }
 
+    @Transactional
     public void saveReaderHistory(Integer userId, Integer novelId, Integer volumeNumber, Integer chapterNumber) {
+        // 删掉同样的旧记录
+        readerHistoryMapper.delete(new LambdaQueryWrapper<ReaderHistory>()
+                .eq(ReaderHistory::getUserId, userId)
+                .eq(ReaderHistory::getNovelId, novelId)
+                .eq(ReaderHistory::getVolumeNumber, volumeNumber)
+                .eq(ReaderHistory::getChapterNumber, chapterNumber)
+        );
+        // 插入新记录
         readerHistoryMapper.insert(new ReaderHistory()
                 .setUserId(userId)
                 .setNovelId(novelId)
