@@ -32,8 +32,9 @@ public class ReaderController {
     @Operation(summary = "获取用户信息")
     @GetMapping("")
     public Result<ReaderDetailVO> getReaderDetail(
-            @NotNull @Schema(description = "用户id") Integer uid
+            @Nullable @Schema(description = "用户id") Integer uid
     ) {
+        if (uid == null) uid = UserContext.getUserId();
         var reader = readerService.getReaderDetail(uid);
         var readerVO = new ReaderDetailVO();
         if (reader != null) BeanUtils.copyProperties(reader, readerVO);
@@ -51,19 +52,18 @@ public class ReaderController {
     @Operation(summary = "获取用户收藏列表")
     @GetMapping("favorites")
     public Result<PageVO<ReaderFavoritesVO>> getReaderFavorites(
-            @NotNull @Schema(description = "用户id") Integer uid,
-            @Nullable @Schema(description = "起始小说id") Integer startNovelId,
+            @Nullable @Schema(description = "起始id(倒序)") Integer startId,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
-        var readerFavorites = readerService.pageReaderFavoritesVO(uid, startNovelId, pageSize);
+        var readerFavorites = readerService.pageReaderFavoritesVO(UserContext.getUserId(), startId, pageSize);
         return Result.success(readerFavorites);
     }
 
     @Operation(summary = "添加用户收藏")
     @PostMapping("favorites/add")
-    public Result<List<ReaderFavoritesVO>> addReaderFavorites(@RequestBody @Valid ReaderFavoritesDTO readerFavoritesDTO) {
-        var readerFavoritesVOList = readerService.addReaderFavorites(UserContext.getUserId(), readerFavoritesDTO.getNovelIds());
-        return Result.success(readerFavoritesVOList);
+    public Result<String> addReaderFavorites(@RequestBody @Valid ReaderFavoritesDTO readerFavoritesDTO) {
+        readerService.addReaderFavorites(UserContext.getUserId(), readerFavoritesDTO.getNovelIds());
+        return Result.success();
     }
 
     @Operation(summary = "删除用户收藏")

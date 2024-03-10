@@ -12,4 +12,9 @@ public @interface RequirePermission {
      * 允许的权限值, 可以写多个
      */
     byte[] value();
+
+    /**
+     * 抛出异常的类型
+     */
+    Class<? extends RuntimeException> exception() default RuntimeException.class;
 }

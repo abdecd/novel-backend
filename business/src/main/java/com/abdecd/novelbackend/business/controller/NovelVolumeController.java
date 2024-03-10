@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.pojo.dto.novel.volume.AddNovelVolumeDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.volume.DeleteNovelVolumeDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.volume.UpdateNovelVolumeDTO;
@@ -42,14 +43,14 @@ public class NovelVolumeController {
     }
 
     @Operation(summary = "新增小说卷")
-    @RequirePermission(99)
+    @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("add")
     public Result<String> addNovelVolume(@RequestBody @Valid AddNovelVolumeDTO addNovelVolumeDTO) {
         return Result.success(novelVolumeService.addNovelVolume(addNovelVolumeDTO)+"");
     }
 
     @Operation(summary = "修改小说卷")
-    @RequirePermission(99)
+    @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("update")
     public Result<String> updateNovelVolume(@RequestBody @Valid UpdateNovelVolumeDTO updateNovelVolumeDTO) {
         novelVolumeService.updateNovelVolume(updateNovelVolumeDTO);
@@ -57,7 +58,7 @@ public class NovelVolumeController {
     }
 
     @Operation(summary = "删除小说卷")
-    @RequirePermission(99)
+    @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("delete")
     public Result<String> deleteNovelVolume(@RequestBody @Valid DeleteNovelVolumeDTO deleteNovelVolumeDTO) {
         novelVolumeService.deleteNovelVolume(deleteNovelVolumeDTO);

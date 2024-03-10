@@ -1,6 +1,7 @@
 package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.aspect.UseFileService;
+import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderFavoritesMapper;
@@ -46,17 +47,26 @@ public class ReaderService {
         readerDetailMapper.updateById(readerDetail);
     }
 
-    public PageVO<ReaderFavoritesVO> pageReaderFavoritesVO(Integer uid, Integer startNovelId, Integer pageSize) {
+    public PageVO<ReaderFavoritesVO> pageReaderFavoritesVO(Integer uid, Integer startId, Integer pageSize) {
         var total = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
                 .eq(ReaderFavorites::getUserId, uid)
         );
-        var list = readerFavoritesMapper.listReaderFavoritesVO(uid, startNovelId, pageSize);
-        return new PageVO<>(Math.toIntExact(total), list);
+        var list = readerFavoritesMapper.listReaderFavoritesVO(uid, startId, pageSize);// todo 考虑缓存
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        var resultList = list.stream().parallel()
+                .peek(vo -> {
+                    var novelInfoVO = novelService.getNovelInfoVO(vo.getNovelId());
+                    var recordId = vo.getId();
+                    BeanUtils.copyProperties(novelInfoVO, vo);
+                    vo.setNovelId(novelInfoVO.getId());
+                    vo.setId(recordId);
+                })
+                .toList();
+        return new PageVO<>(Math.toIntExact(total), resultList);
     }
 
-    public List<ReaderFavoritesVO> addReaderFavorites(Integer userId, Integer[] novelIds) {
+    public void addReaderFavorites(Integer userId, Integer[] novelIds) {
         readerFavoritesMapper.insertBatch(userId, novelIds);
-        return readerFavoritesMapper.getReaderFavoritesVO(userId, novelIds);
     }
 
     public void deleteReaderFavorites(Integer userId, Integer[] novelIds) {

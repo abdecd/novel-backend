@@ -23,9 +23,20 @@ public class RequirePermissionAspect {
             for (var permission : permissions) {
                 if (permission == userPermission) return joinPoint.proceed();
             }
-            throw new RuntimeException("Permission denied");
+            throwException(requirePermission.exception(), "Permission denied");
         } else {
             throw new IllegalStateException("不支持非方法切入点");
         }
+        return null; // never reach
+    }
+
+    private void throwException(Class<? extends RuntimeException> exceptionClass, String errMessage) {
+        RuntimeException exception;
+        try {
+            exception = exceptionClass.getConstructor(String.class).newInstance(errMessage);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        throw exception;
     }
 }

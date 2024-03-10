@@ -10,34 +10,16 @@
     </insert>
     <select id="listReaderFavoritesVO"
             resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO">
-        SELECT rf.id, rf.novel_id, ni.title, ni.author, ni.cover, ni.description
+        SELECT rf.id, rf.novel_id
         FROM reader_favorites rf
-        LEFT JOIN novel_info ni ON rf.novel_id = ni.id
         <where>
             <if test="userId != null">
                 and rf.user_id = #{userId}
             </if>
-            <if test="startNovelId != null">
-                and rf.novel_id >= #{startNovelId}
+            <if test="startId != null">
+                and rf.id &lt;= #{startId}
             </if>
         </where>
         limit #{pageSize}
-    </select>
-    <select id="getReaderFavoritesVO"
-            resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO">
-        SELECT rf.id, rf.novel_id, ni.title, ni.author, ni.cover, ni.description
-        FROM reader_favorites rf
-        LEFT JOIN novel_info ni ON rf.novel_id = ni.id
-        <where>
-            <if test="userId != null">
-                and rf.user_id = #{userId}
-            </if>
-            <if test="novelIds != null">
-                and rf.novel_id IN
-                <foreach collection="novelIds" item="novelId" separator="," open="(" close=")">
-                    #{novelId}
-                </foreach>"
-            </if>
-        </where>
     </select>
 </mapper>

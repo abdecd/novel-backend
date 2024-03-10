@@ -1,6 +1,9 @@
 package com.abdecd.novelbackend.business.controller;
 
-import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.*;
+import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.AddNovelChapterDTO;
+import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.DeleteNovelChapterDTO;
+import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.UpdateNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO;
 import com.abdecd.novelbackend.business.service.NovelChapterService;
@@ -63,7 +66,7 @@ public class NovelChapterController {
     }
 
     @Operation(summary = "新增小说章节", description = "不添加小说内容, 成功时返回novelChapterId(String)")
-    @RequirePermission(99)
+    @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("add")
     public Result<String> addNovelChapter(@RequestBody @Valid AddNovelChapterDTO addNovelChapterDTO) {
         if (novelVolumeService.getNovelVolume(addNovelChapterDTO.getNovelId(), addNovelChapterDTO.getVolumeNumber()) == null)
@@ -74,7 +77,7 @@ public class NovelChapterController {
 
     @Async
     @Operation(summary = "修改小说章节")
-    @RequirePermission(99)
+    @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("update")
     public CompletableFuture<Result<String>> updateNovelChapter(@RequestBody @Valid UpdateNovelChapterDTO updateNovelChapterDTO) {
         var cid = novelChapterService.updateNovelChapter(updateNovelChapterDTO);
@@ -82,7 +85,7 @@ public class NovelChapterController {
     }
 
     @Operation(summary = "删除小说章节")
-    @RequirePermission(99)
+    @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("delete")
     public Result<String> deleteNovelChapter(@RequestBody @Valid DeleteNovelChapterDTO deleteNovelChapterDTO) {
         novelChapterService.deleteNovelChapter(deleteNovelChapterDTO);

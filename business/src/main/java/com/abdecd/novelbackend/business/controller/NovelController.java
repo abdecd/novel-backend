@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
@@ -47,7 +48,7 @@ public class NovelController {
     }
 
     @Operation(summary = "修改小说信息")
-    @RequirePermission(99)
+    @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("update")
     public Result<String> updateNovelInfo(@RequestBody @Valid UpdateNovelInfoDTO updateNovelInfoDTO) {
         novelService.updateNovelInfo(updateNovelInfoDTO);
@@ -55,7 +56,7 @@ public class NovelController {
     }
 
     @Operation(summary = "新增小说", description = "data字段返回小说id")
-    @RequirePermission(99)
+    @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("add")
     public Result<String> addNovelInfo(@RequestBody @Valid AddNovelInfoDTO addNovelInfoDTO) {
         var novelId = novelService.addNovelInfo(addNovelInfoDTO);
@@ -63,7 +64,7 @@ public class NovelController {
     }
 
     @Operation(summary = "删除小说")
-    @RequirePermission(99)
+    @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("delete")
     public Result<String> deleteNovelInfo(@RequestBody @Valid DeleteNovelInfoDTO deleteNovelInfoDTO) {
         novelService.deleteNovelInfo(deleteNovelInfoDTO.getId());

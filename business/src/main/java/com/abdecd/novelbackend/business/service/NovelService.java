@@ -134,7 +134,7 @@ public class NovelService {
         var tagIds = readerService.getTagIdsByNovelId(nid);
         HashSet<Integer> novelIdsSet = new HashSet<>();
         for (var tagId : tagIds) {
-            novelIdsSet.addAll(readerService.getNovelIdsByTagId(tagId));
+            novelIdsSet.addAll(readerService.getNovelIdsByTagId(tagId));// todo 重复的 有多个tag符合 应该提高权重
         }
         List<Integer> novelIds = new ArrayList<>(novelIdsSet);
         Collections.shuffle(novelIds);

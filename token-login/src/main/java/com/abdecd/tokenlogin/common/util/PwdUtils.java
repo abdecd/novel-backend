@@ -87,3 +87,53 @@ public class PwdUtils {
         return ByteArrayUtil.toHexString(hash);
     }
 }
+
+/*
+async function loadPublicKeyFromBase64(base64String) {
+    // 解码Base64字符串为Uint8Array
+    const binaryDer = Uint8Array.from(atob(base64String), c => c.charCodeAt(0));
+
+    // 将DER编码的密钥导入为CryptoKey
+    const importedKey = await crypto.subtle.importKey(
+        "spki", // SPKI for public keys
+        binaryDer,
+        {   // Algorithm configuration
+            name: "RSA-OAEP",
+            hash: {name: "SHA-256"}, // Or other supported hash algorithm
+        },
+        false, // Whether the key is extractable (usually you want this to be false for public keys)
+        ["encrypt"] // Only allow encrypt operation for a public key
+    );
+
+    return importedKey;
+}
+
+async function encryptData(dataToEncrypt) {
+
+  // 将JWK格式的公钥转换成CryptoKey
+
+  const importedPublicKey = await loadPublicKeyFromBase64("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkxJl7WTrNodLLuPwKGd3J60B1unFy01xzScrIBj5SqxLr0RO+yN9Xgoe6fhT2I13zEuAEk5D2BmCNdrtNHDlfrDFdbresBTPLtQsirmpJU3QIoIz8HxSwVRfTMqu3sftgsAJQnD5YvWxk43t33f8nFSrwf4bAPA9hr4ZPIwiOxHLre0PK8CdJlwdsvsMWSA9E1r0Xlxw00uli4lXqHnk76iSy1s8bjlQN6+iwd9v39YMoyAXfwjg0ESaL8U11plW0BR/isBy096L7YzEXpNqwRZRfCKjuEOD/F2ilgU2f2wmOpX+M9/hBm01TRK7KPf4IoPvVcYSwDdxZQyUDrb3uQIDAQAB");
+
+  // 对字符串进行编码
+  let dataUint8Array = new TextEncoder().encode(dataToEncrypt);
+
+
+  // 使用公钥进行加密
+  let encryptedBuffer = await window.crypto.subtle.encrypt(
+    {
+      name: "RSA-OAEP",
+    },
+    importedPublicKey,
+    dataUint8Array
+  );
+
+  // 将加密后的缓冲区转换为Base64格式以便传输或存储
+  let encryptedBase64 = btoa(String.fromCharCode.apply(null, new Uint8Array(encryptedBuffer)));
+
+  return encryptedBase64;
+}
+
+encryptData('Hello World')
+  .then(encrypted => console.log('Encrypted:', encrypted))
+  .catch(error => console.error('Error:', error));
+ */
