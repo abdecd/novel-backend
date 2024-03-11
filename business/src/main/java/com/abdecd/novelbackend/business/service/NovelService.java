@@ -182,7 +182,7 @@ public class NovelService {
         return novelTagsMapper.selectList(new LambdaQueryWrapper<>());
     }
 
-    public PageVO<NovelInfoVO> getNovelInfoVOByTagIds(Integer[] tagIds, Integer page, Integer pageSize) {
+    public PageVO<NovelInfoVO> getNovelInfoVOByTagIds(int[] tagIds, Integer page, Integer pageSize) {
         List<Integer> novelIdsList = new ArrayList<>(readerService.getNovelIdsByTagId(tagIds[0]));
         for (int i = 1; i < tagIds.length; i++) {
             var tmp = readerService.getNovelIdsByTagId(tagIds[i]);

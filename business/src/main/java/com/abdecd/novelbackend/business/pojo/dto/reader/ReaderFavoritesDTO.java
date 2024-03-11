@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 public class ReaderFavoritesDTO {
     @NotEmpty
-    private Integer[] novelIds;
+    private int[] novelIds;
 }

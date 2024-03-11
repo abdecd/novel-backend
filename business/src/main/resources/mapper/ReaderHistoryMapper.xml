@@ -103,7 +103,7 @@
         FROM (
             SELECT novel_id
             FROM reader_history rh
-            WHERE startTime &gt;= #{startTime} AND endTime &lt; #{endTime}
+            WHERE rh.timestamp &gt;= #{startTime} AND rh.timestamp &lt; #{endTime}
         ) t1
         LEFT JOIN novel_and_tags nat ON t1.novel_id = nat.novel_id
         GROUP BY nat.tag_id

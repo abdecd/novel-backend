@@ -133,7 +133,7 @@ public class NovelController {
     @Operation(summary = "获取tags对应的小说列表")
     @GetMapping("get-by-tags")
     public Result<PageVO<NovelInfoVO>> getNovelInfoVOByTagIds(
-            @NotEmpty Integer[] tagIds,
+            @NotEmpty int[] tagIds,
             @NotNull @Schema(description = "页码") Integer page,
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {

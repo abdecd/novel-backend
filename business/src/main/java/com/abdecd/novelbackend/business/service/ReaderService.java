@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -82,7 +83,8 @@ public class ReaderService {
     }
 
     @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
-    public void addReaderFavorites(Integer userId, Integer[] novelIds) {
+    public void addReaderFavorites(Integer userId, int[] novelIdsRaw) {
+        var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
         var count = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
                 .eq(ReaderFavorites::getUserId, userId)
                 .in(ReaderFavorites::getNovelId, (Object[]) novelIds)
@@ -92,7 +94,8 @@ public class ReaderService {
     }
 
     @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
-    public void deleteReaderFavorites(Integer userId, Integer[] novelIds) {
+    public void deleteReaderFavorites(Integer userId, int[] novelIdsRaw) {
+        var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
         readerFavoritesMapper.delete(new LambdaQueryWrapper<ReaderFavorites>()
                 .eq(ReaderFavorites::getUserId, userId)
                 .in(ReaderFavorites::getNovelId, (Object[]) novelIds)
@@ -127,7 +130,8 @@ public class ReaderService {
         return readerHistoryMapper.listReaderHistoryByNovel(userId, novelId, startId, pageSize, StatusConstant.ENABLE);
     }
 
-    public void deleteReaderHistory(Integer userId, Long[] ids) {
+    public void deleteReaderHistory(Integer userId, long[] idsRaw) {
+        var ids = Arrays.stream(idsRaw).boxed().toArray(Long[]::new);
         readerHistoryMapper.update(new LambdaUpdateWrapper<ReaderHistory>()
                 .eq(ReaderHistory::getUserId, userId)
                 .in(ReaderHistory::getId, (Object[]) ids)
@@ -146,14 +150,14 @@ public class ReaderService {
     }
 
     @Cacheable(value = "getNovelIdsByTagId", key = "#tagId")
-    public List<Integer> getNovelIdsByTagId(Integer tagId) {
+    public List<Integer> getNovelIdsByTagId(int tagId) {
          return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
                  .eq(NovelAndTags::getTagId, tagId)
          ).stream().map(NovelAndTags::getNovelId).toList());
     }
 
     @Cacheable(value = "getTagIdsByNovelId", key = "#novelId")
-    public List<Integer> getTagIdsByNovelId(Integer novelId) {
+    public List<Integer> getTagIdsByNovelId(int novelId) {
         return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
                 .eq(NovelAndTags::getNovelId, novelId)
         ).stream().map(NovelAndTags::getTagId).toList());
