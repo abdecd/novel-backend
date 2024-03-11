@@ -45,7 +45,7 @@ public class NovelService {
     @Autowired
     private NovelTagsMapper novelTagsMapper;
 
-    @Cacheable(value = "novelInfoVO", key = "#nid", unless="#result == null")
+    @Cacheable(value = "novelInfoVO", key = "#nid", unless = "#result == null")
     public NovelInfoVO getNovelInfoVO(int nid) {
         var novelInfo = novelInfoMapper.selectById(nid);
         if (novelInfo == null) return null;
@@ -192,17 +192,11 @@ public class NovelService {
             novelIdsList = novelIdsList.stream().parallel().filter(tmp::contains).toList();
         }
         var novelService = SpringContextUtil.getBean(NovelService.class);
-        try {
-            return new PageVO<NovelInfoVO>()
-                    .setTotal(novelIdsList.size())
-                    .setRecords(novelIdsList.subList((page - 1) * pageSize, page * pageSize).stream().parallel()
-                            .map(novelService::getNovelInfoVO)
-                            .toList()
-                    );
-        } catch (IndexOutOfBoundsException e) {
-            return new PageVO<NovelInfoVO>()
-                    .setTotal(novelIdsList.size())
-                    .setRecords(new ArrayList<>());
-        }
+        return new PageVO<NovelInfoVO>()
+                .setTotal(novelIdsList.size())
+                .setRecords(novelIdsList.subList(Math.max(0, (page - 1) * pageSize), Math.min(novelIdsList.size(), page * pageSize)).stream().parallel()
+                        .map(novelService::getNovelInfoVO)
+                        .toList()
+                );
     }
 }

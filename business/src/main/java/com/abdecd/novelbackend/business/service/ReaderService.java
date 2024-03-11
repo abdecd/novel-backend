@@ -60,11 +60,7 @@ public class ReaderService {
         var novelService = SpringContextUtil.getBean(NovelService.class);
         var list = readerService.listReaderFavoritesVO(uid);
         var total = list.size();
-        try {
-            list = list.subList((page - 1) * pageSize, page * pageSize);
-        } catch (IndexOutOfBoundsException e) {
-            list = new ArrayList<>();
-        }
+        list = list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize));
         var resultList = list.stream().parallel()
                 .peek(vo -> {
                     var novelInfoVO = novelService.getNovelInfoVO(vo.getNovelId());
@@ -149,14 +145,14 @@ public class ReaderService {
         return readerHistoryMapper.getHotTagIds(startTime, endTime);
     }
 
-    @Cacheable(value = "getNovelIdsByTagId", key = "#tagId", unless="#result.isEmpty()")
+    @Cacheable(value = "getNovelIdsByTagId", key = "#tagId", unless = "#result.isEmpty()")
     public List<Integer> getNovelIdsByTagId(int tagId) {
-         return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
-                 .eq(NovelAndTags::getTagId, tagId)
-         ).stream().map(NovelAndTags::getNovelId).toList());
+        return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
+                .eq(NovelAndTags::getTagId, tagId)
+        ).stream().map(NovelAndTags::getNovelId).toList());
     }
 
-    @Cacheable(value = "getTagIdsByNovelId", key = "#novelId", unless="#result.isEmpty()")
+    @Cacheable(value = "getTagIdsByNovelId", key = "#novelId", unless = "#result.isEmpty()")
     public List<Integer> getTagIdsByNovelId(int novelId) {
         return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
                 .eq(NovelAndTags::getNovelId, novelId)

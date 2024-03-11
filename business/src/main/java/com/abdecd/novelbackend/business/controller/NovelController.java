@@ -69,7 +69,7 @@ public class NovelController {
     @PostMapping("add")
     public Result<String> addNovelInfo(@RequestBody @Valid AddNovelInfoDTO addNovelInfoDTO) {
         var novelId = novelService.addNovelInfo(addNovelInfoDTO);
-        return Result.success(novelId+"");
+        return Result.success(novelId + "");
     }
 
     @Operation(summary = "删除小说")
@@ -104,8 +104,8 @@ public class NovelController {
     public Result<PageVO<NovelInfoVO>> getRankList(
             @NotNull @Schema(description = "时间类型，day日榜week周榜month月榜") String timeType,
             @Nullable @Schema(description = "小说类型") String tagName,
-            @NotNull @Schema(description = "页码") Integer page,
-            @NotNull @Schema(description = "每页数量") Integer pageSize
+            @NotNull @Schema(description = "页码") @Min(1) Integer page,
+            @NotNull @Schema(description = "每页数量") @Min(0) Integer pageSize
     ) {
         var novelList = novelExtService.pageRankList(timeType, tagName, page, pageSize);
         return Result.success(novelList);
@@ -150,8 +150,8 @@ public class NovelController {
     @GetMapping("get-by-tags")
     public Result<PageVO<NovelInfoVO>> getNovelInfoVOByTagIds(
             @NotEmpty int[] tagIds,
-            @NotNull @Schema(description = "页码") Integer page,
-            @NotNull @Schema(description = "每页数量") Integer pageSize
+            @NotNull @Schema(description = "页码") @Min(1) Integer page,
+            @NotNull @Schema(description = "每页数量") @Min(0) Integer pageSize
     ) {
         var result = novelService.getNovelInfoVOByTagIds(tagIds, page, pageSize);
         return Result.success(result);

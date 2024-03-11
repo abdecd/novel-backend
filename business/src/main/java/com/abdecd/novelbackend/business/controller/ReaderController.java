@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,8 +53,8 @@ public class ReaderController {
     @Operation(summary = "获取用户收藏列表")
     @GetMapping("favorites")
     public Result<PageVO<ReaderFavoritesVO>> getReaderFavorites(
-            @NotNull @Schema(description = "页码") Integer page,
-            @NotNull @Schema(description = "每页数量") Integer pageSize
+            @NotNull @Schema(description = "页码") @Min(1) Integer page,
+            @NotNull @Schema(description = "每页数量") @Min(0) Integer pageSize
     ) {
         var readerFavorites = readerService.pageReaderFavoritesVO(UserContext.getUserId(), page, pageSize);
         return Result.success(readerFavorites);
