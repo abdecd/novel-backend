@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 @TableName("novel_chapter")
 public class NovelChapter {
@@ -14,4 +16,5 @@ public class NovelChapter {
     private Integer volumeNumber;
     private Integer chapterNumber;
     private String title;
+    private LocalDateTime timestamp;
 }
