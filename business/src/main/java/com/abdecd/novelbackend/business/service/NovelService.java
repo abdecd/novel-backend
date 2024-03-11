@@ -45,7 +45,7 @@ public class NovelService {
     @Autowired
     private NovelTagsMapper novelTagsMapper;
 
-    @Cacheable(value = "novelInfoVO", key = "#nid")
+    @Cacheable(value = "novelInfoVO", key = "#nid", unless="#result == null")
     public NovelInfoVO getNovelInfoVO(int nid) {
         var novelInfo = novelInfoMapper.selectById(nid);
         if (novelInfo == null) return null;

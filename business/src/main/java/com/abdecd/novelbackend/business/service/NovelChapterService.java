@@ -25,7 +25,7 @@ public class NovelChapterService {
     @Autowired
     private NovelContentMapper novelContentMapper;
 
-    @Cacheable(value = "novelChapterList", key = "#nid + ':' + #vNum")
+    @Cacheable(value = "novelChapterList", key = "#nid + ':' + #vNum", unless="#result.isEmpty()")
     public List<NovelChapter> listNovelChapter(Integer nid, Integer vNum) {
         return novelChapterMapper.selectList(new LambdaQueryWrapper<NovelChapter>()
                 .eq(NovelChapter::getNovelId, nid)
@@ -33,7 +33,7 @@ public class NovelChapterService {
         );
     }
 
-    @Cacheable(value = "getNovelChapterVOOnlyTimestamp", key = "#nid + ':' + #vNum + ':' + #cNum")
+    @Cacheable(value = "getNovelChapterVOOnlyTimestamp", key = "#nid + ':' + #vNum + ':' + #cNum", unless="#result == null")
     public NovelChapterVO getNovelChapterVOOnlyTimestamp(Integer nid, Integer vNum, Integer cNum) {
         return novelChapterMapper.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
     }

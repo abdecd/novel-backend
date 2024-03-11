@@ -60,6 +60,7 @@ public class NovelChapterController {
     ) {
         // 使用 http 缓存并强制验证
         var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum).getTimestamp();
+        if (currentLocalDateTime == null) return Result.success(null);
         if (request.getHeader("If-None-Match") != null) {
             var clientLastTime = request.getHeader("If-None-Match");
             var clientLocalDateTime = LocalDateTime.parse(clientLastTime);

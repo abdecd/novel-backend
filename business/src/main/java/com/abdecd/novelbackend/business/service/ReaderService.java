@@ -149,14 +149,14 @@ public class ReaderService {
         return readerHistoryMapper.getHotTagIds(startTime, endTime);
     }
 
-    @Cacheable(value = "getNovelIdsByTagId", key = "#tagId")
+    @Cacheable(value = "getNovelIdsByTagId", key = "#tagId", unless="#result.isEmpty()")
     public List<Integer> getNovelIdsByTagId(int tagId) {
          return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
                  .eq(NovelAndTags::getTagId, tagId)
          ).stream().map(NovelAndTags::getNovelId).toList());
     }
 
-    @Cacheable(value = "getTagIdsByNovelId", key = "#novelId")
+    @Cacheable(value = "getTagIdsByNovelId", key = "#novelId", unless="#result.isEmpty()")
     public List<Integer> getTagIdsByNovelId(int novelId) {
         return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
                 .eq(NovelAndTags::getNovelId, novelId)
