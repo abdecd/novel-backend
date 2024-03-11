@@ -14,6 +14,7 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.entity.NovelVolume;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
+import com.abdecd.novelbackend.common.result.PageVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -161,6 +162,7 @@ public class NovelService {
 
         List<Integer> novelIdsList = new ArrayList<>(readerService.getNovelIdsByTagId(tagIds.getFirst()));
         for (int i = 1; i < tagIds.size(); i++) {
+            if (Math.random() > 0.5) continue;
             var tmp = readerService.getNovelIdsByTagId(tagIds.get(i));
             novelIdsList = novelIdsList.stream().parallel().filter(tmp::contains).toList();
         }
@@ -178,5 +180,26 @@ public class NovelService {
     @Cacheable(value = "getAvailableTags") // 不会过期
     public List<NovelTags> getAvailableTags() {
         return novelTagsMapper.selectList(new LambdaQueryWrapper<>());
+    }
+
+    public PageVO<NovelInfoVO> getNovelInfoVOByTagIds(Integer[] tagIds, Integer page, Integer pageSize) {
+        List<Integer> novelIdsList = new ArrayList<>(readerService.getNovelIdsByTagId(tagIds[0]));
+        for (int i = 1; i < tagIds.length; i++) {
+            var tmp = readerService.getNovelIdsByTagId(tagIds[i]);
+            novelIdsList = novelIdsList.stream().parallel().filter(tmp::contains).toList();
+        }
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        try {
+            return new PageVO<NovelInfoVO>()
+                    .setTotal(novelIdsList.size())
+                    .setRecords(novelIdsList.subList((page - 1) * pageSize, page * pageSize).stream().parallel()
+                            .map(novelService::getNovelInfoVO)
+                            .toList()
+                    );
+        } catch (IndexOutOfBoundsException e) {
+            return new PageVO<NovelInfoVO>()
+                    .setTotal(novelIdsList.size())
+                    .setRecords(new ArrayList<>());
+        }
     }
 }

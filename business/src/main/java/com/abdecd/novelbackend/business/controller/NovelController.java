@@ -19,6 +19,7 @@ import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -120,5 +121,23 @@ public class NovelController {
     ) {
         var novelList = novelService.getRelatedList(nid, num);
         return Result.success(novelList);
+    }
+
+    @Operation(summary = "获取热门tags")
+    @GetMapping("hot-tags")
+    public Result<List<NovelTags>> getHotTags() {
+        var tags = novelExtService.getHotTags("week");
+        return Result.success(tags);
+    }
+
+    @Operation(summary = "获取tags对应的小说列表")
+    @GetMapping("get-by-tags")
+    public Result<PageVO<NovelInfoVO>> getNovelInfoVOByTagIds(
+            @NotEmpty Integer[] tagIds,
+            @NotNull @Schema(description = "页码") Integer page,
+            @NotNull @Schema(description = "每页数量") Integer pageSize
+    ) {
+        var result = novelService.getNovelInfoVOByTagIds(tagIds, page, pageSize);
+        return Result.success(result);
     }
 }

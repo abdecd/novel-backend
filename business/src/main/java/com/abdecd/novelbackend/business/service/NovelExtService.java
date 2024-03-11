@@ -4,6 +4,7 @@ import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
+import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -11,6 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -20,6 +22,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class NovelExtService {
@@ -63,21 +66,10 @@ public class NovelExtService {
      * @return :
      */
     public PageVO<NovelInfoVO> pageRankList(String timeType, String tagName, Integer page, Integer pageSize) {
-        var now = LocalDate.now();
-        LocalDateTime startTime = now.atTime(4, 0);
-        LocalDateTime endTime = now.atTime(4, 0);
-        startTime = switch (timeType) {
-            case "day" -> now.minusDays(1).atTime(4, 0);
-            case "week" -> now.minusWeeks(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atTime(4, 0);
-            case "month" -> now.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth()).atTime(4, 0);
-            default -> startTime;
-        };
-        endTime = switch (timeType) {
-            case "day" -> now.atTime(4, 0);
-            case "week" -> now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atTime(4, 0);
-            case "month" -> now.with(TemporalAdjusters.firstDayOfMonth()).atTime(4, 0);
-            default -> endTime;
-        };
+        var pair = getTimeFromTimeType(timeType);
+        LocalDateTime startTime = pair.getFirst();
+        LocalDateTime endTime = pair.getSecond();
+
         List<Integer> list;
         var self = SpringContextUtil.getBean(NovelExtService.class);
         if (tagName == null) {
@@ -97,6 +89,40 @@ public class NovelExtService {
                     .setTotal(list.size())
                     .setRecords(new ArrayList<>());
         }
+    }
+
+    /**
+     * @param timeType day, week, month
+     */
+    public Pair<LocalDateTime, LocalDateTime> getTimeFromTimeType(String timeType) {
+        var now = LocalDate.now();
+        LocalDateTime startTime = now.atTime(4, 0);
+        LocalDateTime endTime = now.atTime(4, 0);
+        startTime = switch (timeType) {
+            case "day" -> now.minusDays(1).atTime(4, 0);
+            case "week" -> now.minusWeeks(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atTime(4, 0);
+            case "month" -> now.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth()).atTime(4, 0);
+            default -> startTime;
+        };
+        endTime = switch (timeType) {
+            case "day" -> now.atTime(4, 0);
+            case "week" -> now.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atTime(4, 0);
+            case "month" -> now.with(TemporalAdjusters.firstDayOfMonth()).atTime(4, 0);
+            default -> endTime;
+        };
+        return Pair.of(startTime, endTime);
+    }
+
+    /**
+     * @param timeType day, week, month
+     */
+    public List<NovelTags> getHotTags(String timeType) {
+        var pair = getTimeFromTimeType(timeType);
+        var tagIds = readerService.getHotTagIds(pair.getFirst(), pair.getSecond());
+        var tagList = novelService.getAvailableTags();
+        return tagIds.stream()// todo 二分
+                .map(id -> tagList.stream().filter(obj -> Objects.equals(obj.getId(), id)).findFirst().orElseGet(()->null))
+                .toList();
     }
 
     @Cacheable(value = "novelRankList#32", key = "#startTime.toString() + ':' + #endTime.toString()")

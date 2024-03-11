@@ -98,4 +98,16 @@
         ORDER BY COUNT(nat.tag_id) DESC
         LIMIT 2
     </select>
+    <select id="getHotTagIds" resultType="java.lang.Integer">
+        SELECT nat.tag_id
+        FROM (
+            SELECT novel_id
+            FROM reader_history rh
+            WHERE startTime &gt;= #{startTime} AND endTime &lt; #{endTime}
+        ) t1
+        LEFT JOIN novel_and_tags nat ON t1.novel_id = nat.novel_id
+        GROUP BY nat.tag_id
+        ORDER BY COUNT(nat.tag_id) DESC
+        LIMIT 5
+    </select>
 </mapper>

@@ -140,6 +140,11 @@ public class ReaderService {
         return readerHistoryMapper.getReaderFavoriteTagIds(userId);
     }
 
+    @Cacheable(value = "getHotTagIds#32", key = "#startTime.toString() + ':' + #endTime.toString()")
+    public List<Integer> getHotTagIds(LocalDateTime startTime, LocalDateTime endTime) {
+        return readerHistoryMapper.getHotTagIds(startTime, endTime);
+    }
+
     @Cacheable(value = "getNovelIdsByTagId", key = "#tagId")
     public List<Integer> getNovelIdsByTagId(Integer tagId) {
          return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
