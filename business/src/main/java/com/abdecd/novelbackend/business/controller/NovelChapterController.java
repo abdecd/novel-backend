@@ -60,17 +60,16 @@ public class NovelChapterController {
     ) {
         var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum).getTimestamp();
         if (currentLocalDateTime == null) return Result.success(null);
+        // 更新阅读记录
+        if (UserContext.getUserId() != null) readerService.saveReaderHistory(
+                UserContext.getUserId(),
+                nid,
+                vNum,
+                cNum
+        );
         if (HttpCacheUtils.tryUseCache(request, response, currentLocalDateTime)) return null;
 
         var novelChapter = novelChapterService.getNovelChapterVO(nid, vNum, cNum);
-        // 更新阅读记录
-        if (novelChapter != null && UserContext.getUserId() != null)
-            readerService.saveReaderHistory(
-                UserContext.getUserId(),
-                novelChapter.getNovelId(),
-                novelChapter.getVolumeNumber(),
-                novelChapter.getChapterNumber()
-            );
         return Result.success(novelChapter);
     }
 
@@ -81,7 +80,7 @@ public class NovelChapterController {
         if (novelVolumeService.getNovelVolume(addNovelChapterDTO.getNovelId(), addNovelChapterDTO.getVolumeNumber()) == null)
             return Result.error(MessageConstant.NOVEL_VOLUME_NOT_FOUND);
         var novelChapterId = novelChapterService.addNovelChapter(addNovelChapterDTO);
-        return Result.success(novelChapterId+"");
+        return Result.success(novelChapterId + "");
     }
 
     @Async

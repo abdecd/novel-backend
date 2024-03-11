@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @Tag(name = "读者接口")
 @RestController
@@ -58,6 +59,18 @@ public class ReaderController {
     ) {
         var readerFavorites = readerService.pageReaderFavoritesVO(UserContext.getUserId(), page, pageSize);
         return Result.success(readerFavorites);
+    }
+
+    @Operation(summary = "获取特定id的小说是否被用户收藏")
+    @GetMapping("favorites/contains")
+    public Result<Boolean> getReaderFavoritesContains(
+            @NotNull @Schema(description = "小说id") Integer novelId
+    ) {
+        var readerFavorites = readerService.listReaderFavoritesVO(UserContext.getUserId());
+        for (var readerFavoritesVO : readerFavorites) {
+            if (Objects.equals(readerFavoritesVO.getNovelId(), novelId)) return Result.success(true);
+        }
+        return Result.success(false);
     }
 
     @Operation(summary = "添加用户收藏")

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.abdecd.novelbackend.business.mapper.UserCommentMapper">
+    <select id="listCommentVOByNovelId"
+            resultType="com.abdecd.novelbackend.business.pojo.vo.user.UserCommentVO">
+        SELECT uc.id, uc.user_id, uc.to_id, uc.content, uc.timestamp,
+               uc2.user_id AS to_user_id
+        FROM user_comment uc
+            LEFT JOIN user_comment uc2 ON uc.to_id = uc2.id
+        WHERE uc.novel_id = #{novelId} AND uc.status = #{status}
+        ORDER BY uc.id ASC
+    </select>
+</mapper>

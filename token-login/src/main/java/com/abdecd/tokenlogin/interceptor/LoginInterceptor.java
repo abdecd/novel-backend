@@ -10,10 +10,13 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.server.PathContainer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.util.pattern.PathPatternParser;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
 
@@ -27,10 +30,15 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull Object handler) throws Exception {
-        //判断当前拦截到的是Controller的方法还是其他资源
+        var canPass = false;
         if (!(handler instanceof HandlerMethod)) {
-            //当前拦截到的不是动态方法，直接放行
-            return true;
+            canPass = true;
+        }
+        PathPatternParser pathPatternParser = new PathPatternParser();
+        for (String pattern : allProperties.getExcludePatterns()) {
+            if (pathPatternParser.parse(pattern).matches(PathContainer.parsePath(request.getRequestURI()))) {
+                canPass = true;
+            }
         }
         log.info("uri: {}, query: {}", request.getRequestURI(), request.getQueryString());
 
@@ -38,11 +46,8 @@ public class LoginInterceptor implements HandlerInterceptor {
         String token = request.getHeader(Constant.JWT_TOKEN_NAME);
         log.info("jwt校验:{}", token);
         if (token == null || token.isEmpty()) {
-            //4、不通过，响应401状态码
-            response.setStatus(401);
-            response.getWriter().println("401 Unauthorized");
-            response.getWriter().close();
-            return false;
+            if (!canPass) return ret401(response);
+            else return true;
         }
         //2、校验令牌
         try {
@@ -61,12 +66,17 @@ public class LoginInterceptor implements HandlerInterceptor {
             //3、通过，放行
             return true;
         } catch (Exception ex) {
-            //4、不通过，响应401状态码
-            response.setStatus(401);
-            response.getWriter().println("401 Unauthorized");
-            response.getWriter().close();
-            return false;
+            if (!canPass) return ret401(response);
+            else return true;
         }
+    }
+
+    public boolean ret401(HttpServletResponse response) throws IOException {
+        // 不通过，响应401状态码
+        response.setStatus(401);
+        response.getWriter().println("401 Unauthorized");
+        response.getWriter().close();
+        return false;
     }
 
     @Override
