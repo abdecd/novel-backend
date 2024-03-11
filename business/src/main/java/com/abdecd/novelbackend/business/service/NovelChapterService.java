@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +33,12 @@ public class NovelChapterService {
         );
     }
 
-    public NovelChapterVO getNovelChapter(Integer nid, Integer vNum, Integer cNum) {
+    @Cacheable(value = "getNovelChapterVOOnlyTimestamp", key = "#nid + ':' + #vNum + ':' + #cNum")
+    public NovelChapterVO getNovelChapterVOOnlyTimestamp(Integer nid, Integer vNum, Integer cNum) {
+        return novelChapterMapper.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
+    }
+
+    public NovelChapterVO getNovelChapterVO(Integer nid, Integer vNum, Integer cNum) {
         return novelChapterMapper.getNovelChapterVO(nid, vNum, cNum);
     }
 
@@ -43,7 +49,10 @@ public class NovelChapterService {
         return entity.getId();
     }
 
-    @CacheEvict(value = "novelChapterList", key = "#updateNovelChapterDTO.novelId + ':' + #updateNovelChapterDTO.volumeNumber")
+    @Caching(evict = {
+            @CacheEvict(value = "novelChapterList", key = "#updateNovelChapterDTO.novelId + ':' + #updateNovelChapterDTO.volumeNumber"),
+            @CacheEvict(value = "getNovelChapterVOOnlyTimestamp", key = "#updateNovelChapterDTO.novelId + ':' + #updateNovelChapterDTO.volumeNumber + ':' + #updateNovelChapterDTO.chapterNumber")
+    })
     @Transactional
     public void updateNovelChapter(UpdateNovelChapterDTO updateNovelChapterDTO) {
         var novelChapter = novelChapterMapper.selectOne(new LambdaQueryWrapper<NovelChapter>()
@@ -74,7 +83,10 @@ public class NovelChapterService {
         novelContentMapper.deleteById(id);
     }
 
-    @CacheEvict(value = "novelChapterList", key = "#deleteNovelChapterDTO.novelId + ':' + #deleteNovelChapterDTO.volumeNumber")
+    @Caching(evict = {
+            @CacheEvict(value = "novelChapterList", key = "#deleteNovelChapterDTO.novelId + ':' + #deleteNovelChapterDTO.volumeNumber"),
+            @CacheEvict(value = "getNovelChapterVOOnlyTimestamp", key = "#deleteNovelChapterDTO.novelId + ':' + #deleteNovelChapterDTO.volumeNumber + ':' + #deleteNovelChapterDTO.chapterNumber")
+    })
     @Transactional
     public void deleteNovelChapter(DeleteNovelChapterDTO deleteNovelChapterDTO) {
         var novelChapter = novelChapterMapper.selectOne(new LambdaQueryWrapper<NovelChapter>()

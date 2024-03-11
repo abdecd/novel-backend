@@ -54,7 +54,7 @@ public class NovelChapterController {
             @NotNull @Schema(description = "章num") Integer cNum
     ) {
         // todo 使用 http 缓存
-        var novelChapter = novelChapterService.getNovelChapter(nid, vNum, cNum);
+        var novelChapter = novelChapterService.getNovelChapterVO(nid, vNum, cNum);
         // 更新阅读记录
         if (novelChapter != null) readerService.saveReaderHistory(
                 UserContext.getUserId(),

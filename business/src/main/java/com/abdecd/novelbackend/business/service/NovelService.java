@@ -70,7 +70,8 @@ public class NovelService {
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
             @CacheEvict(value = "novelInfoVO", key = "#updateNovelInfoDTO.id"),
-            @CacheEvict(value = "getTagIdsByNovelId", key = "#updateNovelInfoDTO.id")
+            @CacheEvict(value = "getTagIdsByNovelId", key = "#updateNovelInfoDTO.id"),
+            @CacheEvict(value = "getHotTagIds#32", allEntries = true)
     })
     @Transactional
     @UseFileService(value = "cover", param = UpdateNovelInfoDTO.class)
@@ -128,7 +129,8 @@ public class NovelService {
             @CacheEvict(value = "getNovelIds", allEntries = true),
             @CacheEvict(value = "getTagIdsByNovelId", key = "#novelInfo.id"),
             @CacheEvict(value = "novelRankList#32", allEntries = true),
-            @CacheEvict(value = "novelRankListByTagName#32", allEntries = true)
+            @CacheEvict(value = "novelRankListByTagName#32", allEntries = true),
+            @CacheEvict(value = "getHotTagIds#32", allEntries = true)
     })
     @Transactional
     public void deleteNovelInfoReally(NovelInfo novelInfo) {

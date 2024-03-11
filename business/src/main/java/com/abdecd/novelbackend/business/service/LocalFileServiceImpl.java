@@ -76,6 +76,7 @@ public class LocalFileServiceImpl implements FileService {
     public void viewImg(String path, HttpServletResponse response) throws IOException {
         if (IMG_PATH.equals("empty")) return;
         response.setContentType("image/jpeg");
+        response.setHeader("Cache-Control", "public, max-age=31536000");
         var file = new File(IMG_PATH + path);
         Files.copy(file.toPath(), response.getOutputStream());
     }
