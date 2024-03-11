@@ -1,12 +1,12 @@
 package com.abdecd.novelbackend.business.pojo.dto.reader;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 @Data
 public class DeleteReaderHistoryDTO {
-    @NotBlank
+    @NotEmpty
     @Schema(description = "历史记录ids")
     Long[] ids;
 }
