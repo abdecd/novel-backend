@@ -5,7 +5,6 @@ import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
-import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
@@ -28,9 +27,8 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Tag(name = "小说接口")
 @RestController
@@ -89,12 +87,14 @@ public class NovelController {
     ) {
         var contentsVO = novelService.getContents(nid);
         if (contentsVO == null) return Result.success(null);
-        var localDateTime = Optional.of(contentsVO)
-                .map(ContentsVO::lastEntry)
-                .map(Map.Entry::getValue)
-                .map(List::getLast)
-                .map(NovelChapter::getTimestamp)
-                .orElse(null);
+        LocalDateTime localDateTime = null;
+        for (var entry : contentsVO.entrySet()) {
+            var novelChapterList = entry.getValue();
+            for (var novelChapter : novelChapterList) {
+                if (localDateTime == null || novelChapter.getTimestamp().isAfter(localDateTime))
+                    localDateTime = novelChapter.getTimestamp();
+            }
+        }
         if (HttpCacheUtils.tryUseCache(request, response, localDateTime)) return null;
         return Result.success(contentsVO);
     }
