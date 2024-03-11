@@ -9,7 +9,6 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.entity.NovelContent;
 import com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -39,10 +38,9 @@ public class NovelChapterService {
 
     @CacheEvict(value = "novelChapterList", key = "#addNovelChapterDTO.novelId + ':' + #addNovelChapterDTO.volumeNumber")
     public long addNovelChapter(AddNovelChapterDTO addNovelChapterDTO) {
-        var novelChapter = new NovelChapter();
-        BeanUtils.copyProperties(addNovelChapterDTO, novelChapter);
-        novelChapterMapper.insert(novelChapter);
-        return novelChapter.getId();
+        var entity = addNovelChapterDTO.toEntity();
+        novelChapterMapper.insert(entity);
+        return entity.getId();
     }
 
     @CacheEvict(value = "novelChapterList", key = "#updateNovelChapterDTO.novelId + ':' + #updateNovelChapterDTO.volumeNumber")
@@ -56,8 +54,8 @@ public class NovelChapterService {
         if (novelChapter == null) return;
         var cid = novelChapter.getId();
         // 更新novelChapter
-        BeanUtils.copyProperties(updateNovelChapterDTO, novelChapter);
-        novelChapterMapper.updateById(novelChapter);
+        var entity = updateNovelChapterDTO.toEntity();
+        novelChapterMapper.updateById(entity);
         // 更新novelContent
         if (updateNovelChapterDTO.getContent() != null) {
             novelContentMapper.delete(new LambdaQueryWrapper<NovelContent>()

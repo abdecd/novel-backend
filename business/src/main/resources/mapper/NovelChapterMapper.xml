@@ -9,6 +9,7 @@
             nc.volume_number,
             nc.chapter_number,
             nc.title,
+            nc.timestamp
             n.content
         FROM
             novel_chapter nc
