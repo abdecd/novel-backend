@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.service;
 
+import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelVolumeMapper;
 import com.abdecd.novelbackend.business.pojo.dto.novel.volume.AddNovelVolumeDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.volume.DeleteNovelVolumeDTO;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class NovelVolumeService {
@@ -23,7 +25,7 @@ public class NovelVolumeService {
     @Autowired
     private NovelChapterService novelChapterService;
 
-    @Cacheable(value = "novelVolumeList", key = "#nid")
+    @Cacheable(value = "novelVolumeList", key = "#nid", unless="#result.isEmpty()")
     public List<NovelVolume> listNovelVolume(Integer nid) {
         return novelVolumeMapper.selectList(new LambdaQueryWrapper<NovelVolume>()
                 .eq(NovelVolume::getNovelId, nid)
@@ -31,10 +33,13 @@ public class NovelVolumeService {
     }
 
     public NovelVolume getNovelVolume(Integer nid, Integer vNum) {
-        return novelVolumeMapper.selectOne(new LambdaQueryWrapper<NovelVolume>()
-                .eq(NovelVolume::getNovelId, nid)
-                .eq(NovelVolume::getVolumeNumber, vNum)
-        );
+        var novelVolumeService = SpringContextUtil.getBean(NovelVolumeService.class);
+        for (NovelVolume novelVolume : novelVolumeService.listNovelVolume(nid)) {
+            if (Objects.equals(novelVolume.getVolumeNumber(), vNum)) {
+                return novelVolume;
+            }
+        }
+        return null;
     }
 
     @CacheEvict(value = "novelVolumeList", key = "#addNovelVolumeDTO.novelId")

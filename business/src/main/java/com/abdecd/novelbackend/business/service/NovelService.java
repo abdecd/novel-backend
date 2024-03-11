@@ -45,7 +45,7 @@ public class NovelService {
     @Autowired
     private NovelTagsMapper novelTagsMapper;
 
-    @Cacheable(value = "novelInfoVO", key = "#nid")
+    @Cacheable(value = "novelInfoVO", key = "#nid", unless = "#result == null")
     public NovelInfoVO getNovelInfoVO(int nid) {
         var novelInfo = novelInfoMapper.selectById(nid);
         if (novelInfo == null) return null;
@@ -70,7 +70,8 @@ public class NovelService {
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
             @CacheEvict(value = "novelInfoVO", key = "#updateNovelInfoDTO.id"),
-            @CacheEvict(value = "getTagIdsByNovelId", key = "#updateNovelInfoDTO.id")
+            @CacheEvict(value = "getTagIdsByNovelId", key = "#updateNovelInfoDTO.id"),
+            @CacheEvict(value = "getHotTagIds#32", allEntries = true)
     })
     @Transactional
     @UseFileService(value = "cover", param = UpdateNovelInfoDTO.class)
@@ -128,7 +129,8 @@ public class NovelService {
             @CacheEvict(value = "getNovelIds", allEntries = true),
             @CacheEvict(value = "getTagIdsByNovelId", key = "#novelInfo.id"),
             @CacheEvict(value = "novelRankList#32", allEntries = true),
-            @CacheEvict(value = "novelRankListByTagName#32", allEntries = true)
+            @CacheEvict(value = "novelRankListByTagName#32", allEntries = true),
+            @CacheEvict(value = "getHotTagIds#32", allEntries = true)
     })
     @Transactional
     public void deleteNovelInfoReally(NovelInfo novelInfo) {
@@ -147,6 +149,7 @@ public class NovelService {
 
     public ContentsVO getContents(Integer nid) {
         List<NovelVolume> novelVolume = novelVolumeService.listNovelVolume(nid);
+        if (novelVolume.isEmpty()) return null;
         var contentsVO = new ContentsVO();
         for (var novelVolumeItem : novelVolume) {
             var vNum = novelVolumeItem.getVolumeNumber();
@@ -189,17 +192,11 @@ public class NovelService {
             novelIdsList = novelIdsList.stream().parallel().filter(tmp::contains).toList();
         }
         var novelService = SpringContextUtil.getBean(NovelService.class);
-        try {
-            return new PageVO<NovelInfoVO>()
-                    .setTotal(novelIdsList.size())
-                    .setRecords(novelIdsList.subList((page - 1) * pageSize, page * pageSize).stream().parallel()
-                            .map(novelService::getNovelInfoVO)
-                            .toList()
-                    );
-        } catch (IndexOutOfBoundsException e) {
-            return new PageVO<NovelInfoVO>()
-                    .setTotal(novelIdsList.size())
-                    .setRecords(new ArrayList<>());
-        }
+        return new PageVO<NovelInfoVO>()
+                .setTotal(novelIdsList.size())
+                .setRecords(novelIdsList.subList(Math.max(0, (page - 1) * pageSize), Math.min(novelIdsList.size(), page * pageSize)).stream().parallel()
+                        .map(novelService::getNovelInfoVO)
+                        .toList()
+                );
     }
 }

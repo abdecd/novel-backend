@@ -77,18 +77,11 @@ public class NovelExtService {
         } else {
             list = self.getRankListByTagName(tagName, startTime, endTime);
         }
-        try {
-            return new PageVO<NovelInfoVO>()
-                    .setTotal(list.size())
-                    .setRecords(list.subList((page - 1) * pageSize, page * pageSize).stream().parallel()
+        return new PageVO<NovelInfoVO>()
+                .setTotal(list.size())
+                .setRecords(list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize)).stream().parallel()
                         .map(novelId -> novelService.getNovelInfoVO(novelId))
-                        .toList()
-                    );
-        } catch (IndexOutOfBoundsException e) {
-            return new PageVO<NovelInfoVO>()
-                    .setTotal(list.size())
-                    .setRecords(new ArrayList<>());
-        }
+                        .toList());
     }
 
     /**
@@ -120,8 +113,8 @@ public class NovelExtService {
         var pair = getTimeFromTimeType(timeType);
         var tagIds = readerService.getHotTagIds(pair.getFirst(), pair.getSecond());
         var tagList = novelService.getAvailableTags();
-        return tagIds.stream()// todo 二分
-                .map(id -> tagList.stream().filter(obj -> Objects.equals(obj.getId(), id)).findFirst().orElseGet(()->null))
+        return tagIds.stream()
+                .map(id -> tagList.stream().filter(obj -> Objects.equals(obj.getId(), id)).findFirst().orElseGet(() -> null))
                 .toList();
     }
 

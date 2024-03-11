@@ -23,3 +23,7 @@ token-login:
     - /novel/ranklist
     - /novel/recommend
     - /novel/related
+    - /novel/get-by-tags
+    - /novel/chapter
+    - /novel/hot-tags
+    - /novel/contents
