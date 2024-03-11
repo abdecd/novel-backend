@@ -29,5 +29,5 @@ public class UpdateNovelInfoDTO {
     String description;
 
     @Schema(description = "小说tags")
-    Integer[] tagIds;
+    int[] tagIds;
 }

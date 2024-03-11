@@ -1,5 +1,6 @@
 package com.abdecd.tokenlogin.common.util;
 
+import com.abdecd.tokenlogin.common.constant.Constant;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 
@@ -41,12 +42,15 @@ public class JwtUtils {
     }
 
     public Map<String, Object> decodeJWT(String token) {
-        return JWT
+        var verifiedToken = JWT
                 .require(HMAC256)
                 .build()
-                .verify(token)
+                .verify(token);
+        var map = verifiedToken
                 .getClaims()
                 .get("claims")
                 .asMap();
+        map.put(Constant.JWT_EXPIRE_TIME, verifiedToken.getExpiresAt().getTime());
+        return map;
     }
 }

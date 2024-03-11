@@ -31,5 +31,5 @@ public class AddNovelInfoDTO {
 
     @NotEmpty
     @Schema(description = "小说tags")
-    Integer[] tagIds;
+    int[] tagIds;
 }
