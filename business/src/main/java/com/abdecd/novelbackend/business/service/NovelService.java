@@ -149,6 +149,7 @@ public class NovelService {
 
     public ContentsVO getContents(Integer nid) {
         List<NovelVolume> novelVolume = novelVolumeService.listNovelVolume(nid);
+        if (novelVolume.isEmpty()) return null;
         var contentsVO = new ContentsVO();
         for (var novelVolumeItem : novelVolume) {
             var vNum = novelVolumeItem.getVolumeNumber();

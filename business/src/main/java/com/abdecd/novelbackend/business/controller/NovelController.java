@@ -1,9 +1,11 @@
 package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
+import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
@@ -16,6 +18,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -25,6 +29,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Tag(name = "小说接口")
 @RestController
@@ -77,9 +83,19 @@ public class NovelController {
     @Operation(summary = "获取小说目录")
     @GetMapping("contents")
     public Result<ContentsVO> getContents(
-            @NotNull @Schema(description = "小说id") Integer nid
+            @NotNull @Schema(description = "小说id") Integer nid,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         var contentsVO = novelService.getContents(nid);
+        if (contentsVO == null) return Result.success(null);
+        var localDateTime = Optional.of(contentsVO)
+                .map(ContentsVO::lastEntry)
+                .map(Map.Entry::getValue)
+                .map(List::getLast)
+                .map(NovelChapter::getTimestamp)
+                .orElse(null);
+        if (HttpCacheUtils.tryUseCache(request, response, localDateTime)) return null;
         return Result.success(contentsVO);
     }
 

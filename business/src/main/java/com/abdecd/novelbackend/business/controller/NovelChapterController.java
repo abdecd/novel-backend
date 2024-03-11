@@ -1,6 +1,7 @@
 package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.AddNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.DeleteNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.UpdateNovelChapterDTO;
@@ -24,7 +25,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -58,19 +58,9 @@ public class NovelChapterController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        // 使用 http 缓存并强制验证
         var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum).getTimestamp();
         if (currentLocalDateTime == null) return Result.success(null);
-        if (request.getHeader("If-None-Match") != null) {
-            var clientLastTime = request.getHeader("If-None-Match");
-            var clientLocalDateTime = LocalDateTime.parse(clientLastTime);
-            if (!clientLocalDateTime.isBefore(currentLocalDateTime)) {
-                response.setStatus(304);
-                return null;
-            }
-        }
-        response.setHeader("Cache-Control", "no-cache");
-        response.setHeader("ETag", currentLocalDateTime.toString());
+        if (HttpCacheUtils.tryUseCache(request, response, currentLocalDateTime)) return null;
 
         var novelChapter = novelChapterService.getNovelChapterVO(nid, vNum, cNum);
         // 更新阅读记录
