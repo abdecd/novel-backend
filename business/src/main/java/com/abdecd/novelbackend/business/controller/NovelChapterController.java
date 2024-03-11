@@ -16,12 +16,15 @@ import com.abdecd.tokenlogin.common.context.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -51,17 +54,32 @@ public class NovelChapterController {
     public Result<NovelChapterVO> getNovelChapter(
             @NotNull @Schema(description = "小说id") Integer nid,
             @NotNull @Schema(description = "卷num") Integer vNum,
-            @NotNull @Schema(description = "章num") Integer cNum
+            @NotNull @Schema(description = "章num") Integer cNum,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        // todo 使用 http 缓存
+        // 使用 http 缓存并强制验证
+        var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum).getTimestamp();
+        if (request.getHeader("If-None-Match") != null) {
+            var clientLastTime = request.getHeader("If-None-Match");
+            var clientLocalDateTime = LocalDateTime.parse(clientLastTime);
+            if (!clientLocalDateTime.isBefore(currentLocalDateTime)) {
+                response.setStatus(304);
+                return null;
+            }
+        }
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("ETag", currentLocalDateTime.toString());
+
         var novelChapter = novelChapterService.getNovelChapterVO(nid, vNum, cNum);
         // 更新阅读记录
-        if (novelChapter != null) readerService.saveReaderHistory(
+        if (novelChapter != null && UserContext.getUserId() != null)
+            readerService.saveReaderHistory(
                 UserContext.getUserId(),
                 novelChapter.getNovelId(),
                 novelChapter.getVolumeNumber(),
                 novelChapter.getChapterNumber()
-        );
+            );
         return Result.success(novelChapter);
     }
 
