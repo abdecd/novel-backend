@@ -14,8 +14,10 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,30 +26,34 @@ import java.util.List;
 public class CommentService {
     @Autowired
     private UserCommentMapper userCommentMapper;
+    @Autowired
+    private RedisTemplate redisTemplate;
+    public static final String COMMENT_FOR_NOVEL_TIMESTAMP = "commmentForNovelId::";
 
-    public PageVO<List<UserCommentVO>> getComment(Integer novelId, Long startId, Integer pageNum) {
+    public PageVO<List<UserCommentVO>> getComment(Integer novelId, Integer page, Integer pageSize) {
         var commentService = SpringContextUtil.getBean(CommentService.class);
         var userCommentList = commentService.getCommentsByNovelId(novelId);
         if (userCommentList == null) return new PageVO<>(0, new ArrayList<>());
-        var startIndex = 0;
-        if (startId != null) for (var i = 0; i < userCommentList.size(); i++) {
-            if (userCommentList.get(i).getFirst().getId() >= startId) {
-                startIndex = i;
-                break;
-            }
-        }
-        return new PageVO<>(userCommentList.size(), userCommentList.subList(startIndex, Math.min(userCommentList.size(), startIndex + pageNum)));
+        return new PageVO<>(userCommentList.size(), userCommentList.subList(Math.max(0, (page - 1) * pageSize), Math.min(userCommentList.size(), page * pageSize)));
     }
 
-    @Cacheable(value = "getCommentsByNovelId", key = "#novelId", unless = "#result == null")
+    // 太大不缓存
+    @Cacheable(value = "getCommentsByNovelId", key = "#novelId", unless = "#result == null || #result.flatMap(List::stream).collect(Collectors.counting()) > 500")
     public List<List<UserCommentVO>> getCommentsByNovelId(Integer novelId) {
         var allComments = userCommentMapper.listCommentVOByNovelId(novelId, StatusConstant.ENABLE);
         if (allComments.isEmpty()) return null;
+
         var unionFind = new UnionFind(Math.toIntExact(allComments.getLast().getId()) + 1);
+        LocalDateTime lastModified = null;
         for (var userComment : allComments) {
+            if (lastModified == null || userComment.getTimestamp().isAfter(lastModified))
+                lastModified = userComment.getTimestamp();
             if (userComment.getToId() == -1) continue;
             unionFind.union(Math.toIntExact(userComment.getId()), Math.toIntExact(userComment.getToId()));
         }
+        // 记录小说评论区时间戳
+        redisTemplate.opsForValue().set(COMMENT_FOR_NOVEL_TIMESTAMP + novelId, lastModified);
+
         var result = new LinkedHashMap<Integer, List<UserCommentVO>>();
         for (var userComment : allComments) {
             // 根评论已建立，直接附加
@@ -77,16 +83,25 @@ public class CommentService {
         );
         if (beCommented == null) return (long) -1;
         userCommentMapper.insert(userComment);
+        redisTemplate.opsForValue().set(COMMENT_FOR_NOVEL_TIMESTAMP + userComment.getNovelId(), userComment.getTimestamp());
         return userComment.getId();
     }
 
     @CacheEvict(value = "getCommentsByNovelId", key = "#root.target.getNovelIdByCommentId(#id)")
     public void deleteComment(Integer id) {
-        userCommentMapper.update(new LambdaUpdateWrapper<UserComment>()
+        var effectedRows = userCommentMapper.update(new LambdaUpdateWrapper<UserComment>()
                 .eq(UserComment::getId, id)
                 .eq(UserComment::getUserId, UserContext.getUserId())
                 .set(UserComment::getStatus, StatusConstant.DISABLE)
+                .set(UserComment::getTimestamp, LocalDateTime.now())
         );
+        if (effectedRows != 0) {
+            var obj = userCommentMapper.selectOne(new LambdaQueryWrapper<UserComment>()
+                    .select(UserComment::getNovelId, UserComment::getTimestamp)
+                    .eq(UserComment::getId, id)
+            );
+            redisTemplate.opsForValue().set(COMMENT_FOR_NOVEL_TIMESTAMP + obj.getNovelId(), obj.getTimestamp());
+        }
     }
 
     public Integer getNovelIdByCommentId(Integer id) {
