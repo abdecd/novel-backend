@@ -1,11 +1,16 @@
 spring:
   profiles:
     active: dev
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 6MB
 novel:
   ttl:
     captcha-ttl-seconds: 300
 token-login:
   jwt-ttl-seconds: 259200 # 3天
+  jwt-refresh-ttl-seconds: 86400 # 1天
   exclude-patterns:
     - /error
     - /doc.html/**
@@ -22,3 +27,7 @@ token-login:
     - /novel/ranklist
     - /novel/recommend
     - /novel/related
+    - /novel/get-by-tags
+    - /novel/chapter
+    - /novel/hot-tags
+    - /novel/contents

@@ -9,6 +9,7 @@ import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.business.service.NovelExtService;
 import com.abdecd.novelbackend.business.service.NovelService;
+import com.abdecd.novelbackend.common.constant.DTOConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.aspect.RequirePermission;
@@ -17,9 +18,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
+import org.hibernate.validator.constraints.Length;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,12 +43,6 @@ public class NovelController {
         return Result.success(novelInfoVO);
     }
 
-    @Operation(summary = "获取可用tags")
-    @GetMapping("available-tags")
-    public Result<List<NovelTags>> getAvailableTags() {
-        return Result.success(novelService.getAvailableTags());
-    }
-
     @Operation(summary = "修改小说信息")
     @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("update")
@@ -62,7 +56,7 @@ public class NovelController {
     @PostMapping("add")
     public Result<String> addNovelInfo(@RequestBody @Valid AddNovelInfoDTO addNovelInfoDTO) {
         var novelId = novelService.addNovelInfo(addNovelInfoDTO);
-        return Result.success(novelId+"");
+        return Result.success(novelId + "");
     }
 
     @Operation(summary = "删除小说")
@@ -79,6 +73,7 @@ public class NovelController {
             @NotNull @Schema(description = "小说id") Integer nid
     ) {
         var contentsVO = novelService.getContents(nid);
+        if (contentsVO == null) return Result.success(null);
         return Result.success(contentsVO);
     }
 
@@ -87,8 +82,8 @@ public class NovelController {
     public Result<PageVO<NovelInfoVO>> getRankList(
             @NotNull @Schema(description = "时间类型，day日榜week周榜month月榜") String timeType,
             @Nullable @Schema(description = "小说类型") String tagName,
-            @NotNull @Schema(description = "页码") Integer page,
-            @NotNull @Schema(description = "每页数量") Integer pageSize
+            @NotNull @Schema(description = "页码") @Min(1) Integer page,
+            @NotNull @Schema(description = "每页数量") @Min(0) Integer pageSize
     ) {
         var novelList = novelExtService.pageRankList(timeType, tagName, page, pageSize);
         return Result.success(novelList);
@@ -120,5 +115,39 @@ public class NovelController {
     ) {
         var novelList = novelService.getRelatedList(nid, num);
         return Result.success(novelList);
+    }
+
+    @Operation(summary = "获取可用tags")
+    @GetMapping("available-tags")
+    public Result<List<NovelTags>> getAvailableTags() {
+        var tags = novelService.getAvailableTags(); // 非空
+        return Result.success(tags);
+    }
+
+    @Operation(summary = "查找tags")
+    @GetMapping("tags")
+    public Result<List<NovelTags>> searchTags(
+            @NotBlank @Schema(description = "标签名") @Length(min = 1, max = DTOConstant.STRING_LENGTH_MAX) String tagName
+    ) {
+        var tags = novelService.searchTags(tagName);
+        return Result.success(tags);
+    }
+
+    @Operation(summary = "获取热门tags")
+    @GetMapping("hot-tags")
+    public Result<List<NovelTags>> getHotTags() {
+        var tags = novelExtService.getHotTags("week");
+        return Result.success(tags);
+    }
+
+    @Operation(summary = "获取tags对应的小说列表")
+    @GetMapping("get-by-tags")
+    public Result<PageVO<NovelInfoVO>> getNovelInfoVOByTagIds(
+            @NotEmpty int[] tagIds,
+            @NotNull @Schema(description = "页码") @Min(1) Integer page,
+            @NotNull @Schema(description = "每页数量") @Min(0) Integer pageSize
+    ) {
+        var result = novelService.getNovelInfoVOByTagIds(tagIds, page, pageSize);
+        return Result.success(result);
     }
 }

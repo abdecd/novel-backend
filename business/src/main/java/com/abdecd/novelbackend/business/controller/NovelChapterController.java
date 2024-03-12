@@ -1,6 +1,7 @@
 package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.AddNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.DeleteNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.UpdateNovelChapterDTO;
@@ -16,6 +17,8 @@ import com.abdecd.tokenlogin.common.context.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,17 +54,22 @@ public class NovelChapterController {
     public Result<NovelChapterVO> getNovelChapter(
             @NotNull @Schema(description = "小说id") Integer nid,
             @NotNull @Schema(description = "卷num") Integer vNum,
-            @NotNull @Schema(description = "章num") Integer cNum
+            @NotNull @Schema(description = "章num") Integer cNum,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        // todo 使用 http 缓存
-        var novelChapter = novelChapterService.getNovelChapter(nid, vNum, cNum);
+        var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
+        if (currentLocalDateTime == null) return Result.success(null);
         // 更新阅读记录
-        if (novelChapter != null) readerService.saveReaderHistory(
+        if (UserContext.getUserId() != null) readerService.saveReaderHistory(
                 UserContext.getUserId(),
-                novelChapter.getNovelId(),
-                novelChapter.getVolumeNumber(),
-                novelChapter.getChapterNumber()
+                nid,
+                vNum,
+                cNum
         );
+        if (HttpCacheUtils.tryUseCache(request, response, currentLocalDateTime)) return null;
+
+        var novelChapter = novelChapterService.getNovelChapterVO(nid, vNum, cNum);
         return Result.success(novelChapter);
     }
 
@@ -72,7 +80,7 @@ public class NovelChapterController {
         if (novelVolumeService.getNovelVolume(addNovelChapterDTO.getNovelId(), addNovelChapterDTO.getVolumeNumber()) == null)
             return Result.error(MessageConstant.NOVEL_VOLUME_NOT_FOUND);
         var novelChapterId = novelChapterService.addNovelChapter(addNovelChapterDTO);
-        return Result.success(novelChapterId+"");
+        return Result.success(novelChapterId + "");
     }
 
     @Async

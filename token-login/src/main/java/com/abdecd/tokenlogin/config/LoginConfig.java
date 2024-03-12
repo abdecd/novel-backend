@@ -17,14 +17,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class LoginConfig implements WebMvcConfigurer {
     @Autowired
     private LoginInterceptor loginInterceptor;
-    @Autowired
-    private AllProperties allProperties;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/**")
-                .excludePathPatterns(allProperties.getExcludePatterns());
+                .addPathPatterns("/**");
     }
 }
 

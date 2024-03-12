@@ -35,4 +35,9 @@ public interface ReaderHistoryMapper extends BaseMapper<ReaderHistory> {
     List<Integer> getRandomRankListByTagName(String tagName);
 
     List<Integer> getReaderFavoriteTagIds(Integer userId);
+
+    /**
+     * 前5个热门类型
+     */
+    List<Integer> getHotTagIds(LocalDateTime startTime, LocalDateTime endTime);
 }

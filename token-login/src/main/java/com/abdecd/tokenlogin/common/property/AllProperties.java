@@ -9,5 +9,6 @@ import org.springframework.stereotype.Component;
 @Data
 public class AllProperties {
     private Integer jwtTtlSeconds;
+    private Integer jwtRefreshTtlSeconds;
     private String[] excludePatterns;
 }

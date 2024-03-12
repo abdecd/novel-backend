@@ -4,6 +4,7 @@ import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
+import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -11,6 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -20,6 +22,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class NovelExtService {
@@ -63,6 +66,28 @@ public class NovelExtService {
      * @return :
      */
     public PageVO<NovelInfoVO> pageRankList(String timeType, String tagName, Integer page, Integer pageSize) {
+        var pair = getTimeFromTimeType(timeType);
+        LocalDateTime startTime = pair.getFirst();
+        LocalDateTime endTime = pair.getSecond();
+
+        List<Integer> list;
+        var self = SpringContextUtil.getBean(NovelExtService.class);
+        if (tagName == null) {
+            list = self.getRankList(startTime, endTime);
+        } else {
+            list = self.getRankListByTagName(tagName, startTime, endTime);
+        }
+        return new PageVO<NovelInfoVO>()
+                .setTotal(list.size())
+                .setRecords(list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize)).stream().parallel()
+                        .map(novelId -> novelService.getNovelInfoVO(novelId))
+                        .toList());
+    }
+
+    /**
+     * @param timeType day, week, month
+     */
+    public Pair<LocalDateTime, LocalDateTime> getTimeFromTimeType(String timeType) {
         var now = LocalDate.now();
         LocalDateTime startTime = now.atTime(4, 0);
         LocalDateTime endTime = now.atTime(4, 0);
@@ -78,25 +103,20 @@ public class NovelExtService {
             case "month" -> now.with(TemporalAdjusters.firstDayOfMonth()).atTime(4, 0);
             default -> endTime;
         };
-        List<Integer> list;
-        var self = SpringContextUtil.getBean(NovelExtService.class);
-        if (tagName == null) {
-            list = self.getRankList(startTime, endTime);
-        } else {
-            list = self.getRankListByTagName(tagName, startTime, endTime);
-        }
-        try {
-            return new PageVO<NovelInfoVO>()
-                    .setTotal(list.size())
-                    .setRecords(list.subList((page - 1) * pageSize, page * pageSize).stream().parallel()
-                        .map(novelId -> novelService.getNovelInfoVO(novelId))
-                        .toList()
-                    );
-        } catch (IndexOutOfBoundsException e) {
-            return new PageVO<NovelInfoVO>()
-                    .setTotal(list.size())
-                    .setRecords(new ArrayList<>());
-        }
+        return Pair.of(startTime, endTime);
+    }
+
+    /**
+     * @param timeType day, week, month
+     */
+    public List<NovelTags> getHotTags(String timeType) {
+        var pair = getTimeFromTimeType(timeType);
+        var tagIds = readerService.getHotTagIds(pair.getFirst(), pair.getSecond());
+        var tagList = novelService.getAvailableTags();
+        return tagIds.stream()
+                .map(id -> tagList.stream()
+                        .filter(obj -> Objects.equals(obj.getId(), id)).findFirst().orElseGet(() -> null))
+                .toList();
     }
 
     @Cacheable(value = "novelRankList#32", key = "#startTime.toString() + ':' + #endTime.toString()")

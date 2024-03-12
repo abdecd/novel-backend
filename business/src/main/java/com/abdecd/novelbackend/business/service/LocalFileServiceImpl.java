@@ -27,6 +27,7 @@ public class LocalFileServiceImpl implements FileService {
         var suffix = Objects.requireNonNull(file.getOriginalFilename()).substring(file.getOriginalFilename().lastIndexOf(".")).toLowerCase();
         var dest = new File(IMG_PATH + folder + "/" + UUID.randomUUID() + suffix);
         if (dest.exists()) throw new IOException("文件已存在");
+        // 保存文件
         dest.getParentFile().mkdirs();
         file.transferTo(dest);
         log.info("当前线程：{}", Thread.currentThread().getName());
@@ -72,10 +73,29 @@ public class LocalFileServiceImpl implements FileService {
         if (file.exists()) file.delete();
     }
 
+    public void clearTmpImg(Integer ttl) throws IOException {
+        if (IMG_PATH.equals("empty")) return;
+        var tmpDir = new File(IMG_PATH + "/img/tmp");
+        if (tmpDir.exists()) {
+            var files = tmpDir.listFiles();
+            if (files != null) {
+                for (var file : files) {
+                    var fileTime = Files.getLastModifiedTime(file.toPath()).toMillis();
+                    var now = System.currentTimeMillis();
+                    if (now - fileTime > ttl * 1000) {
+                        log.info("删除过期文件:{}", file.getAbsolutePath());
+                        file.delete();
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public void viewImg(String path, HttpServletResponse response) throws IOException {
         if (IMG_PATH.equals("empty")) return;
         response.setContentType("image/jpeg");
+        response.setHeader("Cache-Control", "public, max-age=31536000");
         var file = new File(IMG_PATH + path);
         Files.copy(file.toPath(), response.getOutputStream());
     }
