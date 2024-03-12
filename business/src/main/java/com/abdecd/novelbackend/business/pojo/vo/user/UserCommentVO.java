@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 @Data
 public class UserCommentVO {
     private Long id;
-    private Integer userId;
+    private UserCommentVOBasic.UserDetail userDetail;
     private Long toId;
-    private Integer toUserId;
+    private UserCommentVOBasic.UserDetail toUserDetail;
     private String content;
     private LocalDateTime timestamp;
 }

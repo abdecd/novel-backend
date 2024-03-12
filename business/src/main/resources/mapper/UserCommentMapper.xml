@@ -1,13 +1,41 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.abdecd.novelbackend.business.mapper.UserCommentMapper">
+    <resultMap id="listCommentVOByNovelIdResultMap" type="com.abdecd.novelbackend.business.pojo.vo.user.UserCommentVOBasic">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="to_id" property="toId"/>
+        <result column="to_user_id" property="toUserId"/>
+        <result column="content" property="content"/>
+        <result column="timestamp" property="timestamp"/>
+        <result column="status" property="status"/>
+        <association property="userDetail">
+            <result column="user_id" property="id"/>
+            <result column="user_nickname" property="nickname"/>
+            <result column="user_avatar" property="avatar"/>
+        </association>
+        <association property="toUserDetail">
+            <result column="to_user_id" property="id"/>
+            <result column="to_user_nickname" property="nickname"/>
+            <result column="to_user_avatar" property="avatar"/>
+        </association>
+    </resultMap>
     <select id="listCommentVOByNovelId"
-            resultType="com.abdecd.novelbackend.business.pojo.vo.user.UserCommentVO">
-        SELECT uc.id, uc.user_id, uc.to_id, uc.content, uc.timestamp,
-               uc2.user_id AS to_user_id
+            resultMap="listCommentVOByNovelIdResultMap">
+        SELECT uc.id, uc.user_id, uc.to_id, uc.content, uc.timestamp, uc.status,
+               uc2.user_id AS to_user_id,
+               u.nickname AS user_nickname, u2.nickname AS to_user_nickname,
+               u.avatar AS user_avatar, u2.avatar AS to_user_avatar
         FROM user_comment uc
             LEFT JOIN user_comment uc2 ON uc.to_id = uc2.id
-        WHERE uc.novel_id = #{novelId} AND uc.status = #{status}
+            LEFT JOIN reader_detail u ON uc.user_id = u.user_id
+            LEFT JOIN reader_detail u2 ON uc2.user_id = u2.user_id
+        <where>
+            AND uc.novel_id = #{novelId}
+            <if test="status != null">
+                AND uc.status = #{status}
+            </if>
+        </where>
         ORDER BY uc.id ASC
     </select>
 </mapper>
