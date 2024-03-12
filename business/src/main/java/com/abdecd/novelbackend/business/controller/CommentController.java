@@ -5,6 +5,7 @@ import com.abdecd.novelbackend.business.pojo.dto.user.AddCommentDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.DeleteCommentDTO;
 import com.abdecd.novelbackend.business.pojo.vo.user.UserCommentVO;
 import com.abdecd.novelbackend.business.service.CommentService;
+import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +31,7 @@ public class CommentController {
     @Autowired
     private CommentService commentService;
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, LocalDateTime> redisTemplate;
 
     @Operation(summary = "获取评论")
     @GetMapping("")
@@ -41,7 +42,7 @@ public class CommentController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        if (HttpCacheUtils.tryUseCache(request, response, (LocalDateTime) redisTemplate.opsForValue().get(CommentService.COMMENT_FOR_NOVEL_TIMESTAMP + novelId))) return null;
+        if (HttpCacheUtils.tryUseCache(request, response, redisTemplate.opsForValue().get(RedisConstant.COMMENT_FOR_NOVEL_TIMESTAMP + novelId))) return null;
         return Result.success(commentService.getComment(novelId, page, pageSize));
     }
 

@@ -11,6 +11,7 @@ import java.util.List;
 @Mapper
 public interface ReaderHistoryMapper extends BaseMapper<ReaderHistory> {
     List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, Long startId, Integer pageSize, Byte enableStatus);
+    ReaderHistoryVO getReaderHistoryVO(Long id);
 
     List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Long startId, Integer pageSize, Byte enableStatus);
 

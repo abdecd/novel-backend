@@ -117,4 +117,14 @@
         ORDER BY COUNT(nat.tag_id) DESC
         LIMIT 5
     </select>
+    <select id="getReaderHistoryVO"
+            resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO">
+        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp,
+            ni.title as novelTitle, ni.author, ni.cover,
+            nc.title as chapterTitle
+        FROM reader_history rh
+        LEFT JOIN novel_info ni ON rh.novel_id = ni.id
+        LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
+        WHERE rh.id = #{id}
+    </select>
 </mapper>
