@@ -6,6 +6,7 @@ import com.abdecd.novelbackend.business.mapper.UserCommentMapper;
 import com.abdecd.novelbackend.business.pojo.dto.user.AddCommentDTO;
 import com.abdecd.novelbackend.business.pojo.entity.UserComment;
 import com.abdecd.novelbackend.business.pojo.vo.user.UserCommentVO;
+import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -27,8 +28,7 @@ public class CommentService {
     @Autowired
     private UserCommentMapper userCommentMapper;
     @Autowired
-    private RedisTemplate redisTemplate;
-    public static final String COMMENT_FOR_NOVEL_TIMESTAMP = "commmentForNovelId::";
+    private RedisTemplate<String, LocalDateTime> redisTemplate;
 
     public PageVO<List<UserCommentVO>> getComment(Integer novelId, Integer page, Integer pageSize) {
         var commentService = SpringContextUtil.getBean(CommentService.class);
@@ -52,7 +52,9 @@ public class CommentService {
             unionFind.union(Math.toIntExact(userComment.getId()), Math.toIntExact(userComment.getToId()));
         }
         // 记录小说评论区时间戳
-        redisTemplate.opsForValue().set(COMMENT_FOR_NOVEL_TIMESTAMP + novelId, lastModified);
+        if (lastModified != null) {
+            redisTemplate.opsForValue().set(RedisConstant.COMMENT_FOR_NOVEL_TIMESTAMP + novelId, lastModified);
+        }
 
         var result = new LinkedHashMap<Integer, List<UserCommentVO>>();
         for (var userComment : allComments) {
@@ -87,7 +89,7 @@ public class CommentService {
         );
         if (beCommented == null) return (long) -1;
         userCommentMapper.insert(userComment);
-        redisTemplate.opsForValue().set(COMMENT_FOR_NOVEL_TIMESTAMP + userComment.getNovelId(), userComment.getTimestamp());
+        redisTemplate.opsForValue().set(RedisConstant.COMMENT_FOR_NOVEL_TIMESTAMP + userComment.getNovelId(), userComment.getTimestamp());
         return userComment.getId();
     }
 
@@ -104,7 +106,7 @@ public class CommentService {
                     .select(UserComment::getNovelId, UserComment::getTimestamp)
                     .eq(UserComment::getId, id)
             );
-            redisTemplate.opsForValue().set(COMMENT_FOR_NOVEL_TIMESTAMP + obj.getNovelId(), obj.getTimestamp());
+            redisTemplate.opsForValue().set(RedisConstant.COMMENT_FOR_NOVEL_TIMESTAMP + obj.getNovelId(), obj.getTimestamp());
         }
     }
 
