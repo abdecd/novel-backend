@@ -182,7 +182,8 @@ public class NovelService {
 
     @Cacheable(value = "getAvailableTags") // 不会过期
     public List<NovelTags> getAvailableTags() {
-        return novelTagsMapper.selectList(new LambdaQueryWrapper<>());
+        return novelTagsMapper.selectList(new LambdaQueryWrapper<NovelTags>()
+                .orderByAsc(NovelTags::getId));
     }
 
     public PageVO<NovelInfoVO> getNovelInfoVOByTagIds(int[] tagIds, Integer page, Integer pageSize) {
@@ -198,5 +199,17 @@ public class NovelService {
                         .map(novelService::getNovelInfoVO)
                         .toList()
                 );
+    }
+
+    public List<NovelTags> searchTags(String tagName) {
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        var tags = novelService.getAvailableTags();
+        List<NovelTags> result = new ArrayList<>();
+        for (var tag : tags) {
+            if (tag.getTagName().contains(tagName)) {
+                result.add(tag);
+            }
+        }
+        return result;
     }
 }
