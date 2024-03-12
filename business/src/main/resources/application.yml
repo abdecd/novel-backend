@@ -31,3 +31,4 @@ token-login:
     - /novel/chapter
     - /novel/hot-tags
     - /novel/contents
+    - /novel
