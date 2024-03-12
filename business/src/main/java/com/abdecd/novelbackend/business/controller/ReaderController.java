@@ -111,7 +111,7 @@ public class ReaderController {
     @Operation(summary = "删除用户阅读历史")
     @PostMapping("history/delete")
     public Result<String> deleteReaderHistory(@RequestBody @Valid DeleteReaderHistoryDTO deleteReaderHistoryDTO) {
-        readerService.deleteReaderHistory(UserContext.getUserId(), deleteReaderHistoryDTO.getIds());
+        readerService.deleteReaderHistory(UserContext.getUserId(), deleteReaderHistoryDTO.getNovelIds());
         return Result.success();
     }
 }

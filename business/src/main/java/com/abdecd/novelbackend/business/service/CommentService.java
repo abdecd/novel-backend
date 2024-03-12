@@ -38,7 +38,7 @@ public class CommentService {
     }
 
     // 太大不缓存
-    @Cacheable(value = "getCommentsByNovelId", key = "#novelId", unless = "#result == null || #result.flatMap(List::stream).collect(Collectors.counting()) > 500")
+    @Cacheable(value = "getCommentsByNovelId", key = "#novelId", unless = "#result == null || #root.target.getCommentSize(#result) > 500")
     public List<List<UserCommentVO>> getCommentsByNovelId(Integer novelId) {
         var allComments = userCommentMapper.listCommentVOByNovelId(novelId, StatusConstant.ENABLE);
         if (allComments.isEmpty()) return null;
@@ -70,6 +70,10 @@ public class CommentService {
             }
         }
         return new ArrayList<>(result.values());
+    }
+
+    public Integer getCommentSize(List<List<UserCommentVO>> comments) {
+        return comments.stream().mapToInt(List::size).sum();
     }
 
     @CacheEvict(value = "getCommentsByNovelId", key = "#addCommentDTO.novelId")

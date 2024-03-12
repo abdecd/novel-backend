@@ -126,11 +126,11 @@ public class ReaderService {
         return readerHistoryMapper.listReaderHistoryByNovel(userId, novelId, startId, pageSize, StatusConstant.ENABLE);
     }
 
-    public void deleteReaderHistory(Integer userId, long[] idsRaw) {
-        var ids = Arrays.stream(idsRaw).boxed().toArray(Long[]::new);
+    public void deleteReaderHistory(Integer userId, int[] novelIdsRaw) {
+        var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
         readerHistoryMapper.update(new LambdaUpdateWrapper<ReaderHistory>()
                 .eq(ReaderHistory::getUserId, userId)
-                .in(ReaderHistory::getId, (Object[]) ids)
+                .in(ReaderHistory::getNovelId, (Object[]) novelIds)
                 .set(ReaderHistory::getStatus, StatusConstant.DISABLE)
         );
     }
