@@ -6,12 +6,14 @@ import com.abdecd.novelbackend.business.mapper.UserCommentMapper;
 import com.abdecd.novelbackend.business.pojo.dto.user.AddCommentDTO;
 import com.abdecd.novelbackend.business.pojo.entity.UserComment;
 import com.abdecd.novelbackend.business.pojo.vo.user.UserCommentVO;
+import com.abdecd.novelbackend.business.pojo.vo.user.UserCommentVOBasic;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -22,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class CommentService {
@@ -40,7 +43,7 @@ public class CommentService {
     // 太大不缓存
     @Cacheable(value = "getCommentsByNovelId", key = "#novelId", unless = "#result == null || #root.target.getCommentSize(#result) > 500")
     public List<List<UserCommentVO>> getCommentsByNovelId(Integer novelId) {
-        var allComments = userCommentMapper.listCommentVOByNovelId(novelId, StatusConstant.ENABLE);
+        var allComments = userCommentMapper.listCommentVOByNovelId(novelId, null);
         if (allComments.isEmpty()) return null;
 
         var unionFind = new UnionFind(Math.toIntExact(allComments.getLast().getId()) + 1);
@@ -56,8 +59,9 @@ public class CommentService {
             redisTemplate.opsForValue().set(RedisConstant.COMMENT_FOR_NOVEL_TIMESTAMP + novelId, lastModified);
         }
 
-        var result = new LinkedHashMap<Integer, List<UserCommentVO>>();
+        var result = new LinkedHashMap<Integer, List<UserCommentVOBasic>>();
         for (var userComment : allComments) {
+            if (Objects.equals(userComment.getStatus(), StatusConstant.DISABLE)) continue;
             // 根评论已建立，直接附加
             if (result.containsKey(unionFind.find(Math.toIntExact(userComment.getId())))) {
                 result.get(unionFind.find(Math.toIntExact(userComment.getId()))).add(userComment);
@@ -66,12 +70,18 @@ public class CommentService {
                 // 第一个一般是根评论（最早）
                 // 不是根评论说明根评论删掉了，整块不显示
                 if (userComment.getToId() != -1) continue;
-                ArrayList<UserCommentVO> list = new ArrayList<>();
+                ArrayList<UserCommentVOBasic> list = new ArrayList<>();
                 list.add(userComment);
                 result.put(unionFind.find(Math.toIntExact(userComment.getId())), list);
             }
         }
-        return new ArrayList<>(result.values());
+        return new ArrayList<>(result.values()
+                .stream().map(list -> list.stream().map(item -> {
+                        var UserCommentVO = new UserCommentVO();
+                        BeanUtils.copyProperties(item, UserCommentVO);
+                        return UserCommentVO;
+                    }).toList()
+                ).toList());
     }
 
     public Integer getCommentSize(List<List<UserCommentVO>> comments) {
@@ -82,12 +92,14 @@ public class CommentService {
     public Long addComment(AddCommentDTO addCommentDTO) {
         var userComment = addCommentDTO.toEntity();
         // 检查评论的id是否在这本小说中
-        var beCommented = userCommentMapper.selectOne(new LambdaQueryWrapper<UserComment>()
-                .eq(UserComment::getId, userComment.getToId())
-                .eq(UserComment::getNovelId, userComment.getNovelId())
-                .eq(UserComment::getStatus, StatusConstant.ENABLE)
-        );
-        if (beCommented == null) return (long) -1;
+        if (addCommentDTO.getToId() != -1) {
+            var beCommented = userCommentMapper.selectOne(new LambdaQueryWrapper<UserComment>()
+                    .eq(UserComment::getId, userComment.getToId())
+                    .eq(UserComment::getNovelId, userComment.getNovelId())
+                    .eq(UserComment::getStatus, StatusConstant.ENABLE)
+            );
+            if (beCommented == null) return (long) -1;
+        }
         userCommentMapper.insert(userComment);
         redisTemplate.opsForValue().set(RedisConstant.COMMENT_FOR_NOVEL_TIMESTAMP + userComment.getNovelId(), userComment.getTimestamp());
         return userComment.getId();

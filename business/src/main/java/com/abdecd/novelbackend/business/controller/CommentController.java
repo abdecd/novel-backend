@@ -11,7 +11,6 @@ import com.abdecd.novelbackend.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -37,7 +36,7 @@ public class CommentController {
     @GetMapping("")
     public Result<PageVO<List<UserCommentVO>>> getComment(
             @NotNull @Schema(description = "小说id") Integer novelId,
-            @Nullable @Schema(description = "页码") @Min(1) Integer page,
+            @NotNull @Schema(description = "页码") @Min(1) Integer page,
             @NotNull @Schema(description = "每页数量") @Min(0) Integer pageSize,
             HttpServletRequest request,
             HttpServletResponse response
