@@ -58,7 +58,7 @@ public class NovelChapterController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum).getTimestamp();
+        var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
         if (currentLocalDateTime == null) return Result.success(null);
         // 更新阅读记录
         if (UserContext.getUserId() != null) readerService.saveReaderHistory(

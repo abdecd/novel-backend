@@ -114,7 +114,8 @@ public class NovelExtService {
         var tagIds = readerService.getHotTagIds(pair.getFirst(), pair.getSecond());
         var tagList = novelService.getAvailableTags();
         return tagIds.stream()
-                .map(id -> tagList.stream().filter(obj -> Objects.equals(obj.getId(), id)).findFirst().orElseGet(() -> null))
+                .map(id -> tagList.stream()
+                        .filter(obj -> Objects.equals(obj.getId(), id)).findFirst().orElseGet(() -> null))
                 .toList();
     }
 

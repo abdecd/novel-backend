@@ -30,9 +30,9 @@ public class CommentController {
     public Result<PageVO<List<UserCommentVO>>> getComment(
             @NotNull @Schema(description = "小说id") Integer novelId,
             @Nullable @Schema(description = "起始根评论id") @Min(0) Long startId,
-            @NotNull @Schema(description = "评论块数量") @Min(0) Integer pageSize
+            @NotNull @Schema(description = "评论块数量") @Min(0) Integer pageNum
     ) {
-        return Result.success(commentService.getComment(novelId, startId, pageSize));
+        return Result.success(commentService.getComment(novelId, startId, pageNum));
     }
 
     @Operation(summary = "添加评论")
