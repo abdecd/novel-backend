@@ -1,10 +1,12 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.pojo.dto.common.VerifyEmailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.common.CaptchaVO;
 import com.abdecd.novelbackend.business.service.CommonService;
 import com.abdecd.novelbackend.business.service.FileService;
 import com.abdecd.novelbackend.common.result.Result;
+import com.abdecd.tokenlogin.common.context.UserContext;
 import com.abdecd.tokenlogin.service.UserBaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,12 +17,14 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.support.atomic.RedisAtomicInteger;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -69,6 +73,13 @@ public class CommonController {
     @PostMapping("/upload")
     public CompletableFuture<Result<String>> uploadImg(@RequestParam MultipartFile file) {
         try {
+            if (file.isEmpty()) return CompletableFuture.completedFuture(Result.error("文件为空"));
+            if (file.getSize() > 1024 * 1024 * 5) throw new BaseException("文件过大");
+            // 300次/天
+            var key = "limitUploadImg:" + UserContext.getUserId();
+            RedisAtomicInteger redisAtomicInteger = new RedisAtomicInteger(key, Objects.requireNonNull(redisTemplate.getConnectionFactory()));
+            if (redisAtomicInteger.get() == 0) redisAtomicInteger.expire(1, TimeUnit.DAYS);
+            if (redisAtomicInteger.incrementAndGet() > 300) return CompletableFuture.completedFuture(Result.error("图片上传次数达到上限"));
             return CompletableFuture.completedFuture(Result.success(fileService.uploadTmpImg(file)));
         } catch (IOException e) {
             log.warn("上传失败", e);
