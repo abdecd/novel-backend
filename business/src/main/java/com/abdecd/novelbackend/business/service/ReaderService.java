@@ -159,7 +159,7 @@ public class ReaderService {
                     tmpList = readerHistoryMapper.listReaderHistoryVO(uid, willStartId, RedisConstant.READER_HISTORY_SIZE - list.size() + 1, StatusConstant.ENABLE);
                     tmpList.removeFirst();
                 }
-                redisTemplate.opsForList().rightPushAll(RedisConstant.READER_HISTORY + uid, tmpList);
+                if (!tmpList.isEmpty()) redisTemplate.opsForList().rightPushAll(RedisConstant.READER_HISTORY + uid, tmpList);
             }
             var startIndex = 0;
             if (startId != null) {

@@ -163,11 +163,26 @@ public class NovelService {
         var tagIds = readerService.getTagIdsByNovelId(nid);
         if (tagIds.isEmpty()) return new ArrayList<>();
 
-        List<Integer> novelIdsList = new ArrayList<>(readerService.getNovelIdsByTagId(tagIds.getFirst()));
-        for (int i = 1; i < tagIds.size(); i++) {
+        List<Integer> maxList = new ArrayList<>();
+        var maxTagId = -1;
+        for (Integer tagId : tagIds) {
+            var tmpList = readerService.getNovelIdsByTagId(tagId);
+            if (maxList.size() < tmpList.size()) {
+                maxList = tmpList;
+                maxTagId = tagId;
+            }
+        }
+        if (maxList.size() <= num) return maxList.stream().parallel()
+                .map(this::getNovelInfoVO)
+                .toList();
+        List<Integer> novelIdsList = new ArrayList<>(maxList);
+        for (var tagId : tagIds) {
+            if (tagId == maxTagId) continue;
             if (Math.random() > 0.5) continue;
-            var tmp = readerService.getNovelIdsByTagId(tagIds.get(i));
-            novelIdsList = novelIdsList.stream().parallel().filter(tmp::contains).toList();
+            var tmp = readerService.getNovelIdsByTagId(tagId);
+            var willBeNew = novelIdsList.stream().parallel().filter(tmp::contains).toList();
+            if (willBeNew.size() < num) continue;
+            novelIdsList = willBeNew;
         }
         List<Integer> novelIds = new ArrayList<>(novelIdsList);
         novelIds.remove((Object) nid);
