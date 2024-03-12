@@ -1,6 +1,10 @@
 spring:
   profiles:
     active: dev
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 6MB
 novel:
   ttl:
     captcha-ttl-seconds: 300
