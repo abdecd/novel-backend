@@ -28,6 +28,9 @@ public class UserController {
     public Result<String> login(@RequestBody @Valid LoginDTO loginDTO) {
         commonService.verifyCaptcha(loginDTO.getVerifyCodeId(), loginDTO.getCaptcha());
         var user = userService.login(loginDTO);
+        if (user == null) {
+            return Result.error("账号或密码错误");
+        }
         var token = userService.generateUserToken(user);
         return Result.success(token);
     }
