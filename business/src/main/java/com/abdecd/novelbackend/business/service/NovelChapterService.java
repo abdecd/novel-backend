@@ -16,6 +16,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -34,8 +35,13 @@ public class NovelChapterService {
     }
 
     @Cacheable(value = "getNovelChapterVOOnlyTimestamp", key = "#nid + ':' + #vNum + ':' + #cNum", unless="#result == null")
-    public NovelChapterVO getNovelChapterVOOnlyTimestamp(Integer nid, Integer vNum, Integer cNum) {
-        return novelChapterMapper.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
+    public LocalDateTime getNovelChapterVOOnlyTimestamp(Integer nid, Integer vNum, Integer cNum) {
+        var novelChapterVO = novelChapterMapper.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
+        if (novelChapterVO == null) {
+            return null;
+        } else {
+            return novelChapterVO.getTimestamp();
+        }
     }
 
     public NovelChapterVO getNovelChapterVO(Integer nid, Integer vNum, Integer cNum) {

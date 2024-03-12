@@ -1,7 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
-import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
@@ -17,8 +16,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -27,7 +24,6 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Tag(name = "小说接口")
@@ -81,21 +77,10 @@ public class NovelController {
     @Operation(summary = "获取小说目录")
     @GetMapping("contents")
     public Result<ContentsVO> getContents(
-            @NotNull @Schema(description = "小说id") Integer nid,
-            HttpServletRequest request,
-            HttpServletResponse response
+            @NotNull @Schema(description = "小说id") Integer nid
     ) {
         var contentsVO = novelService.getContents(nid);
         if (contentsVO == null) return Result.success(null);
-        LocalDateTime localDateTime = null;
-        for (var entry : contentsVO.entrySet()) {
-            var novelChapterList = entry.getValue();
-            for (var novelChapter : novelChapterList) {
-                if (localDateTime == null || novelChapter.getTimestamp().isAfter(localDateTime))
-                    localDateTime = novelChapter.getTimestamp();
-            }
-        }
-        if (HttpCacheUtils.tryUseCache(request, response, localDateTime)) return null;
         return Result.success(contentsVO);
     }
 

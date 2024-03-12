@@ -19,25 +19,24 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class CommentService {
     @Autowired
     private UserCommentMapper userCommentMapper;
 
-    public PageVO<List<UserCommentVO>> getComment(Integer novelId, Long startId, Integer pageSize) {
+    public PageVO<List<UserCommentVO>> getComment(Integer novelId, Long startId, Integer pageNum) {
         var commentService = SpringContextUtil.getBean(CommentService.class);
         var userCommentList = commentService.getCommentsByNovelId(novelId);
         if (userCommentList == null) return new PageVO<>(0, new ArrayList<>());
         var startIndex = 0;
         if (startId != null) for (var i = 0; i < userCommentList.size(); i++) {
-            if (Objects.equals(userCommentList.get(i).getFirst().getId(), startId)) {
+            if (userCommentList.get(i).getFirst().getId() >= startId) {
                 startIndex = i;
                 break;
             }
         }
-        return new PageVO<>(userCommentList.size(), userCommentList.subList(startIndex, Math.min(userCommentList.size(), startIndex + pageSize)));
+        return new PageVO<>(userCommentList.size(), userCommentList.subList(startIndex, Math.min(userCommentList.size(), startIndex + pageNum)));
     }
 
     @Cacheable(value = "getCommentsByNovelId", key = "#novelId", unless = "#result == null")
