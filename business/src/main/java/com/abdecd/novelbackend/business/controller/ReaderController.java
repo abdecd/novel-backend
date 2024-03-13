@@ -97,7 +97,7 @@ public class ReaderController {
 
     @Operation(summary = "获取用户阅读历史")
     @GetMapping("history")
-    public Result<List<ReaderHistoryVO>> getReaderHistory(
+    public Result<PageVO<ReaderHistoryVO>> getReaderHistory(
             @NotNull @Schema(description = "页码") Integer page,
             @NotNull @Schema(description = "每页数量") Integer pageSize,
             HttpServletRequest request,
