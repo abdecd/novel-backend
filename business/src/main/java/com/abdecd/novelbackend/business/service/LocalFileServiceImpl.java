@@ -38,7 +38,7 @@ public class LocalFileServiceImpl implements FileService {
 
     @Override
     public String uploadTmpImg(MultipartFile file) throws IOException {
-        return basicUpload(file, "/img/tmp");
+        return basicUpload(file, "/tmp");
     }
 
     @Override
@@ -47,19 +47,18 @@ public class LocalFileServiceImpl implements FileService {
     }
 
     @Override
-    public String changeTmpImgToStatic(String fullTmpFilePath) {
-        // /img/tmp/xxx  ->  /img/xxx
+    public String changeTmpImgToStatic(String fullTmpFilePath, String folder) {
+        // /tmp/xxx  ->  folder/xxx
         if (IMG_PATH.equals("empty")) return "";
+        if (folder == null || folder.isEmpty()) folder = "/img";
         if (!fullTmpFilePath.startsWith(URL_PREFIX)) return "";
         var tmpFilePath = fullTmpFilePath.substring(URL_PREFIX.length());
-        if (!tmpFilePath.startsWith("/img/tmp/")) return "";
+        if (!tmpFilePath.startsWith("/tmp/")) return "";
         var oldPath = IMG_PATH + tmpFilePath;
-        var newPath = IMG_PATH + "/img" + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"));
+        var newPath = IMG_PATH + folder + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"));
         var tmp = new File(oldPath);
-        // 适配前端
-        return URL_PREFIX + (tmp.renameTo(new File(newPath)) ?
-                "/img" + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"))
-                : tmpFilePath);
+        if (!tmp.renameTo(new File(newPath))) return "";
+        return URL_PREFIX + folder + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"));
     }
 
     @Override
@@ -67,15 +66,14 @@ public class LocalFileServiceImpl implements FileService {
         if (IMG_PATH.equals("empty")) return;
         if (!path.startsWith(URL_PREFIX)) return;
         var tmpFilePath = path.substring(URL_PREFIX.length());
-        if (!tmpFilePath.startsWith("/img/")) return;
         var oldPath = IMG_PATH + tmpFilePath;
         var file = new File(oldPath);
-        if (file.exists()) file.delete();
+        if (file.exists() && file.isFile()) file.delete();
     }
 
     public void clearTmpImg(Integer ttl) throws IOException {
         if (IMG_PATH.equals("empty")) return;
-        var tmpDir = new File(IMG_PATH + "/img/tmp");
+        var tmpDir = new File(IMG_PATH + "/tmp");
         if (tmpDir.exists()) {
             var files = tmpDir.listFiles();
             if (files != null) {

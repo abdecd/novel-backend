@@ -21,4 +21,9 @@ public @interface UseFileService {
      * 上传文件的路径属性名
      */
     String[] value();
+
+    /**
+     * 目标转正文件夹
+     */
+    String folder() default "";
 }

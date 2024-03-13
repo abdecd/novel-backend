@@ -36,7 +36,7 @@ public class FileAspect {
                 String img = (String) getMethod.invoke(arg);
 
                 if (img != null) {
-                    img = fileService.changeTmpImgToStatic(img);
+                    img = fileService.changeTmpImgToStatic(img, useFileService.folder());
                     // 转正成功，换新链接
                     Method setMethod = useFileService.param().getMethod("set"+suffix, String.class);
                     if (!img.isEmpty()) setMethod.invoke(arg, img);

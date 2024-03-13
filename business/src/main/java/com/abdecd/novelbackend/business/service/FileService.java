@@ -30,12 +30,13 @@ public interface FileService {
      * @param tmpPath url
      * @return url
      */
-    default String changeTmpImgToStatic(String tmpPath) {
+    default String changeTmpImgToStatic(String tmpPath, String folder) {
         throw new RuntimeException("未实现");
     }
 
     /**
      * 图片删除
+     * Dangerous
      * @param path url
      */
     default void deleteImg(String path) {
