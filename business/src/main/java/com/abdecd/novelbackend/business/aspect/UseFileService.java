@@ -26,4 +26,9 @@ public @interface UseFileService {
      * 目标转正文件夹
      */
     String folder() default "";
+
+    /**
+     * 转正失败直接抛出异常
+     */
+    boolean strict() default true;
 }

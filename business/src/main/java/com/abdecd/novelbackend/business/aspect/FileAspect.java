@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.aspect;
 
+import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.service.FileService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
@@ -36,11 +38,18 @@ public class FileAspect {
                 String img = (String) getMethod.invoke(arg);
 
                 if (img != null) {
-                    img = fileService.changeTmpImgToStatic(img, useFileService.folder());
+                    try {
+                        img = fileService.changeTmpImgToStatic(img, useFileService.folder());
+                    } catch (IOException e) {
+                        throw new BaseException("图片链接异常");
+                    }
                     // 转正成功，换新链接
                     Method setMethod = useFileService.param().getMethod("set"+suffix, String.class);
                     if (!img.isEmpty()) setMethod.invoke(arg, img);
-                    else img = null;
+                    else {
+                        if (useFileService.strict()) throw new BaseException("图片链接异常");
+                        img = null;
+                    }
                 }
                 if (img != null) imgList.add(img);
             }

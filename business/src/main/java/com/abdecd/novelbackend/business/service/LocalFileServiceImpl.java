@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.service;
 
+import com.abdecd.tokenlogin.common.context.UserContext;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,15 @@ public class LocalFileServiceImpl implements FileService {
     @Value("${novel.local-file-service.url-prefix:empty}")
     private String URL_PREFIX;
 
+    public static final String TMP_FOLDER_BASE = "/tmp";
+    public static String getTmpFolder() {
+        return TMP_FOLDER_BASE + "/user" + UserContext.getUserId();
+    }
+
+    public static String getImgFolder() {
+        return "/img" + "/user" + UserContext.getUserId();
+    }
+
     private String basicUpload(MultipartFile file, String folder) throws IOException {
         if (IMG_PATH.equals("empty")) return "";
         var suffix = Objects.requireNonNull(file.getOriginalFilename()).substring(file.getOriginalFilename().lastIndexOf(".")).toLowerCase();
@@ -38,26 +48,28 @@ public class LocalFileServiceImpl implements FileService {
 
     @Override
     public String uploadTmpImg(MultipartFile file) throws IOException {
-        return basicUpload(file, "/tmp");
+        return basicUpload(file, getTmpFolder());
     }
 
     @Override
     public String uploadImg(MultipartFile file) throws IOException {
-        return basicUpload(file, "/img");
+        return basicUpload(file, getImgFolder());
     }
 
     @Override
-    public String changeTmpImgToStatic(String fullTmpFilePath, String folder) {
-        // /tmp/xxx  ->  folder/xxx
+    public String changeTmpImgToStatic(String fullTmpFilePath, String folder) throws IOException {
+        // getTmpFolder()/xxx  ->  folder/xxx
         if (IMG_PATH.equals("empty")) return "";
-        if (folder == null || folder.isEmpty()) folder = "/img";
+        if (folder == null || folder.isEmpty()) folder = getImgFolder();
         if (!fullTmpFilePath.startsWith(URL_PREFIX)) return "";
         var tmpFilePath = fullTmpFilePath.substring(URL_PREFIX.length());
-        if (!tmpFilePath.startsWith("/tmp/")) return "";
+        if (!tmpFilePath.startsWith(getTmpFolder()+"/")) return "";
         var oldPath = IMG_PATH + tmpFilePath;
         var newPath = IMG_PATH + folder + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"));
         var tmp = new File(oldPath);
-        if (!tmp.renameTo(new File(newPath))) return "";
+        var newFile = new File(newPath);
+        newFile.getParentFile().mkdirs();
+        Files.move(tmp.toPath(), new File(newPath).toPath());
         return URL_PREFIX + folder + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"));
     }
 
@@ -71,18 +83,36 @@ public class LocalFileServiceImpl implements FileService {
         if (file.exists() && file.isFile()) file.delete();
     }
 
+    /**
+     * 清除过期的临时文件
+     * @param ttl 时长，单位秒
+     * @throws IOException :
+     */
     public void clearTmpImg(Integer ttl) throws IOException {
         if (IMG_PATH.equals("empty")) return;
-        var tmpDir = new File(IMG_PATH + "/tmp");
+        var tmpDir = new File(IMG_PATH + TMP_FOLDER_BASE);
         if (tmpDir.exists()) {
             var files = tmpDir.listFiles();
             if (files != null) {
                 for (var file : files) {
-                    var fileTime = Files.getLastModifiedTime(file.toPath()).toMillis();
-                    var now = System.currentTimeMillis();
-                    if (now - fileTime > ttl * 1000) {
-                        log.info("删除过期文件:{}", file.getAbsolutePath());
-                        file.delete();
+                    clearTmpImgBase(file, ttl);
+                }
+            }
+        }
+    }
+    private void clearTmpImgBase(File tmpDir, Integer ttl) throws IOException {
+        if (tmpDir.exists() && tmpDir.isDirectory()) {
+            var files = tmpDir.listFiles();
+            if (files != null) {
+                for (var file : files) {
+                    if (file.isDirectory()) clearTmpImgBase(file, ttl);
+                    else {
+                        var fileTime = Files.getLastModifiedTime(file.toPath()).toMillis();
+                        var now = System.currentTimeMillis();
+                        if (now - fileTime > ttl * 1000) {
+                            log.info("删除过期文件:{}", file.getAbsolutePath());
+                            file.delete();
+                        }
                     }
                 }
             }

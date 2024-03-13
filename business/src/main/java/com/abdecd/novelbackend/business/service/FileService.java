@@ -30,7 +30,7 @@ public interface FileService {
      * @param tmpPath url
      * @return url
      */
-    default String changeTmpImgToStatic(String tmpPath, String folder) {
+    default String changeTmpImgToStatic(String tmpPath, String folder) throws IOException {
         throw new RuntimeException("未实现");
     }
 

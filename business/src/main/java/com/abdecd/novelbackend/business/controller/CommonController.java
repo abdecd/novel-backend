@@ -74,7 +74,7 @@ public class CommonController {
     public CompletableFuture<Result<String>> uploadImg(@RequestParam MultipartFile file) {
         try {
             if (file.isEmpty()) return CompletableFuture.completedFuture(Result.error("文件为空"));
-            if (file.getSize() > 1024 * 1024 * 5) throw new BaseException("文件过大");
+            if (file.getSize() > 1024 * 1024 * 3) throw new BaseException("文件过大");
             // 300次/天
             var key = "limitUploadImg:" + UserContext.getUserId();
             RedisAtomicInteger redisAtomicInteger = new RedisAtomicInteger(key, Objects.requireNonNull(redisTemplate.getConnectionFactory()));
