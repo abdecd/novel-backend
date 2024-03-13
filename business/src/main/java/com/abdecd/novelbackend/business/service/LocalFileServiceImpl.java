@@ -29,7 +29,7 @@ public class LocalFileServiceImpl implements FileService {
     }
 
     public static String getImgFolder() {
-        return "/img" + "/user" + UserContext.getUserId();
+        return "/img";
     }
 
     private String basicUpload(MultipartFile file, String folder) throws IOException {
