@@ -5,6 +5,7 @@ import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
 import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
+import com.abdecd.novelbackend.business.pojo.vo.novel.HotNovelVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -165,5 +166,18 @@ public class NovelExtService {
             list.addAll(tmpList);
         }
         return list;
+    }
+
+    public List<HotNovelVO> getHotList(String week, Integer num) {
+        var tags = getHotTags("week");
+        var novelExtService = SpringContextUtil.getBean(NovelExtService.class);
+        var pair = novelExtService.getTimeFromTimeType(week);
+        return tags.stream().map(tag -> {
+            var list = novelExtService.getRankListByTagName(tag.getTagName(), pair.getFirst(), pair.getSecond());
+            return new HotNovelVO(tag, list
+                    .subList(0, Math.min(num, list.size()))
+                    .stream().parallel().map(id -> novelService.getNovelInfoVO(id))
+                    .toList());
+        }).toList();
     }
 }

@@ -1,5 +1,7 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
+import com.abdecd.novelbackend.business.pojo.vo.novel.HotNovelVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.service.NovelExtService;
 import com.abdecd.novelbackend.business.service.NovelService;
@@ -9,6 +11,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -33,18 +37,24 @@ public class NovelExtController {
             @NotNull @Schema(description = "时间类型，day日榜week周榜month月榜") String timeType,
             @Nullable @Schema(description = "小说类型") String tagName,
             @NotNull @Schema(description = "页码") @Min(1) Integer page,
-            @NotNull @Schema(description = "每页数量") @Min(0) Integer pageSize
+            @NotNull @Schema(description = "每页数量") @Min(0) Integer pageSize,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         var novelList = novelExtService.pageRankList(timeType, tagName, page, pageSize);
+        if (HttpCacheUtils.tryUseCache(request, response, novelList.hashCode())) return null;
         return Result.success(novelList);
     }
 
     @Operation(summary = "获取轮播小说列表")
     @GetMapping("carousel")
     public Result<List<NovelInfoVO>> getCarouselList(
-            @NotNull @Schema(description = "数量") @Min(1) @Max(20) Integer num
+            @NotNull @Schema(description = "数量") @Min(1) @Max(20) Integer num,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         var novelPageVO = novelExtService.pageRankList("month", null, 1, num);
+        if (HttpCacheUtils.tryUseCache(request, response, novelPageVO.hashCode())) return null;
         return Result.success(novelPageVO.getRecords());
     }
 
@@ -65,5 +75,17 @@ public class NovelExtController {
     ) {
         var novelList = novelService.getRelatedList(nid, num);
         return Result.success(novelList);
+    }
+
+    @Operation(summary = "获取热门小说块")
+    @GetMapping("hot")
+    public Result<List<HotNovelVO>> getHotList(
+            @NotNull @Schema(description = "每块数量") @Min(0) Integer num,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        var list = novelExtService.getHotList("week", num);
+        if (HttpCacheUtils.tryUseCache(request, response, list.hashCode())) return null;
+        return Result.success(list);
     }
 }
