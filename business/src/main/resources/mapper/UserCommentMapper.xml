@@ -38,4 +38,15 @@
         </where>
         ORDER BY uc.id ASC
     </select>
+    <select id="countRootCommentByNovelId" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM user_comment
+        <where>
+            AND novel_id = #{novelId}
+            AND to_id = -1
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
 </mapper>

@@ -10,4 +10,5 @@ import java.util.List;
 @Mapper
 public interface UserCommentMapper extends BaseMapper<UserComment> {
     List<UserCommentVOBasic> listCommentVOByNovelId(Integer novelId, Byte status);
+    Integer countRootCommentByNovelId(Integer novelId, Byte status);
 }

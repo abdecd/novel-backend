@@ -40,7 +40,7 @@ public class LoginInterceptor implements HandlerInterceptor {
                 canPass = true;
             }
         }
-//        log.info("uri: {}, query: {}", request.getRequestURI(), request.getQueryString());
+        log.info("uri: {}, query: {}", request.getRequestURI(), request.getQueryString());
 
         //1、从请求头中获取令牌
         String token = request.getHeader(Constant.JWT_TOKEN_NAME);

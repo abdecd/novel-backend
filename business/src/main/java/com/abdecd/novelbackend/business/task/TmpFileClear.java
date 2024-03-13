@@ -15,7 +15,7 @@ public class TmpFileClear {
     @Scheduled(cron = "0 0 4 * * ?")
     public void clearTmpFile() throws IOException {
         System.out.println("开始清理临时文件");
-        localFileService.clearTmpImg(86400); // 1天
+        localFileService.clearTmpImg(300);
         System.out.println("清理临时文件完成");
     }
 }
