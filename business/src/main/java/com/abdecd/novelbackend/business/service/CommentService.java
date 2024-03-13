@@ -13,6 +13,7 @@ import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -35,28 +36,42 @@ public class CommentService {
 
     public PageVO<List<UserCommentVO>> getComment(Integer novelId, Integer page, Integer pageSize) {
         var commentService = SpringContextUtil.getBean(CommentService.class);
-        var userCommentList = commentService.getCommentsByNovelId(novelId);
-        if (userCommentList == null) return new PageVO<>(0, new ArrayList<>());
-        return new PageVO<>(userCommentList.size(), userCommentList.subList(Math.max(0, (page - 1) * pageSize), Math.min(userCommentList.size(), page * pageSize)));
+        var userCommentList = commentService.getCommentsByNovelIdCached(novelId);
+        if (userCommentList.isEmpty()) return new PageVO<>(0, new ArrayList<>());
+        var cnt = userCommentMapper.countRootCommentByNovelId(novelId, StatusConstant.ENABLE);
+        if (page * pageSize > userCommentList.size()) {
+            // 超出范围且后面有数据就无缓
+            if (cnt > userCommentList.size()) userCommentList = commentService.getCommentsByNovelId(novelId);
+        }
+        return new PageVO<>(cnt, userCommentList.subList(Math.max(0, (page - 1) * pageSize), Math.min(userCommentList.size(), page * pageSize)));
     }
 
-    // 太大不缓存
-    @Cacheable(value = "getCommentsByNovelId", key = "#novelId", unless = "#result == null || #root.target.getCommentSize(#result) > 500")
+    /**
+     * 最多缓存前 RedisConstant.COMMENT_FOR_NOVEL_SIZE 条
+     */
+    @Cacheable(value = "getCommentsByNovelId", key = "#novelId", unless = "#result.isEmpty()")
+    @Nonnull
+    public List<List<UserCommentVO>> getCommentsByNovelIdCached(Integer novelId) {
+        var list = getCommentsByNovelId(novelId);
+        if (list == null || list.isEmpty()) return new ArrayList<>();
+        var maxCnt = RedisConstant.COMMENT_FOR_NOVEL_SIZE;
+        var lastIndex = 0;
+        for (var userCommentList : list) {
+            if ((maxCnt -= userCommentList.size()) >= 0) {
+                lastIndex++;
+            } else break;
+        }
+        return new ArrayList<>(list.subList(0, lastIndex));
+    }
+
     public List<List<UserCommentVO>> getCommentsByNovelId(Integer novelId) {
         var allComments = userCommentMapper.listCommentVOByNovelId(novelId, null);
         if (allComments.isEmpty()) return null;
 
         var unionFind = new UnionFind(Math.toIntExact(allComments.getLast().getId()) + 1);
-        LocalDateTime lastModified = null;
         for (var userComment : allComments) {
-            if (lastModified == null || userComment.getTimestamp().isAfter(lastModified))
-                lastModified = userComment.getTimestamp();
             if (userComment.getToId() == -1) continue;
             unionFind.union(Math.toIntExact(userComment.getId()), Math.toIntExact(userComment.getToId()));
-        }
-        // 记录小说评论区时间戳
-        if (lastModified != null) {
-            redisTemplate.opsForValue().set(RedisConstant.COMMENT_FOR_NOVEL_TIMESTAMP + novelId, lastModified);
         }
 
         var result = new LinkedHashMap<Integer, List<UserCommentVOBasic>>();
@@ -76,16 +91,12 @@ public class CommentService {
             }
         }
         return new ArrayList<>(result.values()
-                .stream().map(list -> list.stream().map(item -> {
-                        var UserCommentVO = new UserCommentVO();
-                        BeanUtils.copyProperties(item, UserCommentVO);
-                        return UserCommentVO;
-                    }).toList()
+                .stream().map(list -> new ArrayList<>(list.stream().map(item -> {
+                            var userCommentVO = new UserCommentVO();
+                            BeanUtils.copyProperties(item, userCommentVO);
+                            return userCommentVO;
+                        }).toList())
                 ).toList());
-    }
-
-    public Integer getCommentSize(List<List<UserCommentVO>> comments) {
-        return comments.stream().mapToInt(List::size).sum();
     }
 
     @CacheEvict(value = "getCommentsByNovelId", key = "#addCommentDTO.novelId")
@@ -123,6 +134,8 @@ public class CommentService {
     }
 
     public Integer getNovelIdByCommentId(Integer id) {
-        return userCommentMapper.selectById(id).getNovelId();
+        var obj = userCommentMapper.selectById(id);
+        if (obj == null) return -1;
+        return obj.getNovelId();
     }
 }

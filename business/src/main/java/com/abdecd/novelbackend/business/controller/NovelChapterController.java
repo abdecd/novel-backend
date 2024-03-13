@@ -17,6 +17,7 @@ import com.abdecd.tokenlogin.common.context.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Tag(name = "小说章节接口")
 @RestController
@@ -38,6 +40,8 @@ public class NovelChapterController {
     private NovelVolumeService novelVolumeService;
     @Autowired
     private ReaderService readerService;
+    @Resource
+    private Executor taskExecutor;
 
     @Operation(summary = "获取小说章节列表")
     @GetMapping("list")
@@ -61,12 +65,14 @@ public class NovelChapterController {
         var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
         if (currentLocalDateTime == null) return Result.success(null);
         // 更新阅读记录
-        if (UserContext.getUserId() != null) readerService.saveReaderHistory(
-                UserContext.getUserId(),
-                nid,
-                vNum,
-                cNum
-        );
+        if (UserContext.getUserId() != null) {
+            taskExecutor.execute(() -> readerService.saveReaderHistory(
+                    UserContext.getUserId(),
+                    nid,
+                    vNum,
+                    cNum
+            ));
+        }
         if (HttpCacheUtils.tryUseCache(request, response, currentLocalDateTime)) return null;
 
         var novelChapter = novelChapterService.getNovelChapterVO(nid, vNum, cNum);

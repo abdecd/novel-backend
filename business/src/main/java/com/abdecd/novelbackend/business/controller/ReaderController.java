@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.reader.DeleteReaderHistoryDTO;
 import com.abdecd.novelbackend.business.pojo.dto.reader.ReaderFavoritesDTO;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
@@ -7,6 +8,7 @@ import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderDetailVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
 import com.abdecd.novelbackend.business.service.ReaderService;
+import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -14,13 +16,17 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,6 +36,8 @@ import java.util.Objects;
 public class ReaderController {
     @Autowired
     private ReaderService readerService;
+    @Autowired
+    private RedisTemplate<String, LocalDateTime> redisTemplate;
 
     @Operation(summary = "获取用户信息")
     @GetMapping("")
@@ -90,10 +98,18 @@ public class ReaderController {
     @Operation(summary = "获取用户阅读历史")
     @GetMapping("history")
     public Result<List<ReaderHistoryVO>> getReaderHistory(
-            @Nullable @Schema(description = "起始记录id(倒序)") Long startId,
-            @NotNull @Schema(description = "每页数量") Integer pageSize
+            @NotNull @Schema(description = "页码") Integer page,
+            @NotNull @Schema(description = "每页数量") Integer pageSize,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        var readerHistory = readerService.listReaderHistoryVO(UserContext.getUserId(), startId, pageSize);
+        if (HttpCacheUtils.tryUseCache(
+                request,
+                response,
+                redisTemplate.opsForValue().get(
+                        RedisConstant.READER_HISTORY_TIMESTAMP + UserContext.getUserId()
+                ))) return null;
+        var readerHistory = readerService.listReaderHistoryVO(UserContext.getUserId(), page, pageSize);
         return Result.success(readerHistory);
     }
 
@@ -102,8 +118,16 @@ public class ReaderController {
     public Result<List<ReaderHistoryVO>> getReaderHistoryByNovel(
             @NotNull @Schema(description = "小说id") Integer novelId,
             @Nullable @Schema(description = "起始记录id(倒序)") Long startId,
-            @NotNull @Schema(description = "每页数量") Integer pageSize
+            @NotNull @Schema(description = "每页数量") Integer pageSize,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
+        if (HttpCacheUtils.tryUseCache(
+                request,
+                response,
+                redisTemplate.opsForValue().get(
+                        RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + UserContext.getUserId() + ':' + novelId
+                ))) return null;
         var readerHistory = readerService.listReaderHistoryByNovel(UserContext.getUserId(), novelId, startId, pageSize);
         return Result.success(readerHistory);
     }

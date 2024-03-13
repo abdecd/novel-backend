@@ -48,6 +48,8 @@ public class ReaderService {
     private NovelAndTagsMapper novelAndTagsMapper;
     @Autowired
     private RedisTemplate<String, ReaderHistoryVO> redisTemplate;
+    @Autowired
+    private RedisTemplate<String, LocalDateTime> redisTemplateForTime;
 
     public ReaderDetail getReaderDetail(Integer uid) {
         return readerDetailMapper.selectById(uid);
@@ -122,6 +124,66 @@ public class ReaderService {
                 .setStatus(StatusConstant.ENABLE)
                 .setTimestamp(LocalDateTime.now());
         readerHistoryMapper.insert(newRecord);
+        addReaderHistoryCache(userId, newRecord);
+        redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_TIMESTAMP + userId, LocalDateTime.now());
+        redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + userId + ':' + novelId, LocalDateTime.now());
+    }
+
+    @Deprecated
+    public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Long startId, Integer pageSize) {
+        List<ReaderHistoryVO> list = getReaderHistoryCache(uid);
+        // 计算 startIndex
+        var startIndex = 0;
+        if (startId != null) {
+            for (var i = 0; i < list.size(); i++) {
+                if (Objects.equals(list.get(i).getId(), startId)) {
+                    startIndex = i;
+                    break;
+                }
+            }
+            if (startIndex == 0) startIndex = Integer.MAX_VALUE;
+        }
+        if (startIndex == Integer.MAX_VALUE)
+            return readerHistoryMapper.listReaderHistoryVO(uid, startId, pageSize, StatusConstant.ENABLE);
+        if (startIndex + pageSize <= list.size()) {
+            return list.subList(startIndex, pageSize);
+        } else {
+            list = list.subList(startIndex, list.size());
+            var remainList = readerHistoryMapper.listReaderHistoryVO(uid, list.getLast().getId(), pageSize - list.size() + startIndex + 1, StatusConstant.ENABLE);
+            remainList.removeFirst();
+            list.addAll(remainList);
+            return list;
+        }
+    }
+
+    /**
+     * 最多返回 RedisConstant.READER_HISTORY_SIZE 条
+     */
+    public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Integer page, Integer pageSize) {
+        List<ReaderHistoryVO> list = getReaderHistoryCache(uid);
+        return list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize));
+    }
+
+    public List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Long startId, Integer pageSize) {
+        return readerHistoryMapper.listReaderHistoryByNovel(userId, novelId, startId, pageSize, StatusConstant.ENABLE);// todo 优化
+    }
+
+    public void deleteReaderHistory(Integer userId, int[] novelIdsRaw) {
+        var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
+        readerHistoryMapper.update(new LambdaUpdateWrapper<ReaderHistory>()
+                .eq(ReaderHistory::getUserId, userId)
+                .in(ReaderHistory::getNovelId, (Object[]) novelIds)
+                .set(ReaderHistory::getStatus, StatusConstant.DISABLE)
+        );
+        removeReaderHistoryCache(userId, novelIds);
+        redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_TIMESTAMP + userId, LocalDateTime.now());
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        var allNovelIds = novelService.getNovelIds();
+        for (var novelId : novelIds) if (allNovelIds.contains(novelId))
+            redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + userId + ':' + novelId, LocalDateTime.now());
+    }
+
+    private void addReaderHistoryCache(Integer userId, ReaderHistory newRecord) {
         // 更新redis
         List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
         redisTemplate.execute(new SessionCallback<List<Object>>() {
@@ -131,9 +193,9 @@ public class ReaderService {
                 operations.multi();
                 if (list != null) {
                     for (var readerHistoryVO : list) {
-                        if (Objects.equals(readerHistoryVO.getNovelId(), novelId)
-                                && Objects.equals(readerHistoryVO.getVolumeNumber(), volumeNumber)
-                                && Objects.equals(readerHistoryVO.getChapterNumber(), chapterNumber)) {
+                        if (Objects.equals(readerHistoryVO.getNovelId(), newRecord.getNovelId())
+                                && Objects.equals(readerHistoryVO.getVolumeNumber(), newRecord.getVolumeNumber())
+                                && Objects.equals(readerHistoryVO.getChapterNumber(), newRecord.getChapterNumber())) {
                             operations.opsForList().remove(RedisConstant.READER_HISTORY + userId, 1, readerHistoryVO);
                             break;
                         }
@@ -146,56 +208,26 @@ public class ReaderService {
         });
     }
 
-    public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Long startId, Integer pageSize) {
+    public List<ReaderHistoryVO> getReaderHistoryCache(Integer uid) {
         List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + uid, 0, RedisConstant.READER_HISTORY_SIZE);
-        if (list != null) {
-            // 不够就补
-            if (list.size() < RedisConstant.READER_HISTORY_SIZE) {
-                var willStartId = Optional.of(list).map(List::getLast).map(ReaderHistoryVO::getId).orElse(null);
-                List<ReaderHistoryVO> tmpList;
-                if (willStartId == null) {
-                    tmpList = readerHistoryMapper.listReaderHistoryVO(uid, null, RedisConstant.READER_HISTORY_SIZE, StatusConstant.ENABLE);
-                } else {
-                    tmpList = readerHistoryMapper.listReaderHistoryVO(uid, willStartId, RedisConstant.READER_HISTORY_SIZE - list.size() + 1, StatusConstant.ENABLE);
-                    tmpList.removeFirst();
-                }
-                if (!tmpList.isEmpty()) redisTemplate.opsForList().rightPushAll(RedisConstant.READER_HISTORY + uid, tmpList);
-            }
-            var startIndex = 0;
-            if (startId != null) {
-                for (var i = 0; i < list.size(); i++) {
-                    if (Objects.equals(list.get(i).getId(), startId)) {
-                        startIndex = i;
-                        break;
-                    }
-                }
-                if (startIndex == 0) startIndex = Integer.MAX_VALUE;
-            }
-            if (startIndex == Integer.MAX_VALUE)
-                return readerHistoryMapper.listReaderHistoryVO(uid, startId, pageSize, StatusConstant.ENABLE);
-            if (startIndex + pageSize <= list.size()) {
-                return list.subList(startIndex, pageSize);
+        if (list == null) list = new ArrayList<>();
+        if (list.size() < RedisConstant.READER_HISTORY_SIZE) {
+            Long willStartId = null;
+            if (!list.isEmpty()) willStartId = list.getLast().getId();
+            List<ReaderHistoryVO> tmpList;
+            if (willStartId == null) {
+                tmpList = readerHistoryMapper.listReaderHistoryVO(uid, null, RedisConstant.READER_HISTORY_SIZE, StatusConstant.ENABLE);
             } else {
-                var remainList = readerHistoryMapper.listReaderHistoryVO(uid, list.getLast().getId(), pageSize - list.size() + startIndex + 1, StatusConstant.ENABLE);
-                remainList.removeFirst();
-                list.addAll(remainList);
-                return list;
+                tmpList = readerHistoryMapper.listReaderHistoryVO(uid, willStartId, RedisConstant.READER_HISTORY_SIZE - list.size() + 1, StatusConstant.ENABLE);
+                tmpList.removeFirst();
             }
+            if (!tmpList.isEmpty()) redisTemplate.opsForList().rightPushAll(RedisConstant.READER_HISTORY + uid, tmpList);
+            list.addAll(tmpList);
         }
-        return readerHistoryMapper.listReaderHistoryVO(uid, startId, pageSize, StatusConstant.ENABLE);
+        return list;
     }
 
-    public List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Long startId, Integer pageSize) {
-        return readerHistoryMapper.listReaderHistoryByNovel(userId, novelId, startId, pageSize, StatusConstant.ENABLE);
-    }
-
-    public void deleteReaderHistory(Integer userId, int[] novelIdsRaw) {
-        var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
-        readerHistoryMapper.update(new LambdaUpdateWrapper<ReaderHistory>()
-                .eq(ReaderHistory::getUserId, userId)
-                .in(ReaderHistory::getNovelId, (Object[]) novelIds)
-                .set(ReaderHistory::getStatus, StatusConstant.DISABLE)
-        );
+    private void removeReaderHistoryCache(Integer userId, Integer[] novelIds) {
         // 更新redis
         List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
         var novelIdsList = Arrays.asList(novelIds);
@@ -215,6 +247,7 @@ public class ReaderService {
             }
         });
     }
+
 
     @Cacheable(value = "readerFavoriteTagIds#1", key = "#userId")
     public List<Integer> getReaderFavoriteTagIds(Integer userId) {
