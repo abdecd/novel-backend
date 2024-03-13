@@ -27,10 +27,13 @@ token-login:
     - /novel/ranklist
     - /novel/recommend
     - /novel/related
+    - /novel/hot
+    - /novel/available-tags
     - /novel/get-by-tags
+    - /novel/hot-tags
     - /novel/chapter
     - /novel/chapter/previous
     - /novel/chapter/next
-    - /novel/hot-tags
     - /novel/contents
     - /novel
+    - /novel/comment
