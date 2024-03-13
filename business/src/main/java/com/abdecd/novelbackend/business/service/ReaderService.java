@@ -159,9 +159,9 @@ public class ReaderService {
     /**
      * 最多返回 RedisConstant.READER_HISTORY_SIZE 条
      */
-    public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Integer page, Integer pageSize) {
+    public PageVO<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Integer page, Integer pageSize) {
         List<ReaderHistoryVO> list = getReaderHistoryCache(uid);
-        return list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize));
+        return new PageVO<>(list.size(), list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize)));
     }
 
     public List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Long startId, Integer pageSize) {
