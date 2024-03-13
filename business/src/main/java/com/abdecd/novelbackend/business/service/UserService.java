@@ -11,6 +11,7 @@ import com.abdecd.tokenlogin.mapper.UserMapper;
 import com.abdecd.tokenlogin.pojo.entity.User;
 import com.abdecd.tokenlogin.service.UserBaseService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import jakarta.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,7 +56,7 @@ public class UserService {
         return user;
     }
 
-    public String generateUserToken(User user) {
+    public String generateUserToken(@Nonnull User user) {
         return userBaseService.generateUserToken(user);
     }
 

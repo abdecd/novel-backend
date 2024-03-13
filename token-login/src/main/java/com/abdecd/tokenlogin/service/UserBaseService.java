@@ -9,6 +9,7 @@ import com.abdecd.tokenlogin.mapper.UserMapper;
 import com.abdecd.tokenlogin.pojo.entity.User;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,16 +35,14 @@ public class UserBaseService {
             String pwdErrMsg,
             String accountLockedMsg
     ) {
-        //1、根据用户名查询数据库中的数据
         var user = userMapper.selectById(id);
-        log.info("user:{}", user);
         //2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
-        if (user == null) {
-            //账号不存在
-            return null;
-        }
+        if (user == null) return null;
 
-        //密码比对
+        password = PwdUtils.getEncryptedPwd(password);
+        if (!Constant.PASSWORD_PATTERN.matcher(password).find()) {
+            throwException(exceptionClass, pwdErrMsg);
+        }
         String hashPwd = "";
         try {
             hashPwd = PwdUtils.encodePwd(user.getId().toString(), password);
@@ -60,7 +59,6 @@ public class UserBaseService {
             throwException(exceptionClass, accountLockedMsg);
         }
 
-        //3、返回实体对象
         return user;
     }
 
@@ -78,7 +76,7 @@ public class UserBaseService {
         return loginById(user.getId(), password, exceptionClass, pwdErrMsg, accountLockedMsg);
     }
 
-    public String generateUserToken(User user) {
+    public String generateUserToken(@Nonnull User user) {
         var claims = new HashMap<String, String>();
         claims.put(Constant.JWT_ID, user.getId().toString());
         claims.put(Constant.JWT_PERMISSION, user.getPermission().toString());
@@ -96,6 +94,10 @@ public class UserBaseService {
     public int signup(String password, byte permission, Class<? extends RuntimeException> exceptionClass) {
         // 注册
         try {
+            password = PwdUtils.getEncryptedPwd(password);
+            if (!Constant.PASSWORD_PATTERN.matcher(password).find()) {
+                throwException(exceptionClass, "invalid password");
+            }
             var user = User.ofEmpty()
                     .setPassword("")
                     .setPermission(permission)
@@ -117,6 +119,10 @@ public class UserBaseService {
      */
     public void forgetPassword(Integer id, String newPassword, Class<? extends RuntimeException> exceptionClass) {
         try {
+            newPassword = PwdUtils.getEncryptedPwd(newPassword);
+            if (!Constant.PASSWORD_PATTERN.matcher(newPassword).find()) {
+                throwException(exceptionClass, "invalid password");
+            }
             userMapper.updateById(new User()
                     .setId(id)
                     .setPassword(PwdUtils.encodePwd(id.toString(), newPassword))

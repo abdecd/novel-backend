@@ -62,20 +62,7 @@ public class PwdUtils {
         return pwd.substring(0, pwd.length() - 2) + salt + pwd.substring(pwd.length() - 2);
     }
 
-//    public static String encodePwd(String username, String pwd) throws RuntimeException {
-//        MessageDigest sha256;
-//        try {
-//            sha256 = MessageDigest.getInstance("SHA-256");
-//        } catch (NoSuchAlgorithmException e) {
-//            throw new RuntimeException("unknown error");
-//        }
-//        var saltedPwd = getSaltedPwd(username, pwd);
-//        var hash = sha256.digest(saltedPwd.getBytes(StandardCharsets.UTF_8));
-//        return ByteArrayUtil.toHexString(hash);
-//    }
-
-    public static String encodePwd(String username, String encryptedPwd) throws RuntimeException {
-        var pwd = getEncryptedPwd(encryptedPwd);
+    public static String encodePwd(String username, String pwd) throws RuntimeException {
         MessageDigest sha256;
         try {
             sha256 = MessageDigest.getInstance("SHA-256");
