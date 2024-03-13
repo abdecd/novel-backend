@@ -29,6 +29,8 @@ token-login:
     - /novel/related
     - /novel/get-by-tags
     - /novel/chapter
+    - /novel/chapter/previous
+    - /novel/chapter/next
     - /novel/hot-tags
     - /novel/contents
     - /novel

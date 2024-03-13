@@ -8,6 +8,7 @@ import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.UpdateNovelChapte
 import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO;
 import com.abdecd.novelbackend.business.service.NovelChapterService;
+import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.business.service.NovelVolumeService;
 import com.abdecd.novelbackend.business.service.ReaderService;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
@@ -26,7 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -38,6 +41,8 @@ public class NovelChapterController {
     private NovelChapterService novelChapterService;
     @Autowired
     private NovelVolumeService novelVolumeService;
+    @Autowired
+    private NovelService novelService;
     @Autowired
     private ReaderService readerService;
     @Resource
@@ -77,6 +82,64 @@ public class NovelChapterController {
 
         var novelChapter = novelChapterService.getNovelChapterVO(nid, vNum, cNum);
         return Result.success(novelChapter);
+    }
+
+    @Operation(summary = "上一章")
+    @GetMapping("previous")
+    public Result<NovelChapterVO> previousChapter(
+            @NotNull @Schema(description = "小说id") Integer nid,
+            @NotNull @Schema(description = "卷num") Integer vNum,
+            @NotNull @Schema(description = "章num") Integer cNum,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        var contents = novelService.getContents(nid);
+        if (contents == null) return Result.success(null);
+        var chapters = contents.values().stream().flatMap(Collection::stream).toList();
+        for (int i = 0; i < chapters.size(); i++) {
+            if (Objects.equals(chapters.get(i).getVolumeNumber(), vNum)
+                    && Objects.equals(chapters.get(i).getChapterNumber(), cNum)) {
+                if (i == 0) return Result.success(null);
+                var previous = chapters.get(i - 1);
+                return getNovelChapter(
+                        nid,
+                        previous.getVolumeNumber(),
+                        previous.getChapterNumber(),
+                        request,
+                        response
+                );
+            }
+        }
+        return Result.success(null);
+    }
+
+    @Operation(summary = "下一章")
+    @GetMapping("next")
+    public Result<NovelChapterVO> nextChapter(
+            @NotNull @Schema(description = "小说id") Integer nid,
+            @NotNull @Schema(description = "卷num") Integer vNum,
+            @NotNull @Schema(description = "章num") Integer cNum,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        var contents = novelService.getContents(nid);
+        if (contents == null) return Result.success(null);
+        var chapters = contents.values().stream().flatMap(Collection::stream).toList();
+        for (int i = 0; i < chapters.size(); i++) {
+            if (Objects.equals(chapters.get(i).getVolumeNumber(), vNum)
+                    && Objects.equals(chapters.get(i).getChapterNumber(), cNum)) {
+                if (i == chapters.size() - 1) return Result.success(null);
+                var next = chapters.get(i + 1);
+                return getNovelChapter(
+                        nid,
+                        next.getVolumeNumber(),
+                        next.getChapterNumber(),
+                        request,
+                        response
+                );
+            }
+        }
+        return Result.success(null);
     }
 
     @Operation(summary = "新增小说章节", description = "不添加小说内容, 成功时返回novelChapterId(String)")
