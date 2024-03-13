@@ -4,8 +4,10 @@ import com.abdecd.novelbackend.common.constant.DTOConstant;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class AddNovelInfoDTO {
@@ -19,10 +21,9 @@ public class AddNovelInfoDTO {
     @Schema(description = "小说作者")
     String author;
 
-    @NotBlank
-    @Length(max = DTOConstant.STRING_LENGTH_MAX)
+    @NotNull
     @Schema(description = "小说封面")
-    String cover;
+    MultipartFile cover;
 
     @NotBlank
     @Length(max = DTOConstant.STRING_LENGTH_MAX)

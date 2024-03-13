@@ -1,10 +1,12 @@
 package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.common.util.ImageChecker;
 import com.abdecd.novelbackend.business.pojo.dto.common.VerifyEmailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.common.CaptchaVO;
 import com.abdecd.novelbackend.business.service.CommonService;
 import com.abdecd.novelbackend.business.service.FileService;
+import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.abdecd.tokenlogin.service.UserBaseService;
@@ -60,11 +62,11 @@ public class CommonController {
     @PostMapping("/verify-email")
     public CompletableFuture<Result<String>> verifyEmail(@RequestBody @Valid VerifyEmailDTO verifyEmailDTO, HttpServletRequest request) {
         // 接口限流
-        if (Boolean.TRUE.equals(redisTemplate.hasKey("limitVerifyEmail:" + request.getRemoteAddr())))
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(RedisConstant.LIMIT_VERIFY_EMAIL + request.getRemoteAddr())))
             return CompletableFuture.completedFuture(Result.error("请求过于频繁"));
         commonService.sendCodeToVerifyEmail(verifyEmailDTO.getEmail());
         // 成功后进行限流
-        redisTemplate.opsForValue().set("limitVerifyEmail:" + request.getRemoteAddr(), "true", 60, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(RedisConstant.LIMIT_VERIFY_EMAIL + request.getRemoteAddr(), "true", 60, TimeUnit.SECONDS);
         return CompletableFuture.completedFuture(Result.success());
     }
 
@@ -74,9 +76,10 @@ public class CommonController {
     public CompletableFuture<Result<String>> uploadImg(@RequestParam MultipartFile file) {
         try {
             if (file.isEmpty()) return CompletableFuture.completedFuture(Result.error("文件为空"));
+            if (!ImageChecker.isImage(file)) throw new BaseException("文件类型不正确");
             if (file.getSize() > 1024 * 1024 * 3) throw new BaseException("文件过大");
             // 300次/天
-            var key = "limitUploadImg:" + UserContext.getUserId();
+            var key = RedisConstant.LIMIT_UPLOAD_IMG + UserContext.getUserId();
             RedisAtomicInteger redisAtomicInteger = new RedisAtomicInteger(key, Objects.requireNonNull(redisTemplate.getConnectionFactory()));
             if (redisAtomicInteger.get() == 0) redisAtomicInteger.expire(1, TimeUnit.DAYS);
             if (redisAtomicInteger.incrementAndGet() > 300) return CompletableFuture.completedFuture(Result.error("图片上传次数达到上限"));

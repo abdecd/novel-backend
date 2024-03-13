@@ -4,6 +4,7 @@ import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.reader.DeleteReaderHistoryDTO;
 import com.abdecd.novelbackend.business.pojo.dto.reader.ReaderFavoritesDTO;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
+import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTOWithUrl;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderDetailVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
@@ -24,11 +25,15 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @Tag(name = "读者接口")
 @RestController
@@ -36,6 +41,8 @@ import java.util.Objects;
 public class ReaderController {
     @Autowired
     private ReaderService readerService;
+    @Autowired
+    private CommonController commonController;
     @Autowired
     private RedisTemplate<String, LocalDateTime> redisTemplate;
 
@@ -52,11 +59,17 @@ public class ReaderController {
         return Result.success(readerVO);
     }
 
+    @Async
     @Operation(summary = "修改用户信息")
-    @PostMapping("update")
-    public Result<String> updateReaderDetail(@RequestBody @Valid UpdateReaderDetailDTO updateReaderDetailDTO) {
-        readerService.updateReaderDetail(updateReaderDetailDTO);
-        return Result.success();
+    @PostMapping(value = "update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CompletableFuture<Result<String>> updateReaderDetail(@Valid UpdateReaderDetailDTO updateReaderDetailDTO) throws ExecutionException, InterruptedException {
+        var avatarResult = commonController.uploadImg(updateReaderDetailDTO.getAvatar());
+        if (avatarResult.get().getCode() != 200) return avatarResult;
+        var tmp = new UpdateReaderDetailDTOWithUrl();
+        BeanUtils.copyProperties(updateReaderDetailDTO, tmp);
+        tmp.setAvatar(avatarResult.get().getData());
+        readerService.updateReaderDetail(tmp);
+        return CompletableFuture.completedFuture(Result.success());
     }
 
     @Operation(summary = "获取用户收藏列表")

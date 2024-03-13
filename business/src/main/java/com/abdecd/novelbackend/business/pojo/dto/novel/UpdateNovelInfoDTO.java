@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class UpdateNovelInfoDTO {
@@ -20,9 +21,8 @@ public class UpdateNovelInfoDTO {
     @Schema(description = "小说作者")
     String author;
 
-    @Length(max = DTOConstant.STRING_LENGTH_MAX)
     @Schema(description = "小说封面")
-    String cover;
+    MultipartFile cover;
 
     @Length(max = DTOConstant.STRING_LENGTH_MAX)
     @Schema(description = "小说描述")

@@ -7,7 +7,7 @@ import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderFavoritesMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
-import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTO;
+import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTOWithUrl;
 import com.abdecd.novelbackend.business.pojo.entity.NovelAndTags;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderFavorites;
@@ -34,7 +34,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ReaderService {
@@ -55,10 +58,10 @@ public class ReaderService {
         return readerDetailMapper.selectById(uid);
     }
 
-    @UseFileService(value = "avatar", param = UpdateReaderDetailDTO.class)
-    public void updateReaderDetail(UpdateReaderDetailDTO updateReaderDetailDTO) {
+    @UseFileService(value = "avatar", param = UpdateReaderDetailDTOWithUrl.class)
+    public void updateReaderDetail(UpdateReaderDetailDTOWithUrl updateReaderDetailDTOWithUrl) {
         var readerDetail = new ReaderDetail();
-        BeanUtils.copyProperties(updateReaderDetailDTO, readerDetail);
+        BeanUtils.copyProperties(updateReaderDetailDTOWithUrl, readerDetail);
         readerDetail.setUserId(UserContext.getUserId());
         readerDetailMapper.updateById(readerDetail);
     }

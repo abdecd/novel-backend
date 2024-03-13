@@ -5,8 +5,8 @@ import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
 import com.abdecd.novelbackend.business.mapper.NovelTagsMapper;
-import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
-import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
+import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTOWithUrl;
+import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTOWithUrl;
 import com.abdecd.novelbackend.business.pojo.dto.novel.volume.DeleteNovelVolumeDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelAndTags;
 import com.abdecd.novelbackend.business.pojo.entity.NovelInfo;
@@ -69,23 +69,23 @@ public class NovelService {
 
     @Caching(evict = {
             @CacheEvict(value = "getNovelIdsByTagId", allEntries = true),
-            @CacheEvict(value = "novelInfoVO", key = "#updateNovelInfoDTO.id"),
-            @CacheEvict(value = "getTagIdsByNovelId", key = "#updateNovelInfoDTO.id"),
+            @CacheEvict(value = "novelInfoVO", key = "#updateNovelInfoDTOWithUrl.id"),
+            @CacheEvict(value = "getTagIdsByNovelId", key = "#updateNovelInfoDTOWithUrl.id"),
             @CacheEvict(value = "getHotTagIds#32", allEntries = true)
     })
     @Transactional
-    @UseFileService(value = "cover", param = UpdateNovelInfoDTO.class)
-    public void updateNovelInfo(UpdateNovelInfoDTO updateNovelInfoDTO) {
+    @UseFileService(value = "cover", param = UpdateNovelInfoDTOWithUrl.class)
+    public void updateNovelInfo(UpdateNovelInfoDTOWithUrl updateNovelInfoDTOWithUrl) {
         // 更新小说
         var novelInfo = new NovelInfo();
-        BeanUtils.copyProperties(updateNovelInfoDTO, novelInfo);
+        BeanUtils.copyProperties(updateNovelInfoDTOWithUrl, novelInfo);
         novelInfoMapper.updateById(novelInfo);
         // 更新tags 必须有才更
-        if (updateNovelInfoDTO.getTagIds() == null || updateNovelInfoDTO.getTagIds().length == 0) return;
+        if (updateNovelInfoDTOWithUrl.getTagIds() == null || updateNovelInfoDTOWithUrl.getTagIds().length == 0) return;
         novelAndTagsMapper.delete(new LambdaQueryWrapper<NovelAndTags>()
-                .eq(NovelAndTags::getNovelId, updateNovelInfoDTO.getId())
+                .eq(NovelAndTags::getNovelId, updateNovelInfoDTOWithUrl.getId())
         );
-        for (var tagId : updateNovelInfoDTO.getTagIds()) {
+        for (var tagId : updateNovelInfoDTOWithUrl.getTagIds()) {
             novelAndTagsMapper.insert(new NovelAndTags()
                     .setNovelId(novelInfo.getId())
                     .setTagId(tagId)
@@ -99,14 +99,14 @@ public class NovelService {
             @CacheEvict(value = "getNovelIds", allEntries = true)
     })
     @Transactional
-    @UseFileService(value = "cover", param = AddNovelInfoDTO.class)
-    public Integer addNovelInfo(AddNovelInfoDTO addNovelInfoDTO) {
+    @UseFileService(value = "cover", param = AddNovelInfoDTOWithUrl.class)
+    public Integer addNovelInfo(AddNovelInfoDTOWithUrl addNovelInfoDTOWithUrl) {
         // 插入小说
         var novelInfo = new NovelInfo();
-        BeanUtils.copyProperties(addNovelInfoDTO, novelInfo);
+        BeanUtils.copyProperties(addNovelInfoDTOWithUrl, novelInfo);
         novelInfoMapper.insert(novelInfo);
         // 插入tags
-        for (var tagId : addNovelInfoDTO.getTagIds()) {
+        for (var tagId : addNovelInfoDTOWithUrl.getTagIds()) {
             novelAndTagsMapper.insert(new NovelAndTags()
                     .setNovelId(novelInfo.getId())
                     .setTagId(tagId)
