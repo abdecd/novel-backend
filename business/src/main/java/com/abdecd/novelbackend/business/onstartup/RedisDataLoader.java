@@ -1,7 +1,5 @@
 package com.abdecd.novelbackend.business.onstartup;
 
-import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
-import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
 import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.business.service.ReaderService;
 import com.abdecd.novelbackend.common.constant.RedisConstant;

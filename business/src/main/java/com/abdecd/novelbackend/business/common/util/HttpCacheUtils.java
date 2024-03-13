@@ -23,4 +23,21 @@ public class HttpCacheUtils {
         response.setHeader("ETag", currentLocalDateTime.toString());
         return false;
     }
+
+    /**
+     * 使用 http 缓存并强制验证
+     */
+    public static boolean tryUseCache(HttpServletRequest request, HttpServletResponse response, Object hash) {
+        if (hash == null) return false;
+        if (request.getHeader("If-None-Match") != null) {
+            var oldHash = request.getHeader("If-None-Match");
+            if (oldHash.equals(hash.toString())) {
+                response.setStatus(304);
+                return true;
+            }
+        }
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("ETag", hash.toString());
+        return false;
+    }
 }

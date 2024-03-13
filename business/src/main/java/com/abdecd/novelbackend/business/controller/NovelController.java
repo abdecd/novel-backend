@@ -1,6 +1,7 @@
 package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
@@ -16,6 +17,8 @@ import com.abdecd.tokenlogin.aspect.RequirePermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -39,9 +42,12 @@ public class NovelController {
     @Operation(summary = "获取小说信息")
     @GetMapping("")
     public Result<NovelInfoVO> getNovelInfo(
-            @NotNull @Schema(description = "小说id") Integer nid
+            @NotNull @Schema(description = "小说id") Integer nid,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         var novelInfoVO = novelService.getNovelInfoVO(nid);
+        if (HttpCacheUtils.tryUseCache(request, response, novelInfoVO.hashCode())) return null;
         return Result.success(novelInfoVO);
     }
 
@@ -72,17 +78,24 @@ public class NovelController {
     @Operation(summary = "获取小说目录")
     @GetMapping("contents")
     public Result<ContentsVO> getContents(
-            @NotNull @Schema(description = "小说id") Integer nid
+            @NotNull @Schema(description = "小说id") Integer nid,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         var contentsVO = novelService.getContents(nid);
         if (contentsVO == null) return Result.success(null);
+        if (HttpCacheUtils.tryUseCache(request, response, contentsVO.hashCode())) return null;
         return Result.success(contentsVO);
     }
 
     @Operation(summary = "获取可用tags")
     @GetMapping("available-tags")
-    public Result<List<NovelTags>> getAvailableTags() {
+    public Result<List<NovelTags>> getAvailableTags(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
         var tags = novelService.getAvailableTags(); // 非空
+        if (HttpCacheUtils.tryUseCache(request, response, tags.hashCode())) return null;
         return Result.success(tags);
     }
 
