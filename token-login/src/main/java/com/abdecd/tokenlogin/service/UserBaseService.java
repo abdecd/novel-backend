@@ -39,7 +39,11 @@ public class UserBaseService {
         //2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
         if (user == null) return null;
 
-        password = PwdUtils.getEncryptedPwd(password);
+        try {
+            password = PwdUtils.getEncryptedPwd(password);
+        } catch (RuntimeException e) {
+            throwException(exceptionClass, e.getMessage());
+        }
         if (!Constant.PASSWORD_PATTERN.matcher(password).find()) {
             throwException(exceptionClass, pwdErrMsg);
         }

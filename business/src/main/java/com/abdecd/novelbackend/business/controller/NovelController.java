@@ -2,9 +2,7 @@ package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
-import com.abdecd.novelbackend.business.pojo.dto.novel.AddNovelInfoDTO;
-import com.abdecd.novelbackend.business.pojo.dto.novel.DeleteNovelInfoDTO;
-import com.abdecd.novelbackend.business.pojo.dto.novel.UpdateNovelInfoDTO;
+import com.abdecd.novelbackend.business.pojo.dto.novel.*;
 import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
@@ -25,10 +23,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @Tag(name = "小说接口")
 @RestController
@@ -38,6 +41,8 @@ public class NovelController {
     private NovelService novelService;
     @Autowired
     private NovelExtService novelExtService;
+    @Autowired
+    private CommonController commonController;
 
     @Operation(summary = "获取小说信息")
     @GetMapping("")
@@ -51,20 +56,34 @@ public class NovelController {
         return Result.success(novelInfoVO);
     }
 
+    @Async
     @Operation(summary = "修改小说信息")
     @RequirePermission(value = 99, exception = BaseException.class)
-    @PostMapping("update")
-    public Result<String> updateNovelInfo(@RequestBody @Valid UpdateNovelInfoDTO updateNovelInfoDTO) {
-        novelService.updateNovelInfo(updateNovelInfoDTO);
-        return Result.success();
+    @PostMapping(value = "update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CompletableFuture<Result<String>> updateNovelInfo(@Valid UpdateNovelInfoDTO updateNovelInfoDTO) throws ExecutionException, InterruptedException {
+        var tmp = new UpdateNovelInfoDTOWithUrl();
+        if (updateNovelInfoDTO.getCover() != null) {
+            var coverResult = commonController.uploadImg(updateNovelInfoDTO.getCover());
+            if (coverResult.get().getCode() != 200) return coverResult;
+            tmp.setCover(coverResult.get().getData());
+        }
+        BeanUtils.copyProperties(updateNovelInfoDTO, tmp);
+        novelService.updateNovelInfo(tmp);
+        return CompletableFuture.completedFuture(Result.success());
     }
 
+    @Async
     @Operation(summary = "新增小说", description = "data字段返回小说id")
     @RequirePermission(value = 99, exception = BaseException.class)
-    @PostMapping("add")
-    public Result<String> addNovelInfo(@RequestBody @Valid AddNovelInfoDTO addNovelInfoDTO) {
-        var novelId = novelService.addNovelInfo(addNovelInfoDTO);
-        return Result.success(novelId + "");
+    @PostMapping(value = "add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CompletableFuture<Result<String>> addNovelInfo(@Valid AddNovelInfoDTO addNovelInfoDTO) throws ExecutionException, InterruptedException {
+        var coverResult = commonController.uploadImg(addNovelInfoDTO.getCover());
+        if (coverResult.get().getCode() != 200) return coverResult;
+        var tmp = new AddNovelInfoDTOWithUrl();
+        BeanUtils.copyProperties(addNovelInfoDTO, tmp);
+        tmp.setCover(coverResult.get().getData());
+        var novelId = novelService.addNovelInfo(tmp);
+        return CompletableFuture.completedFuture(Result.success(novelId + ""));
     }
 
     @Operation(summary = "删除小说")
