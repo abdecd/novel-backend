@@ -16,6 +16,10 @@
                 <if test="startId != null">
                     and rh.id &lt;= #{startId}
                 </if>
+                <if test="novelIdsNot != null">
+                    and rh.novel_id not in
+                        (<foreach collection="novelIdsNot" item="item" separator=",">#{item}</foreach>)
+                </if>
                 <if test="enableStatus != null">
                     and rh.status = #{enableStatus}
                 </if>

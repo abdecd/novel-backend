@@ -10,7 +10,12 @@ import java.util.List;
 
 @Mapper
 public interface ReaderHistoryMapper extends BaseMapper<ReaderHistory> {
-    List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, Long startId, Integer pageSize, Byte enableStatus);
+    List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, Long startId, Integer pageSize, Byte enableStatus, Integer[] novelIdsNot);
+
+    default List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, Long startId, Integer pageSize, Byte enableStatus) {
+        return listReaderHistoryVO(userId, startId, pageSize, enableStatus, null);
+    }
+
     ReaderHistoryVO getReaderHistoryVO(Long id);
 
     List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Long startId, Integer pageSize, Byte enableStatus);
