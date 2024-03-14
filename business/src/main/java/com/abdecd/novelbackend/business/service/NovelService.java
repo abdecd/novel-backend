@@ -1,6 +1,7 @@
 package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.aspect.UseFileService;
+import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.NovelInfoMapper;
@@ -16,6 +17,7 @@ import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -24,9 +26,11 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 @Service
 public class NovelService {
@@ -44,6 +48,10 @@ public class NovelService {
     private NovelAndTagsMapper novelAndTagsMapper;
     @Autowired
     private NovelTagsMapper novelTagsMapper;
+    @Autowired
+    private ElasticSearchService elasticSearchService;
+    @Resource
+    private Executor taskExecutor;
 
     @Cacheable(value = "novelInfoVO", key = "#nid", unless = "#result == null")
     public NovelInfoVO getNovelInfoVO(int nid) {
@@ -77,20 +85,27 @@ public class NovelService {
     @UseFileService(value = "cover", param = UpdateNovelInfoDTOWithUrl.class)
     public void updateNovelInfo(UpdateNovelInfoDTOWithUrl updateNovelInfoDTOWithUrl) {
         // 更新小说
-        var novelInfo = new NovelInfo();
+        var novelInfo = novelInfoMapper.selectById(updateNovelInfoDTOWithUrl.getId());
+        if (novelInfo == null) throw new BaseException("更新失败");
+        var cover = updateNovelInfoDTOWithUrl.getCover() == null ? null : novelInfo.getCover();
         BeanUtils.copyProperties(updateNovelInfoDTOWithUrl, novelInfo);
         novelInfoMapper.updateById(novelInfo);
         // 更新tags 必须有才更
-        if (updateNovelInfoDTOWithUrl.getTagIds() == null || updateNovelInfoDTOWithUrl.getTagIds().length == 0) return;
-        novelAndTagsMapper.delete(new LambdaQueryWrapper<NovelAndTags>()
-                .eq(NovelAndTags::getNovelId, updateNovelInfoDTOWithUrl.getId())
-        );
-        for (var tagId : updateNovelInfoDTOWithUrl.getTagIds()) {
-            novelAndTagsMapper.insert(new NovelAndTags()
-                    .setNovelId(novelInfo.getId())
-                    .setTagId(tagId)
+        if (updateNovelInfoDTOWithUrl.getTagIds() != null && updateNovelInfoDTOWithUrl.getTagIds().length != 0) {
+            novelAndTagsMapper.delete(new LambdaQueryWrapper<NovelAndTags>()
+                    .eq(NovelAndTags::getNovelId, updateNovelInfoDTOWithUrl.getId())
             );
+            for (var tagId : updateNovelInfoDTOWithUrl.getTagIds()) {
+                novelAndTagsMapper.insert(new NovelAndTags()
+                        .setNovelId(novelInfo.getId())
+                        .setTagId(tagId)
+                );
+            }
         }
+        if (cover != null) {
+            fileService.deleteFile(updateNovelInfoDTOWithUrl.getCover());
+        }
+        saveNovelToElasticSearch(novelInfo);
     }
 
     @Caching(evict = {
@@ -112,7 +127,25 @@ public class NovelService {
                     .setTagId(tagId)
             );
         }
+        saveNovelToElasticSearch(novelInfo);
         return novelInfo.getId();
+    }
+
+    private void saveNovelToElasticSearch(NovelInfo novelInfo) {
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        taskExecutor.execute(() -> {
+            try {
+                // 等小说缓存清掉
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                elasticSearchService.saveSearchNovelEntity(novelService.getNovelInfoVO(novelInfo.getId()));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Transactional
@@ -121,6 +154,11 @@ public class NovelService {
         if (novelInfo == null) return;
         var novelService = SpringContextUtil.getBean(NovelService.class);
         novelService.deleteNovelInfoReally(novelInfo);
+        try {
+            elasticSearchService.deleteSearchNovelEntity(id);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Caching(evict = {

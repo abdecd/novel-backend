@@ -1,7 +1,11 @@
 package com.abdecd.novelbackend.business.onstartup;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
+import com.abdecd.novelbackend.business.service.ElasticSearchService;
 import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.business.service.ReaderService;
+import com.abdecd.novelbackend.common.constant.ElasticSearchConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.tokenlogin.mapper.UserMapper;
 import com.abdecd.tokenlogin.pojo.entity.User;
@@ -12,11 +16,12 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
-public class RedisDataLoader implements ApplicationRunner {
+public class DataLoader implements ApplicationRunner {
     @Autowired
     private ReaderService readerService;
     @Autowired
@@ -25,13 +30,18 @@ public class RedisDataLoader implements ApplicationRunner {
     private UserMapper userMapper;
     @Autowired
     private RedisTemplate<String, LocalDateTime> redisTemplateForTime;
+    @Autowired
+    private ElasticsearchClient esClient;
+    @Autowired
+    private ElasticSearchService elasticSearchService;
 
     @Override
-    public void run(ApplicationArguments args) {
-        novelService.getNovelIds().forEach(novelId -> novelService.getNovelInfoVO(novelId));
+    public void run(ApplicationArguments args) throws IOException {
+        var novels = novelService.getNovelIds().stream().map(novelId -> novelService.getNovelInfoVO(novelId)).toList();
         var users = userMapper.selectList(new LambdaQueryWrapper<>());
         loadReaderHistory(users);
         loadTimestamp(users);
+        loadSearchNovelEntity(novels);
     }
 
     public void loadReaderHistory(List<User> users) {
@@ -48,6 +58,17 @@ public class RedisDataLoader implements ApplicationRunner {
             var allNovelIds = novelService.getNovelIds();
             for (var novelId : allNovelIds)
                 redisTemplateForTime.opsForValue().setIfAbsent(RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + user.getId() + ':' + novelId, now);
+        }
+    }
+
+    public void loadSearchNovelEntity(List<NovelInfoVO> novels) throws IOException {
+        for (var novel : novels) {
+            if (!esClient.exists(g -> g
+                    .index(ElasticSearchConstant.INDEX_NAME)
+                    .id(novel.getId().toString())
+            ).value()) {
+                elasticSearchService.saveSearchNovelEntity(novel);
+            }
         }
     }
 }
