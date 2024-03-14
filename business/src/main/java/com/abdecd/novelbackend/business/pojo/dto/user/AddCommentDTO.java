@@ -21,7 +21,7 @@ public class AddCommentDTO {
     @Schema(description = "目标评论id，对小说写-1")
     private Long toId;
     @NotBlank
-    @Length(min = 1, max = DTOConstant.STRING_LENGTH_MAX)
+    @Length(min = 1, max = DTOConstant.COMMENT_LENGTH_MAX)
     private String content; // todo 关键字屏蔽
 
     public UserComment toEntity() {
