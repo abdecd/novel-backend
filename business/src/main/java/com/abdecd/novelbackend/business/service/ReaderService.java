@@ -196,11 +196,8 @@ public class ReaderService {
                 operations.multi();
                 if (list != null) {
                     for (var readerHistoryVO : list) {
-                        if (Objects.equals(readerHistoryVO.getNovelId(), newRecord.getNovelId())
-                                && Objects.equals(readerHistoryVO.getVolumeNumber(), newRecord.getVolumeNumber())
-                                && Objects.equals(readerHistoryVO.getChapterNumber(), newRecord.getChapterNumber())) {
-                            operations.opsForList().remove(RedisConstant.READER_HISTORY + userId, 1, readerHistoryVO);
-                            break;
+                        if (Objects.equals(readerHistoryVO.getNovelId(), newRecord.getNovelId())) {
+                            operations.opsForList().remove(RedisConstant.READER_HISTORY + userId, -1, readerHistoryVO);
                         }
                     }
                 }
@@ -221,8 +218,9 @@ public class ReaderService {
             if (willStartId == null) {
                 tmpList = readerHistoryMapper.listReaderHistoryVO(uid, null, RedisConstant.READER_HISTORY_SIZE, StatusConstant.ENABLE);
             } else {
-                tmpList = readerHistoryMapper.listReaderHistoryVO(uid, willStartId, RedisConstant.READER_HISTORY_SIZE - list.size() + 1, StatusConstant.ENABLE);
-                tmpList.removeFirst();
+                var novelIdsNot = list.stream().map(ReaderHistoryVO::getNovelId).toArray(Integer[]::new);
+                // 已将重复列表排除，不用多拿一个
+                tmpList = readerHistoryMapper.listReaderHistoryVO(uid, willStartId, RedisConstant.READER_HISTORY_SIZE - list.size(), StatusConstant.ENABLE, novelIdsNot);
             }
             if (!tmpList.isEmpty()) redisTemplate.opsForList().rightPushAll(RedisConstant.READER_HISTORY + uid, tmpList);
             list.addAll(tmpList);
