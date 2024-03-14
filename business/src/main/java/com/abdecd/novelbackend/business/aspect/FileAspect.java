@@ -39,7 +39,7 @@ public class FileAspect {
 
                 if (img != null) {
                     try {
-                        img = fileService.changeTmpImgToStatic(img, useFileService.folder());
+                        img = fileService.changeTmpFileToStatic(img, useFileService.folder());
                     } catch (IOException e) {
                         throw new BaseException("图片链接异常");
                     }
@@ -57,7 +57,7 @@ public class FileAspect {
                 return joinPoint.proceed();
             } catch (Exception e) {
                 // 回滚
-                if (!imgList.isEmpty()) for (var img : imgList) fileService.deleteImg(img);
+                if (!imgList.isEmpty()) for (var img : imgList) fileService.deleteFile(img);
                 throw e;
             }
         } else {

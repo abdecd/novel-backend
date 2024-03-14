@@ -1,5 +1,7 @@
 package com.abdecd.novelbackend.business.service;
 
+import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.common.util.ImageChecker;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +19,8 @@ import java.util.UUID;
 @Slf4j
 public class LocalFileServiceImpl implements FileService {
 
-    @Value("${novel.local-file-service.img-path:empty}")
-    private String IMG_PATH;
+    @Value("${novel.local-file-service.file-base-path:empty}")
+    private String FILE_BASE_PATH;
 
     @Value("${novel.local-file-service.url-prefix:empty}")
     private String URL_PREFIX;
@@ -28,14 +30,14 @@ public class LocalFileServiceImpl implements FileService {
         return TMP_FOLDER_BASE + "/user" + UserContext.getUserId();
     }
 
-    public static String getImgFolder() {
+    public static String getFileFolder() {
         return "/img";
     }
 
     private String basicUpload(MultipartFile file, String folder) throws IOException {
-        if (IMG_PATH.equals("empty")) return "";
+        if (FILE_BASE_PATH.equals("empty")) return "";
         var suffix = Objects.requireNonNull(file.getOriginalFilename()).substring(file.getOriginalFilename().lastIndexOf(".")).toLowerCase();
-        var dest = new File(IMG_PATH + folder + "/" + UUID.randomUUID() + suffix);
+        var dest = new File(FILE_BASE_PATH + folder + "/" + UUID.randomUUID() + suffix);
         if (dest.exists()) throw new IOException("文件已存在");
         // 保存文件
         dest.getParentFile().mkdirs();
@@ -47,25 +49,25 @@ public class LocalFileServiceImpl implements FileService {
     }
 
     @Override
-    public String uploadTmpImg(MultipartFile file) throws IOException {
+    public String uploadTmpFile(MultipartFile file) throws IOException {
         return basicUpload(file, getTmpFolder());
     }
 
     @Override
-    public String uploadImg(MultipartFile file) throws IOException {
-        return basicUpload(file, getImgFolder());
+    public String uploadFile(MultipartFile file) throws IOException {
+        return basicUpload(file, getFileFolder());
     }
 
     @Override
-    public String changeTmpImgToStatic(String fullTmpFilePath, String folder) throws IOException {
+    public String changeTmpFileToStatic(String fullTmpFilePath, String folder) throws IOException {
         // getTmpFolder()/xxx  ->  folder/xxx
-        if (IMG_PATH.equals("empty")) return "";
-        if (folder == null || folder.isEmpty()) folder = getImgFolder();
+        if (FILE_BASE_PATH.equals("empty")) return "";
+        if (folder == null || folder.isEmpty()) folder = getFileFolder();
         if (!fullTmpFilePath.startsWith(URL_PREFIX)) return "";
         var tmpFilePath = fullTmpFilePath.substring(URL_PREFIX.length());
         if (!tmpFilePath.startsWith(getTmpFolder()+"/")) return "";
-        var oldPath = IMG_PATH + tmpFilePath;
-        var newPath = IMG_PATH + folder + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"));
+        var oldPath = FILE_BASE_PATH + tmpFilePath;
+        var newPath = FILE_BASE_PATH + folder + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"));
         var tmp = new File(oldPath);
         var newFile = new File(newPath);
         newFile.getParentFile().mkdirs();
@@ -74,11 +76,11 @@ public class LocalFileServiceImpl implements FileService {
     }
 
     @Override
-    public void deleteImg(String path) {
-        if (IMG_PATH.equals("empty")) return;
+    public void deleteFile(String path) {
+        if (FILE_BASE_PATH.equals("empty")) return;
         if (!path.startsWith(URL_PREFIX)) return;
         var tmpFilePath = path.substring(URL_PREFIX.length());
-        var oldPath = IMG_PATH + tmpFilePath;
+        var oldPath = FILE_BASE_PATH + tmpFilePath;
         var file = new File(oldPath);
         if (file.exists() && file.isFile()) file.delete();
     }
@@ -88,24 +90,24 @@ public class LocalFileServiceImpl implements FileService {
      * @param ttl 时长，单位秒
      * @throws IOException :
      */
-    public void clearTmpImg(Integer ttl) throws IOException {
-        if (IMG_PATH.equals("empty")) return;
-        var tmpDir = new File(IMG_PATH + TMP_FOLDER_BASE);
+    public void clearTmpFile(Integer ttl) throws IOException {
+        if (FILE_BASE_PATH.equals("empty")) return;
+        var tmpDir = new File(FILE_BASE_PATH + TMP_FOLDER_BASE);
         if (tmpDir.exists()) {
             var files = tmpDir.listFiles();
             if (files != null) {
                 for (var file : files) {
-                    clearTmpImgBase(file, ttl);
+                    clearTmpFileBase(file, ttl);
                 }
             }
         }
     }
-    private void clearTmpImgBase(File tmpDir, Integer ttl) throws IOException {
+    private void clearTmpFileBase(File tmpDir, Integer ttl) throws IOException {
         if (tmpDir.exists() && tmpDir.isDirectory()) {
             var files = tmpDir.listFiles();
             if (files != null) {
                 for (var file : files) {
-                    if (file.isDirectory()) clearTmpImgBase(file, ttl);
+                    if (file.isDirectory()) clearTmpFileBase(file, ttl);
                     else {
                         var fileTime = Files.getLastModifiedTime(file.toPath()).toMillis();
                         var now = System.currentTimeMillis();
@@ -121,10 +123,12 @@ public class LocalFileServiceImpl implements FileService {
 
     @Override
     public void viewImg(String path, HttpServletResponse response) throws IOException {
-        if (IMG_PATH.equals("empty")) return;
+        if (FILE_BASE_PATH.equals("empty")) return;
         response.setContentType("image/jpeg");
         response.setHeader("Cache-Control", "public, max-age=31536000");
-        var file = new File(IMG_PATH + path);
-        Files.copy(file.toPath(), response.getOutputStream());
+        var file = new File(FILE_BASE_PATH + path);
+        if (file.exists() && file.isFile() && ImageChecker.isImage(file))
+            Files.copy(file.toPath(), response.getOutputStream());
+        else throw new BaseException("文件不存在或格式错误");
     }
 }
