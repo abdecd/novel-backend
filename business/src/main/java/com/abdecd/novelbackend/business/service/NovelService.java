@@ -134,7 +134,7 @@ public class NovelService {
     })
     @Transactional
     public void deleteNovelInfoReally(NovelInfo novelInfo) {
-        fileService.deleteImg(novelInfo.getCover());
+        fileService.deleteFile(novelInfo.getCover());
         // 章节内容没有外键约束, 手动删除
         var volumeList = novelVolumeService.listNovelVolume(novelInfo.getId());
         for (var volume : volumeList) {

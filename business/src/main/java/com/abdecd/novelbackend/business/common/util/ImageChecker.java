@@ -2,6 +2,8 @@ package com.abdecd.novelbackend.business.common.util;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -12,6 +14,15 @@ public class ImageChecker {
         byte[] headerBytes = new byte[HEAD_BYTES_TO_READ];
         InputStream inputStream = file.getInputStream();
         inputStream.read(headerBytes, 0, HEAD_BYTES_TO_READ);
+
+        return checkImageType(headerBytes);
+    }
+
+    public static boolean isImage(File file) throws IOException {
+        byte[] headerBytes = new byte[HEAD_BYTES_TO_READ];
+        try (InputStream inputStream = new FileInputStream(file)) {
+            inputStream.read(headerBytes, 0, HEAD_BYTES_TO_READ);
+        }
 
         return checkImageType(headerBytes);
     }

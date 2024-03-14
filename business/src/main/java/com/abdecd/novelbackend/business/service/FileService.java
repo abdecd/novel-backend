@@ -8,38 +8,38 @@ import java.io.IOException;
 public interface FileService {
 
     /**
-     * 临时图片上传
+     * 临时文件上传
      * @param file :
      * @return url
      * @throws IOException :
      */
-    String uploadTmpImg(MultipartFile file) throws IOException;
+    String uploadTmpFile(MultipartFile file) throws IOException;
 
     /**
-     * 图片上传
+     * 文件上传
      * @param file :
      * @return url
      * @throws IOException :
      */
-    default String uploadImg(MultipartFile file) throws IOException {
+    default String uploadFile(MultipartFile file) throws IOException {
         throw new RuntimeException("未实现");
     }
 
     /**
-     * 临时图片转正 不成功返回空字符串
+     * 临时文件转正 不成功返回空字符串
      * @param tmpPath url
      * @return url
      */
-    default String changeTmpImgToStatic(String tmpPath, String folder) throws IOException {
+    default String changeTmpFileToStatic(String tmpPath, String folder) throws IOException {
         throw new RuntimeException("未实现");
     }
 
     /**
-     * 图片删除
+     * 文件删除
      * Dangerous
      * @param path url
      */
-    default void deleteImg(String path) {
+    default void deleteFile(String path) {
         throw new RuntimeException("未实现");
     }
 

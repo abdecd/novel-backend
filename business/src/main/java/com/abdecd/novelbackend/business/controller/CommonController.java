@@ -83,7 +83,7 @@ public class CommonController {
             RedisAtomicInteger redisAtomicInteger = new RedisAtomicInteger(key, Objects.requireNonNull(redisTemplate.getConnectionFactory()));
             if (redisAtomicInteger.get() == 0) redisAtomicInteger.expire(1, TimeUnit.DAYS);
             if (redisAtomicInteger.incrementAndGet() > 300) return CompletableFuture.completedFuture(Result.error("图片上传次数达到上限"));
-            return CompletableFuture.completedFuture(Result.success(fileService.uploadTmpImg(file)));
+            return CompletableFuture.completedFuture(Result.success(fileService.uploadTmpFile(file)));
         } catch (IOException e) {
             log.warn("上传失败", e);
             return CompletableFuture.completedFuture(Result.error("上传失败"));
