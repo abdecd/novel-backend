@@ -69,6 +69,6 @@ public class ElasticSearchService {
                 SearchNovelEntity.class
         );
         return response.suggest().get("suggestion").getFirst().completion().options()
-                .stream().limit(num).map(CompletionSuggestOption::text).toList();
+                .stream().limit(100).map(CompletionSuggestOption::text).distinct().limit(num).toList();
     }
 }
