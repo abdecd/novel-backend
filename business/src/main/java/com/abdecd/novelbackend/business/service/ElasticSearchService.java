@@ -41,9 +41,9 @@ public class ElasticSearchService {
             .query(q -> q
                 .bool(b -> b
                     .should(b1 -> b1.matchPhrase(b2 -> b2.field("title").query(keyword)))
-                    .should(b1 -> b1.match(b2 -> b2.field("author").query(keyword)))
-                    .should(b1 -> b1.match(b2 -> b2.field("tags_text").query(keyword)))
-                    .should(b1 -> b1.match(b2 -> b2.field("description").query(keyword)))
+                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("author").query(keyword)))
+                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("tags_text").query(keyword)))
+                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("description").query(keyword)))
                 )
             )
             .from(Math.max(0, (page - 1) * pageSize))
