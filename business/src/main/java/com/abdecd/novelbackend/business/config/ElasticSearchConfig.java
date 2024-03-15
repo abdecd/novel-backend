@@ -8,7 +8,9 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
+@Configuration
 public class ElasticSearchConfig {
     @Value("${spring.data.elasticsearch.url}")
     private String serverUrl;
