@@ -28,12 +28,14 @@ token-login:
     - /novel/recommend
     - /novel/related
     - /novel/hot
-    - /novel/available-tags
-    - /novel/get-by-tags
-    - /novel/hot-tags
+    - /novel/tags/available-tags
+    - /novel/tags/get-by-tags
+    - /novel/tags/hot-tags
     - /novel/chapter
     - /novel/chapter/previous
     - /novel/chapter/next
     - /novel/contents
     - /novel
     - /novel/comment
+    - /search
+    - /search/suggestion
