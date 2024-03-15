@@ -40,10 +40,10 @@ public class ElasticSearchService {
             .index(ElasticSearchConstant.INDEX_NAME)
             .query(q -> q
                 .bool(b -> b
-                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("title").query(keyword)))
-                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("author").query(keyword)))
-                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("tags_text").query(keyword)))
-                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("description").query(keyword)))
+                    .should(b1 -> b1.match(b2 -> b2.field("title").query(keyword).minimumShouldMatch("80%").boost(1.5F)))
+                    .should(b1 -> b1.match(b2 -> b2.field("author").query(keyword).minimumShouldMatch("80%")))
+                    .should(b1 -> b1.match(b2 -> b2.field("tags_text").query(keyword).minimumShouldMatch("80%")))
+                    .should(b1 -> b1.match(b2 -> b2.field("description").query(keyword).minimumShouldMatch("80%").boost(0.5F)))
                 )
             )
             .from(Math.max(0, (page - 1) * pageSize))
