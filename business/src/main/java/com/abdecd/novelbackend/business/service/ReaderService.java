@@ -34,10 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class ReaderService {
@@ -257,7 +254,18 @@ public class ReaderService {
 
     @Cacheable(value = "getHotTagIds#32", key = "#startTime.toString() + ':' + #endTime.toString()")
     public List<Integer> getHotTagIds(LocalDateTime startTime, LocalDateTime endTime) {
-        return readerHistoryMapper.getHotTagIds(startTime, endTime);
+        var list = readerHistoryMapper.getHotTagIds(startTime, endTime);
+        if (list.isEmpty() || list.size() < 5) {
+            var novelService = SpringContextUtil.getBean(NovelService.class);
+            var tags = novelService.getAvailableTags();
+            Collections.shuffle(tags);
+            while (list.size() < 5 && !tags.isEmpty()) {
+                var tag = tags.removeFirst();
+                var id = tag.getId();
+                if (!list.contains(id)) list.add(id);
+            }
+        }
+        return list;
     }
 
     @Cacheable(value = "getNovelIdsByTagId", key = "#tagId", unless = "#result.isEmpty()")
