@@ -40,9 +40,8 @@ public class ElasticSearchService {
             .index(ElasticSearchConstant.INDEX_NAME)
             .query(q -> q
                 .bool(b -> b
-                    .should(b1 -> b1.match(b2 -> b2.field("title").query(keyword)))
+                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("title").query(keyword)))
                     .should(b1 -> b1.match(b2 -> b2.field("author").query(keyword)))
-                    .should(b1 -> b1.match(b2 -> b2.field("tags").query(keyword)))
                     .should(b1 -> b1.match(b2 -> b2.field("tags_text").query(keyword)))
                     .should(b1 -> b1.match(b2 -> b2.field("description").query(keyword)))
                 )
