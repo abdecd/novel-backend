@@ -10,6 +10,7 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.server.PathContainer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -21,6 +22,7 @@ import java.util.Date;
 import java.util.Map;
 
 @Component
+@Order(1)
 @Slf4j
 public class LoginInterceptor implements HandlerInterceptor {
     @Resource

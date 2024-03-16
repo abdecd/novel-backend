@@ -73,7 +73,7 @@ public class ElasticSearchService {
                 )
             )
             .fields(f -> f.field("id"))
-            .minScore(9.)
+            .minScore(10.)
             .from(Math.max(0, (page - 1) * pageSize))
             .size(pageSize),
             SearchNovelEntity.class
