@@ -40,14 +40,16 @@ public class ElasticSearchService {
             .index(ElasticSearchConstant.INDEX_NAME)
             .query(q -> q
                 .bool(b -> b
-                    .should(b1 -> b1.match(b2 -> b2.field("title").query(keyword).minimumShouldMatch("80%").boost(1.5F)))
+                    .should(b1 -> b1.match(b2 -> b2.field("title").query(keyword).minimumShouldMatch("80%").boost(2F)))
+                    .should(b1 -> b1.matchPhrasePrefix(b2 -> b2.field("title").query(keyword).boost(2F)))
                     .should(b1 -> b1.match(b2 -> b2.field("author").query(keyword).minimumShouldMatch("80%")))
                     .should(b1 -> b1.match(b2 -> b2.field("tags_text").query(keyword).minimumShouldMatch("80%")))
                     .should(b1 -> b1.match(b2 -> b2.field("description").query(keyword).minimumShouldMatch("80%").boost(0.5F)))
                 )
             )
+            .minScore(9.)
             .from(Math.max(0, (page - 1) * pageSize))
-            .size(page * pageSize),
+            .size(pageSize),
             SearchNovelEntity.class
         );
         if (response.hits().total() == null || response.hits().total().value() == 0) return new PageVO<>(0, new ArrayList<>());
