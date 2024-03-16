@@ -18,6 +18,5 @@ public class SearchNovelEntity {
         suggestion = new ArrayList<>();
         suggestion.add(title);
         suggestion.add(author);
-        suggestion.addAll(tags);
     }
 }

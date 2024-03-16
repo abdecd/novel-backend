@@ -20,6 +20,31 @@ public class ElasticSearchService {
     @Autowired
     private ElasticsearchClient esClient;
 
+    public void initData(List<String> tags, List<NovelInfoVO> novels) throws IOException {
+        for (var tag : tags) {
+            if (!esClient.exists(g -> g
+                    .index(ElasticSearchConstant.INDEX_NAME)
+                    .id(tag)
+            ).value()) {
+                var searchNovelEntity = new SearchNovelEntity();
+                searchNovelEntity.setSuggestion(List.of(tag));
+                esClient.index(u -> u
+                        .index(ElasticSearchConstant.INDEX_NAME)
+                        .id(tag)
+                        .document(searchNovelEntity)
+                );
+            }
+        }
+        for (var novel : novels) {
+            if (!esClient.exists(g -> g
+                    .index(ElasticSearchConstant.INDEX_NAME)
+                    .id(novel.getId().toString())
+            ).value()) {
+                saveSearchNovelEntity(novel);
+            }
+        }
+    }
+
     public void saveSearchNovelEntity(NovelInfoVO novelInfoVO) throws IOException {
         esClient.index(u -> u
                 .index(ElasticSearchConstant.INDEX_NAME)
@@ -47,6 +72,7 @@ public class ElasticSearchService {
                     .should(b1 -> b1.match(b2 -> b2.field("description").query(keyword).minimumShouldMatch("80%").boost(0.5F)))
                 )
             )
+            .fields(f -> f.field("id"))
             .minScore(9.)
             .from(Math.max(0, (page - 1) * pageSize))
             .size(pageSize),
@@ -64,13 +90,18 @@ public class ElasticSearchService {
 
     public List<String> getSearchSuggestions(String keyword, Integer num) throws IOException {
         var response = esClient.search(s -> s
-                        .index(ElasticSearchConstant.INDEX_NAME)
-                        .suggest(sug -> sug.suggesters("suggestion", sug2 -> sug2
-                                .prefix(keyword)
-                                .completion(f -> f.field("suggestion")))),
+                .index(ElasticSearchConstant.INDEX_NAME)
+                .suggest(sug -> sug.suggesters("suggestion", sug2 -> sug2
+                        .prefix(keyword)
+                        .completion(f -> f
+                                .field("suggestion")
+                                .skipDuplicates(true)
+                        )
+                ))
+                .fields(f -> f.field("id")),
                 SearchNovelEntity.class
         );
         return response.suggest().get("suggestion").getFirst().completion().options()
-                .stream().limit(100).map(CompletionSuggestOption::text).distinct().limit(num).toList();
+                .stream().limit(num).map(CompletionSuggestOption::text).toList();
     }
 }
