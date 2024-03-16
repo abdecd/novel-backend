@@ -1,11 +1,10 @@
 package com.abdecd.novelbackend.business.onstartup;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.service.ElasticSearchService;
 import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.business.service.ReaderService;
-import com.abdecd.novelbackend.common.constant.ElasticSearchConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.tokenlogin.mapper.UserMapper;
 import com.abdecd.tokenlogin.pojo.entity.User;
@@ -30,8 +29,6 @@ public class DataLoader implements ApplicationRunner {
     private UserMapper userMapper;
     @Autowired
     private RedisTemplate<String, LocalDateTime> redisTemplateForTime;
-    @Autowired
-    private ElasticsearchClient esClient;
     @Autowired
     private ElasticSearchService elasticSearchService;
 
@@ -62,13 +59,7 @@ public class DataLoader implements ApplicationRunner {
     }
 
     public void loadSearchNovelEntity(List<NovelInfoVO> novels) throws IOException {
-        for (var novel : novels) {
-            if (!esClient.exists(g -> g
-                    .index(ElasticSearchConstant.INDEX_NAME)
-                    .id(novel.getId().toString())
-            ).value()) {
-                elasticSearchService.saveSearchNovelEntity(novel);
-            }
-        }
+        var tags = novelService.getAvailableTags().stream().map(NovelTags::getTagName).toList();
+        elasticSearchService.initData(tags, novels);
     }
 }
