@@ -34,7 +34,6 @@ public class ImageChecker {
      */
     private static boolean checkImageType(byte[] headerBytes) {
         String hexString = bytesToHexString(headerBytes);
-        System.out.println("hexString"+hexString);
 
         // 示例：简单检查JPEG、PNG、GIF等常见图片类型的头部特征
         return (
