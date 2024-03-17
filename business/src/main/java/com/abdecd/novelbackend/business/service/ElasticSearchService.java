@@ -61,19 +61,22 @@ public class ElasticSearchService {
     }
 
     public PageVO<NovelInfoVO> searchNovel(String keyword, Integer page, Integer pageSize) throws IOException {
+        var strlen = keyword.replaceAll("\\s","").length();
+        String minimumShouldMatch;
+        if (strlen < 3) minimumShouldMatch = "100%";
+        else minimumShouldMatch = "80%";
         var response = esClient.search(s -> s
             .index(ElasticSearchConstant.INDEX_NAME)
             .query(q -> q
                 .bool(b -> b
-                    .should(b1 -> b1.match(b2 -> b2.field("title").query(keyword).minimumShouldMatch("80%").boost(2F)))
-                    .should(b1 -> b1.matchPhrasePrefix(b2 -> b2.field("title").query(keyword).boost(2F)))
-                    .should(b1 -> b1.match(b2 -> b2.field("author").query(keyword).minimumShouldMatch("80%")))
-                    .should(b1 -> b1.match(b2 -> b2.field("tags_text").query(keyword).minimumShouldMatch("80%")))
-                    .should(b1 -> b1.match(b2 -> b2.field("description").query(keyword).minimumShouldMatch("80%").boost(0.5F)))
+                    .should(b1 -> b1.match(b2 -> b2.field("title").query(keyword).minimumShouldMatch(minimumShouldMatch).boost(1.5F)))
+                    .should(b1 -> b1.matchPhrasePrefix(b2 -> b2.field("title").query(keyword).boost(1.5F)))
+                    .should(b1 -> b1.match(b2 -> b2.field("author").query(keyword).minimumShouldMatch(minimumShouldMatch)))
+                    .should(b1 -> b1.match(b2 -> b2.field("tags_text").query(keyword).minimumShouldMatch(minimumShouldMatch)))
+                    .should(b1 -> b1.match(b2 -> b2.field("description").query(keyword).minimumShouldMatch(minimumShouldMatch).boost(0.5F)))
                 )
             )
             .fields(f -> f.field("id"))
-            .minScore(10.)
             .from(Math.max(0, (page - 1) * pageSize))
             .size(pageSize),
             SearchNovelEntity.class
