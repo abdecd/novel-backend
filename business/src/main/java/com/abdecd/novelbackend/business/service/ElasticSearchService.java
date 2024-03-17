@@ -63,7 +63,7 @@ public class ElasticSearchService {
     public PageVO<NovelInfoVO> searchNovel(String keyword, Integer page, Integer pageSize) throws IOException {
         var strlen = keyword.replaceAll("\\s","").length();
         String minimumShouldMatch;
-        if (strlen < 3) minimumShouldMatch = "100%";
+        if (strlen < 7) minimumShouldMatch = "100%";
         else minimumShouldMatch = "80%";
         var response = esClient.search(s -> s
             .index(ElasticSearchConstant.INDEX_NAME)
