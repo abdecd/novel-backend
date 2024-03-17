@@ -69,11 +69,12 @@ public class ElasticSearchService {
             .index(ElasticSearchConstant.INDEX_NAME)
             .query(q -> q
                 .bool(b -> b
-                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("title").query(keyword).slop(5).boost(2F)))
+                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("title").query(keyword).slop(10).boost(2F)))
                     .should(b1 -> b1.matchPhrasePrefix(b2 -> b2.field("title").query(keyword).boost(1.5F)))
                     .should(b1 -> b1.match(b2 -> b2.field("author").query(keyword).minimumShouldMatch(minimumShouldMatch)))
+                    .should(b1 -> b1.term(b2 -> b2.field("tags").value(keyword)))
                     .should(b1 -> b1.match(b2 -> b2.field("tags_text").query(keyword).minimumShouldMatch(minimumShouldMatch)))
-                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("description").query(keyword).slop(2).boost(0.5F)))
+                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("description").query(keyword).slop(4).boost(0.5F)))
                 )
             )
             .fields(f -> f.field("id"))
