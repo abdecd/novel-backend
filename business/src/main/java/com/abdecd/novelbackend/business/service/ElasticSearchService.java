@@ -63,19 +63,23 @@ public class ElasticSearchService {
     public PageVO<NovelInfoVO> searchNovel(String keyword, Integer page, Integer pageSize) throws IOException {
         var strlen = keyword.replaceAll("\\s","").length();
         String minimumShouldMatch;
-        if (strlen < 7) minimumShouldMatch = "100%";
-        else minimumShouldMatch = "80%";
+        if (strlen > 5) minimumShouldMatch = "80%";
+        else minimumShouldMatch = "100%";
         var response = esClient.search(s -> s
             .index(ElasticSearchConstant.INDEX_NAME)
             .query(q -> q
-                .bool(b -> b
-                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("title").query(keyword).slop(10).boost(2F)))
-                    .should(b1 -> b1.matchPhrasePrefix(b2 -> b2.field("title").query(keyword).boost(1.5F)))
-                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("author").query(keyword).slop(1)))
-                    .should(b1 -> b1.term(b2 -> b2.field("tags").value(keyword)))
-                    .should(b1 -> b1.match(b2 -> b2.field("tags_text").query(keyword).minimumShouldMatch(minimumShouldMatch)))
-                    .should(b1 -> b1.matchPhrase(b2 -> b2.field("description").query(keyword).slop(1).boost(0.5F)))
-                )
+                .bool(b -> {
+                    var query = b
+                            .should(b1 -> b1.matchPhrase(b2 -> b2.field("title").query(keyword).slop(10).boost(2F)))
+                            .should(b1 -> b1.matchPhrasePrefix(b2 -> b2.field("title").query(keyword).boost(1.5F)))
+                            .should(b1 -> b1.matchPhrase(b2 -> b2.field("author").query(keyword).slop(1)))
+                            .should(b1 -> b1.term(b2 -> b2.field("tags").value(keyword)))
+                            .should(b1 -> b1.match(b2 -> b2.field("tags_text").query(keyword).minimumShouldMatch(minimumShouldMatch)));
+                    if (strlen > 5) {
+                        query.should(b1 -> b1.matchPhrase(b2 -> b2.field("description").query(keyword).slop(1).boost(0.5F)));
+                    }
+                    return query;
+                })
             )
             .fields(f -> f.field("id"))
             .from(Math.max(0, (page - 1) * pageSize))
