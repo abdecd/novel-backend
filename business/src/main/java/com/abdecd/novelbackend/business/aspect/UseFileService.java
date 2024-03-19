@@ -28,7 +28,12 @@ public @interface UseFileService {
     String folder() default "";
 
     /**
-     * 转正失败直接抛出异常
+     * 目标转正后文件名
+     */
+    String name() default "";
+
+    /**
+     * 除非字段为null，否则转正失败直接抛出异常
      */
     boolean strict() default true;
 }

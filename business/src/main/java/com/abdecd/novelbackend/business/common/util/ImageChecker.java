@@ -27,6 +27,13 @@ public class ImageChecker {
         return checkImageType(headerBytes);
     }
 
+    public static boolean isImage(InputStream inputStream) throws IOException {
+        byte[] headerBytes = new byte[HEAD_BYTES_TO_READ];
+        inputStream.read(headerBytes, 0, HEAD_BYTES_TO_READ);
+
+        return checkImageType(headerBytes);
+    }
+
     /**
      * 检查文件头并确定是否是图片文件
      * @param headerBytes 文件头字节数组

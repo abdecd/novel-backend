@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.support.atomic.RedisAtomicInteger;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -94,8 +95,16 @@ public class CommonController {
     @Operation(summary = "图片查看")
     @GetMapping("/image/**")
     public CompletableFuture<Result<String>> viewImg(HttpServletRequest request, HttpServletResponse response) {
-        try {
-            fileService.viewImg(request.getRequestURI().substring("/common/image".length()), response);
+        var path = request.getRequestURI().substring("/common/image".length());
+        try (
+                var inForCheck = fileService.getFileInSystem(path);
+                var in = fileService.getFileInSystem(path)
+        ) {
+            response.setContentType("image/jpeg");
+            response.setHeader("Cache-Control", "public, max-age=31536000");
+            if (ImageChecker.isImage(inForCheck))
+                FileCopyUtils.copy(in, response.getOutputStream());
+            else throw new BaseException("文件不存在或格式错误");
             return null;
         } catch (IOException e) {
             log.warn("查看失败", e);

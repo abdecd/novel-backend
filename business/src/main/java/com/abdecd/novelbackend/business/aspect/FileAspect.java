@@ -39,15 +39,15 @@ public class FileAspect {
 
                 if (img != null) {
                     try {
-                        img = fileService.changeTmpFileToStatic(img, useFileService.folder());
+                        img = fileService.changeTmpFileToStatic(img, useFileService.folder(), useFileService.name());
                     } catch (IOException e) {
-                        throw new BaseException("图片链接异常");
+                        throw new BaseException("文件链接异常");
                     }
                     // 转正成功，换新链接
                     Method setMethod = useFileService.param().getMethod("set"+suffix, String.class);
                     if (!img.isEmpty()) setMethod.invoke(arg, img);
                     else {
-                        if (useFileService.strict()) throw new BaseException("图片链接异常");
+                        if (useFileService.strict()) throw new BaseException("文件链接异常");
                         img = null;
                     }
                 }
