@@ -41,7 +41,7 @@ public class NovelController {
             HttpServletResponse response
     ) {
         var novelInfoVO = novelService.getNovelInfoVO(nid);
-        if (HttpCacheUtils.tryUseCache(request, response, novelInfoVO.hashCode())) return null;
+        if (novelInfoVO != null && HttpCacheUtils.tryUseCache(request, response, novelInfoVO.hashCode())) return null;
         return Result.success(novelInfoVO);
     }
 

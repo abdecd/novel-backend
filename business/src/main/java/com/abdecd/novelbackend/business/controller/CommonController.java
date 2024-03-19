@@ -102,7 +102,7 @@ public class CommonController {
         ) {
             response.setContentType("image/jpeg");
             response.setHeader("Cache-Control", "public, max-age=31536000");
-            if (ImageChecker.isImage(inForCheck))
+            if (inForCheck != null && ImageChecker.isImage(inForCheck))
                 FileCopyUtils.copy(in, response.getOutputStream());
             else throw new BaseException("文件不存在或格式错误");
             return null;
