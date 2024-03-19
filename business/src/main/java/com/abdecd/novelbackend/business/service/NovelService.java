@@ -82,7 +82,11 @@ public class NovelService {
             @CacheEvict(value = "getHotTagIds#32", allEntries = true)
     })
     @Transactional
-    @UseFileService(value = "cover", param = UpdateNovelInfoDTOWithUrl.class)
+    @UseFileService(
+            value = "cover",
+            param = UpdateNovelInfoDTOWithUrl.class,
+            folder = "'/novel_data/' + #updateNovelInfoDTOWithUrl.id"
+    )
     public void updateNovelInfo(UpdateNovelInfoDTOWithUrl updateNovelInfoDTOWithUrl) {
         // 更新小说
         var novelInfo = novelInfoMapper.selectById(updateNovelInfoDTOWithUrl.getId());
@@ -103,7 +107,7 @@ public class NovelService {
             }
         }
         if (cover != null) {
-            fileService.deleteFile(updateNovelInfoDTOWithUrl.getCover());
+            fileService.deleteFile(cover);// todo 同名覆盖
         }
         saveNovelToElasticSearch(novelInfo);
     }
@@ -114,7 +118,6 @@ public class NovelService {
             @CacheEvict(value = "getNovelIds", allEntries = true)
     })
     @Transactional
-    @UseFileService(value = "cover", param = AddNovelInfoDTOWithUrl.class)
     public Integer addNovelInfo(AddNovelInfoDTOWithUrl addNovelInfoDTOWithUrl) {
         // 插入小说
         var novelInfo = new NovelInfo();
@@ -127,6 +130,13 @@ public class NovelService {
                     .setTagId(tagId)
             );
         }
+        // 更新图片
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        var updateNovelInfoDTOWithUrl = new UpdateNovelInfoDTOWithUrl();
+        updateNovelInfoDTOWithUrl.setId(novelInfo.getId());
+        updateNovelInfoDTOWithUrl.setCover(novelInfo.getCover());
+        novelService.updateNovelInfo(updateNovelInfoDTOWithUrl);
+
         saveNovelToElasticSearch(novelInfo);
         return novelInfo.getId();
     }

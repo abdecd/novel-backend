@@ -1,9 +1,9 @@
 package com.abdecd.novelbackend.business.service;
 
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 public interface FileService {
 
@@ -18,19 +18,57 @@ public interface FileService {
     /**
      * 文件上传
      * @param file :
+     * @param fileName :
      * @return url
      * @throws IOException :
      */
-    default String uploadFile(MultipartFile file) throws IOException {
+    default String uploadFile(MultipartFile file, String fileName) throws IOException {
+        throw new RuntimeException("未实现");
+    }
+
+    /**
+     * 文件上传
+     * @param file :
+     * @param folder :
+     * @param fileName :
+     * @return url
+     * @throws IOException :
+     */
+    default String uploadFile(MultipartFile file, String folder, String fileName) throws IOException {
+        throw new RuntimeException("未实现");
+    }
+
+    /**
+     * 文件上传 不会关输入流
+     * @param inputStream :
+     * @param fileName :
+     * @return url
+     * @throws IOException :
+     */
+    default String uploadFile(InputStream inputStream, String fileName) throws IOException {
+        throw new RuntimeException("未实现");
+    }
+
+    /**
+     * 文件上传 不会关输入流
+     * @param inputStream :
+     * @param folder :
+     * @param fileName :
+     * @return url
+     * @throws IOException :
+     */
+    default String uploadFile(InputStream inputStream, String folder, String fileName) throws IOException {
         throw new RuntimeException("未实现");
     }
 
     /**
      * 临时文件转正 不成功返回空字符串
      * @param tmpPath url
+     * @param folder :
+     * @param fileName :
      * @return url
      */
-    default String changeTmpFileToStatic(String tmpPath, String folder) throws IOException {
+    default String changeTmpFileToStatic(String tmpPath, String folder, String fileName) throws IOException {
         throw new RuntimeException("未实现");
     }
 
@@ -44,12 +82,11 @@ public interface FileService {
     }
 
     /**
-     * 图片查看
+     * 文件获取 输入流记得关
      * @param path 相对路径，如 /img/xxx
-     * @param response :
      * @throws IOException :
      */
-    default void viewImg(String path, HttpServletResponse response) throws IOException {
+    default InputStream getFileInSystem(String path) throws IOException {
         throw new RuntimeException("未实现");
     }
 }
