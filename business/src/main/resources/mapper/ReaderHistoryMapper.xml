@@ -3,11 +3,11 @@
 <mapper namespace="com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper">
     <select id="listReaderHistoryVO"
             resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO">
-        SELECT t1.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp,
+        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp,
             ni.title as novelTitle, ni.author, ni.cover,
             nc.title as chapterTitle
         FROM (
-            SELECT MAX(rh.id) as id
+            SELECT rh.novel_id, MAX(rh.timestamp) as timestamp
             FROM reader_history rh
             <where>
                 <if test="userId != null">
@@ -25,10 +25,10 @@
                 </if>
             </where>
             GROUP BY rh.novel_id
-            ORDER BY id desc
+            ORDER BY timestamp desc
             limit #{pageSize}
         ) t1
-        LEFT JOIN reader_history rh ON rh.id = t1.id
+        LEFT JOIN reader_history rh ON rh.novel_id = t1.novel_id and rh.timestamp = t1.timestamp
         LEFT JOIN novel_info ni ON rh.novel_id = ni.id
         LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
     </select>
