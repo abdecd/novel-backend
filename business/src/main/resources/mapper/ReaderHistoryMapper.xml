@@ -25,7 +25,7 @@
                 </if>
             </where>
             GROUP BY rh.novel_id
-            order by id desc
+            ORDER BY id desc
             limit #{pageSize}
         ) t1
         LEFT JOIN reader_history rh ON rh.id = t1.id
@@ -52,15 +52,20 @@
             </if>
             and status = #{enableStatus}
         </where>
-        order by rh.id desc
+        ORDER BY rh.id desc
         limit #{pageSize}
     </select>
     <select id="getRankList" resultType="java.lang.Integer">
-        SELECT rh.novel_id
-        FROM reader_history rh
-        WHERE rh.timestamp &gt;= #{startTime} and rh.timestamp &lt; #{endTime}
-        GROUP BY rh.novel_id
-        ORDER BY COUNT(1) DESC
+        SELECT t1.novel_id
+        FROM (
+            SELECT rh.novel_id, COUNT(1) as count
+            FROM reader_history rh
+            WHERE rh.timestamp &gt;= #{startTime}
+                and rh.timestamp &lt; #{endTime}
+            GROUP BY rh.novel_id, rh.user_id
+        ) t1
+        group by t1.novel_id
+        order by SUM(LEAST(count, 10)) desc
         limit 100
     </select>
     <select id="getRankListByTagName" resultType="java.lang.Integer">
@@ -70,13 +75,18 @@
                  JOIN novel_and_tags nat ON nt.id = nat.tag_id
             WHERE nt.tag_name = #{tagName}
         )
-         SELECT rh.novel_id
-         FROM novels
-             JOIN reader_history rh ON novels.novel_id = rh.novel_id
-         WHERE rh.timestamp &gt;= #{startTime} and rh.timestamp &lt; #{endTime}
-         GROUP BY rh.novel_id
-         ORDER BY COUNT(1) DESC
-         limit 100
+        SELECT t1.novel_id
+        FROM (
+            SELECT rh.novel_id, COUNT(1) as count
+            FROM novels
+                JOIN reader_history rh ON novels.novel_id = rh.novel_id
+            WHERE rh.timestamp &gt;= #{startTime}
+                and rh.timestamp &lt; #{endTime}
+            GROUP BY rh.novel_id, rh.user_id
+        ) t1
+        group by t1.novel_id
+        order by SUM(LEAST(count, 10)) desc
+        limit 100
     </select>
     <select id="getRandomRankList" resultType="java.lang.Integer">
         SELECT ni.id
@@ -100,25 +110,27 @@
     <select id="getReaderFavoriteTagIds" resultType="java.lang.Integer">
         SELECT nat.tag_id
         FROM (
-                SELECT novel_id
-                FROM reader_history rh
-                WHERE rh.user_id = #{userId}
-            ) t1
+            SELECT novel_id, COUNT(1) as count
+            FROM reader_history rh
+            WHERE rh.user_id = #{userId}
+            GROUP BY rh.novel_id
+        ) t1
             LEFT JOIN novel_and_tags nat ON t1.novel_id = nat.novel_id
         GROUP BY nat.tag_id
-        ORDER BY COUNT(nat.tag_id) DESC
+        ORDER BY SUM(LEAST(count, 10)) desc
         LIMIT 2
     </select>
     <select id="getHotTagIds" resultType="java.lang.Integer">
         SELECT nat.tag_id
         FROM (
-            SELECT novel_id
+            SELECT novel_id, COUNT(1) as count
             FROM reader_history rh
             WHERE rh.timestamp &gt;= #{startTime} AND rh.timestamp &lt; #{endTime}
+            GROUP BY rh.novel_id, rh.user_id
         ) t1
-        LEFT JOIN novel_and_tags nat ON t1.novel_id = nat.novel_id
+            LEFT JOIN novel_and_tags nat ON t1.novel_id = nat.novel_id
         GROUP BY nat.tag_id
-        ORDER BY COUNT(nat.tag_id) DESC
+        ORDER BY SUM(LEAST(count, 10)) desc
         LIMIT 5
     </select>
     <select id="getReaderHistoryVO"
