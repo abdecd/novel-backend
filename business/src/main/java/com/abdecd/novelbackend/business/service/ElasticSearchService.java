@@ -1,6 +1,7 @@
 package com.abdecd.novelbackend.business.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.CompletionSuggestOption;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
@@ -21,6 +22,8 @@ public class ElasticSearchService {
     private ElasticsearchClient esClient;
 
     public void initData(List<String> tags, List<NovelInfoVO> novels) throws IOException {
+        List<BulkOperation> operations = new ArrayList<>();
+        // 插入tags
         for (var tag : tags) {
             if (!esClient.exists(g -> g
                     .index(ElasticSearchConstant.INDEX_NAME)
@@ -28,20 +31,34 @@ public class ElasticSearchService {
             ).value()) {
                 var searchNovelEntity = new SearchNovelEntity();
                 searchNovelEntity.setSuggestion(List.of(tag));
-                esClient.index(u -> u
-                        .index(ElasticSearchConstant.INDEX_NAME)
-                        .id(tag)
-                        .document(searchNovelEntity)
-                );
+                operations.add(BulkOperation.of(o -> o
+                        .index(i -> i.index(ElasticSearchConstant.INDEX_NAME)
+                                .id(tag)
+                                .document(searchNovelEntity)
+                        )));
             }
         }
+        // 插入小说
         for (var novel : novels) {
             if (!esClient.exists(g -> g
                     .index(ElasticSearchConstant.INDEX_NAME)
                     .id(novel.getId().toString())
             ).value()) {
-                saveSearchNovelEntity(novel);
+                var searchNovelEntity = novel.toSearchNovelEntity();
+                operations.add(BulkOperation.of(o -> o
+                        .index(i -> i.index(ElasticSearchConstant.INDEX_NAME)
+                                .id(novel.getId().toString())
+                                .document(searchNovelEntity)
+                        )));
             }
+        }
+
+        for (int i = 0; i < operations.size(); i += 1000) {
+            int finalI = i;
+            esClient.bulk(b -> b
+                    .index(ElasticSearchConstant.INDEX_NAME)
+                    .operations(operations.subList(finalI, Math.min(finalI + 1000, operations.size())))
+            );
         }
     }
 
@@ -61,7 +78,7 @@ public class ElasticSearchService {
     }
 
     public PageVO<NovelInfoVO> searchNovel(String keyword, Integer page, Integer pageSize) throws IOException {
-        var strlen = keyword.replaceAll("\\s","").length();
+        var strlen = keyword.replaceAll("\\s", "").length();
         String minimumShouldMatch;
         if (strlen > 5) minimumShouldMatch = "80%";
         else minimumShouldMatch = "100%";
@@ -86,7 +103,8 @@ public class ElasticSearchService {
             .size(pageSize),
             SearchNovelEntity.class
         );
-        if (response.hits().total() == null || response.hits().total().value() == 0) return new PageVO<>(0, new ArrayList<>());
+        if (response.hits().total() == null || response.hits().total().value() == 0)
+            return new PageVO<>(0, new ArrayList<>());
         List<SearchNovelEntity> list = response.hits().hits().stream().map(Hit::source).toList();
         var novelService = SpringContextUtil.getBean(NovelService.class);
         return new PageVO<>(
@@ -103,8 +121,8 @@ public class ElasticSearchService {
                         .prefix(keyword)
                         .completion(f -> f
                                 .field("suggestion")
-                                .size(num)
                                 .skipDuplicates(true)
+                                .size(num)
                         )
                 ))
                 .fields(f -> f.field("id")),
