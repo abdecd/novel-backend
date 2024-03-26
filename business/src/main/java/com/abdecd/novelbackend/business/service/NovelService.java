@@ -43,7 +43,7 @@ public class NovelService {
     @Autowired
     private FileService fileService;
     @Autowired
-    private ReaderService readerService;
+    private TagService tagService;
     @Autowired
     private NovelAndTagsMapper novelAndTagsMapper;
     @Autowired
@@ -58,7 +58,7 @@ public class NovelService {
         var novelInfo = novelInfoMapper.selectById(nid);
         if (novelInfo == null) return null;
 
-        var tagIds = readerService.getTagIdsByNovelId(nid);
+        var tagIds = tagService.getTagIdsByNovelId(nid);
         List<NovelTags> tags = new ArrayList<>();
         if (tagIds != null) tags = novelTagsMapper.selectBatchIds(tagIds);
 
@@ -209,13 +209,13 @@ public class NovelService {
     }
 
     public List<NovelInfoVO> getRelatedList(Integer nid, Integer num) {
-        var tagIds = readerService.getTagIdsByNovelId(nid);
+        var tagIds = tagService.getTagIdsByNovelId(nid);
         if (tagIds.isEmpty()) return new ArrayList<>();
 
         List<Integer> maxList = new ArrayList<>();
         var maxTagId = -1;
         for (Integer tagId : tagIds) {
-            var tmpList = readerService.getNovelIdsByTagId(tagId);
+            var tmpList = tagService.getNovelIdsByTagId(tagId);
             if (maxList.size() < tmpList.size()) {
                 maxList = tmpList;
                 maxTagId = tagId;
@@ -228,13 +228,13 @@ public class NovelService {
         for (var tagId : tagIds) {
             if (tagId == maxTagId) continue;
             if (Math.random() > 0.5) continue;
-            var tmp = readerService.getNovelIdsByTagId(tagId);
+            var tmp = tagService.getNovelIdsByTagId(tagId);
             var willBeNew = novelIdsList.stream().parallel().filter(tmp::contains).toList();
             if (willBeNew.size() < num) continue;
             novelIdsList = willBeNew;
         }
         List<Integer> novelIds = new ArrayList<>(novelIdsList);
-        novelIds.remove((Object) nid);
+        novelIds.remove(nid);
         Collections.shuffle(novelIds);
 
         if (novelIds.size() >= num) novelIds = novelIds.subList(0, num);
@@ -251,9 +251,9 @@ public class NovelService {
     }
 
     public PageVO<NovelInfoVO> getNovelInfoVOByTagIds(int[] tagIds, Integer page, Integer pageSize) {
-        List<Integer> novelIdsList = new ArrayList<>(readerService.getNovelIdsByTagId(tagIds[0]));
+        List<Integer> novelIdsList = new ArrayList<>(tagService.getNovelIdsByTagId(tagIds[0]));
         for (int i = 1; i < tagIds.length; i++) {
-            var tmp = readerService.getNovelIdsByTagId(tagIds[i]);
+            var tmp = tagService.getNovelIdsByTagId(tagIds[i]);
             novelIdsList = novelIdsList.stream().parallel().filter(tmp::contains).toList();
         }
         var novelService = SpringContextUtil.getBean(NovelService.class);

@@ -28,7 +28,7 @@ import java.util.Objects;
 @Service
 public class NovelExtService {
     @Autowired
-    private ReaderService readerService;
+    private TagService tagService;
     @Autowired
     private NovelService novelService;
     @Autowired
@@ -112,11 +112,12 @@ public class NovelExtService {
      */
     public List<NovelTags> getHotTags(String timeType) {
         var pair = getTimeFromTimeType(timeType);
-        var tagIds = readerService.getHotTagIds(pair.getFirst(), pair.getSecond());
+        var novelExtService = SpringContextUtil.getBean(NovelExtService.class);
+        var tagIds = novelExtService.getHotTagIds(pair.getFirst(), pair.getSecond());
         var tagList = novelService.getAvailableTags();
         return tagIds.stream()
                 .map(id -> tagList.stream()
-                        .filter(obj -> Objects.equals(obj.getId(), id)).findFirst().orElseGet(() -> null))
+                        .filter(obj -> Objects.equals(obj.getId(), id)).findFirst().orElse(null))
                 .toList();
     }
 
@@ -144,7 +145,10 @@ public class NovelExtService {
 
     public List<NovelInfoVO> getRecommendList(Integer num) {
         List<Integer> tagIds = new ArrayList<>();
-        if (UserContext.getUserId() != null) tagIds = readerService.getReaderFavoriteTagIds(UserContext.getUserId());
+        if (UserContext.getUserId() != null) {
+            var novelExtService = SpringContextUtil.getBean(NovelExtService.class);
+            tagIds = novelExtService.getReaderFavoriteTagIds(UserContext.getUserId());
+        }
         List<NovelInfoVO> list = new ArrayList<>();
         List<Integer> weigthList = new ArrayList<>();
         weigthList.add((int) Math.ceil((double) num / 2));
@@ -153,7 +157,7 @@ public class NovelExtService {
         for (int i = 0; i < weigthList.size(); i++) {
             List<Integer> novelIds;
             try {
-                novelIds = readerService.getNovelIdsByTagId(tagIds.get(i));
+                novelIds = tagService.getNovelIdsByTagId(tagIds.get(i));
             } catch (IndexOutOfBoundsException e) {
                 novelIds = novelService.getNovelIds();
             }
@@ -179,5 +183,26 @@ public class NovelExtService {
                     .stream().parallel().map(id -> novelService.getNovelInfoVO(id))
                     .toList());
         }).toList();
+    }
+
+    @Cacheable(value = "getHotTagIds#32", key = "#startTime.toString() + ':' + #endTime.toString()")
+    public List<Integer> getHotTagIds(LocalDateTime startTime, LocalDateTime endTime) {
+        var list = readerHistoryMapper.getHotTagIds(startTime, endTime);
+        if (list.isEmpty() || list.size() < 5) {
+            var novelService = SpringContextUtil.getBean(NovelService.class);
+            var tags = novelService.getAvailableTags();
+            Collections.shuffle(tags);
+            while (list.size() < 5 && !tags.isEmpty()) {
+                var tag = tags.removeFirst();
+                var id = tag.getId();
+                if (!list.contains(id)) list.add(id);
+            }
+        }
+        return list;
+    }
+
+    @Cacheable(value = "readerFavoriteTagIds#1", key = "#userId")
+    public List<Integer> getReaderFavoriteTagIds(Integer userId) {
+        return readerHistoryMapper.getReaderFavoriteTagIds(userId);
     }
 }

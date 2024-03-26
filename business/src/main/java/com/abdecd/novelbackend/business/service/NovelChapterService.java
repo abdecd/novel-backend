@@ -97,7 +97,7 @@ public class NovelChapterService {
                                 + "/" + entity.getNovelId()
                                 + "/" + entity.getVolumeNumber(),
                         entity.getChapterNumber() + ".txt"
-                );// todo 更新的时候网断了 然后文件没了
+                );// todo 更新的时候出现异常 然后文件没了
             } catch (Exception e) {
                 throw new BaseException("更新失败");
             }

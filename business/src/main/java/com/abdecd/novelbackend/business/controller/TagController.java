@@ -28,7 +28,7 @@ import java.util.List;
 @Tag(name = "标签接口")
 @RestController
 @RequestMapping("novel/tags")
-public class TagsController {
+public class TagController {
     @Autowired
     private NovelService novelService;
     @Autowired
