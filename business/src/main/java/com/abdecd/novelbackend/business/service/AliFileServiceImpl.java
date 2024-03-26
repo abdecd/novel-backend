@@ -1,28 +1,33 @@
 package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.tokenlogin.common.context.UserContext;
-import lombok.extern.slf4j.Slf4j;
+import com.aliyun.oss.OSS;
+import com.aliyun.oss.OSSClientBuilder;
+import com.aliyun.oss.model.CopyObjectRequest;
+import com.aliyun.oss.model.GetObjectRequest;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.UUID;
 
-//@Service
-@Slf4j
-@SuppressWarnings("all")
-public class LocalFileServiceImpl implements FileService {
-
-    @Value("${novel.local-file-service.file-base-path:empty}")
-    private String FILE_BASE_PATH;
-
-    @Value("${novel.local-file-service.url-prefix:empty}")
+@Service
+public class AliFileServiceImpl implements FileService {
+    @Value("${ali.oss.endpoint:empty}")
+    String endpoint;
+    @Value("${ali.oss.endpoint:empty}")
+    String FILE_BASE_PATH;
+    @Value("${ali.oss.bucket-name}")
+    String bucketName;
+    @Value("${ali.oss.access-key-id}")
+    String accessKeyId;
+    @Value("${ali.oss.access-key-secret}")
+    String accessKeySecret;
+    @Value("${ali.oss.url-prefix}")
     private String URL_PREFIX;
 
     public static final String TMP_FOLDER_BASE = "/tmp";
@@ -36,20 +41,22 @@ public class LocalFileServiceImpl implements FileService {
 
     private String basicUpload(MultipartFile file, String folder, String fileName) throws IOException {
         if (FILE_BASE_PATH.equals("empty")) return "";
-        var dest = new File(FILE_BASE_PATH + folder + "/" + fileName);
         // 保存文件
-        dest.getParentFile().mkdirs();
-        file.transferTo(dest);
+        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        ossClient.putObject(bucketName, (folder + "/" + fileName).substring(1), file.getInputStream());
+        // 关闭OSSClient。
+        ossClient.shutdown();
         // 适配前端
         return URL_PREFIX + folder + "/" + fileName;
     }
 
     private String basicUpload(InputStream inputStream, String folder, String fileName) throws IOException {
         if (FILE_BASE_PATH.equals("empty")) return "";
-        var dest = new File(FILE_BASE_PATH + folder + "/" + fileName);
         // 保存文件
-        dest.getParentFile().mkdirs();
-        Files.copy(inputStream, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        ossClient.putObject(bucketName, (folder + "/" + fileName).substring(1), inputStream);
+        // 关闭OSSClient。
+        ossClient.shutdown();
         // 适配前端
         return URL_PREFIX + folder + "/" + fileName;
     }
@@ -89,13 +96,12 @@ public class LocalFileServiceImpl implements FileService {
         var tmpFilePath = fullTmpFilePath.substring(URL_PREFIX.length());
         if (!tmpFilePath.startsWith(getTmpFolder()+"/")) return "";
         var newFileName = (fileName == null || fileName.isBlank()) ? tmpFilePath.substring(tmpFilePath.lastIndexOf("/")) : ("/" + fileName);
-        var oldPath = FILE_BASE_PATH + tmpFilePath;
-        var newPath = FILE_BASE_PATH + folder + newFileName;
-        var tmp = new File(oldPath);
-        var newFile = new File(newPath);
-        newFile.getParentFile().mkdirs();
-        Files.move(tmp.toPath(), new File(newPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
-        return URL_PREFIX + folder + newFileName;
+        var newPath = folder + newFileName;
+        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        CopyObjectRequest request = new CopyObjectRequest(bucketName, tmpFilePath.substring(1), bucketName, newPath.substring(1));
+        ossClient.copyObject(request);
+        ossClient.shutdown();
+        return URL_PREFIX + newPath;
     }
 
     @Override
@@ -103,60 +109,57 @@ public class LocalFileServiceImpl implements FileService {
         if (FILE_BASE_PATH.equals("empty")) return;
         if (!path.startsWith(URL_PREFIX)) return;
         var tmpFilePath = path.substring(URL_PREFIX.length());
-        var oldPath = FILE_BASE_PATH + tmpFilePath;
-        var file = new File(oldPath);
-        if (file.exists() && file.isFile()) file.delete();
+        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        ossClient.deleteObject(bucketName, tmpFilePath.substring(1));
+        ossClient.shutdown();
     }
 
     @Override
     public void deleteFileInSystem(String path) {
         if (FILE_BASE_PATH.equals("empty")) return;
-        var oldPath = FILE_BASE_PATH + path;
-        var file = new File(oldPath);
-        if (file.exists() && file.isFile()) file.delete();
-    }
-
-    /**
-     * 清除过期的临时文件
-     * @param ttl 时长，单位秒
-     * @throws IOException :
-     */
-    public void clearTmpFile(Integer ttl) throws IOException {
-        if (FILE_BASE_PATH.equals("empty")) return;
-        var tmpDir = new File(FILE_BASE_PATH + TMP_FOLDER_BASE);
-        if (tmpDir.exists()) {
-            var files = tmpDir.listFiles();
-            if (files != null) {
-                for (var file : files) {
-                    clearTmpFileBase(file, ttl);
-                }
-            }
-        }
-    }
-    private void clearTmpFileBase(File tmpDir, Integer ttl) throws IOException {
-        if (tmpDir.exists() && tmpDir.isDirectory()) {
-            var files = tmpDir.listFiles();
-            if (files != null) {
-                for (var file : files) {
-                    if (file.isDirectory()) clearTmpFileBase(file, ttl);
-                    else {
-                        var fileTime = Files.getLastModifiedTime(file.toPath()).toMillis();
-                        var now = System.currentTimeMillis();
-                        if (now - fileTime > ttl * 1000) {
-                            log.info("删除过期文件:{}", file.getAbsolutePath());
-                            file.delete();
-                        }
-                    }
-                }
-            }
-        }
+        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        ossClient.deleteObject(bucketName, path.substring(1));
+        ossClient.shutdown();
     }
 
     @Override
     public InputStream getFileInSystem(String path) throws IOException {
         if (FILE_BASE_PATH.equals("empty")) return null;
-        var file = new File(FILE_BASE_PATH + path);
-        if (file.exists() && file.isFile()) return new FileInputStream(file);
-        return null;
+        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        var obj = ossClient.getObject(new GetObjectRequest(bucketName, path.substring(1)));
+        return new AliInputStream(obj.getObjectContent(), ossClient);
+    }
+    static class AliInputStream extends InputStream {
+        private final InputStream inputStream;
+        private final OSS ossClient;
+        AliInputStream(InputStream inputStream, OSS ossClient) {
+            this.inputStream = inputStream;
+            this.ossClient = ossClient;
+        }
+        @Override
+        public int read() throws IOException {
+            return inputStream.read();
+        }
+        @Override
+        public void close() throws IOException {
+            inputStream.close();
+            ossClient.shutdown();
+        }
+        @Override
+        public int available() throws IOException {
+            return inputStream.available();
+        }
+        @Override
+        public long skip(long n) throws IOException {
+            return inputStream.skip(n);
+        }
+        @Override
+        public int read(@Nonnull byte[] b) throws IOException {
+            return inputStream.read(b);
+        }
+        @Override
+        public int read(@Nonnull byte[] b, int off, int len) throws IOException {
+            return inputStream.read(b, off, len);
+        }
     }
 }
