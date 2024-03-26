@@ -18,9 +18,14 @@ public @interface UseFileService {
     Class<?> param();
 
     /**
-     * 上传文件的路径属性名
+     * 上传文件的路径属性名 可以传多个 该属性类型为字符串
      */
-    String[] value();
+    String[] value() default {};
+
+    /**
+     * 上传文件的路径属性名 可以传多个 该属性类型为字符串数组
+     */
+    String[] valueArr() default {};
 
     /**
      * 目标转正文件夹

@@ -15,8 +15,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 @Aspect
 @Component
@@ -32,49 +34,12 @@ public class FileAspect {
             UseFileService useFileService = method.getAnnotation(UseFileService.class);
 
             // 获得方法参数
-            EvaluationContext context = new StandardEvaluationContext(joinPoint.getTarget());
-            var allArgNames = methodSignature.getParameterNames();
-            var allArgTypes = methodSignature.getParameterTypes();
-            Object dto = null;
-            for (int i = 0; i < allArgNames.length; i++) {
-                context.setVariable(allArgNames[i], joinPoint.getArgs()[i]);
-                // 选中第一个类型符合的dto
-                if (dto == null && allArgTypes[i].equals(useFileService.param()))
-                    dto = joinPoint.getArgs()[i];
-            }
-            if (dto == null) throw new RuntimeException("未找到对应参数");
-            var targetFolder = (useFileService.folder() == null || useFileService.folder().isBlank())
-                    ? null
-                    : (String) spelExpressionParser.parseExpression(useFileService.folder()).getValue(context);
-            var targetName = (useFileService.name() == null || useFileService.name().isBlank())
-                    ? null
-                    : (String) spelExpressionParser.parseExpression(useFileService.name()).getValue(context);
+            Result result = getNeedArgs(joinPoint, methodSignature, useFileService);
 
             ArrayList<String> imgList = new ArrayList<>();
+            tryConvertImageFromString(useFileService.value(), useFileService, result, imgList);
+            tryConvertImageFromStringArr(useFileService.valueArr(), useFileService, result, imgList);
 
-            var needConvertProperties = useFileService.value();
-            for (var property : needConvertProperties) {
-                // 获取图片属性
-                var suffix = StringUtils.capitalize(property);
-                Method getMethod = useFileService.param().getMethod("get"+suffix);
-                String img = (String) getMethod.invoke(dto);
-
-                if (img != null) {
-                    try {
-                        img = fileService.changeTmpFileToStatic(img, targetFolder, targetName);
-                    } catch (IOException e) {
-                        throw new BaseException("文件链接异常");
-                    }
-                    // 转正成功，换新链接
-                    Method setMethod = useFileService.param().getMethod("set"+suffix, String.class);
-                    if (!img.isEmpty()) setMethod.invoke(dto, img);
-                    else {
-                        if (useFileService.strict()) throw new BaseException("文件链接异常");
-                        img = null;
-                    }
-                }
-                if (img != null) imgList.add(img);
-            }
             try {
                 return joinPoint.proceed();
             } catch (Exception e) {
@@ -84,6 +49,97 @@ public class FileAspect {
             }
         } else {
             throw new IllegalStateException("不支持非方法切入点");
+        }
+    }
+
+    private static Result getNeedArgs(ProceedingJoinPoint joinPoint, MethodSignature methodSignature, UseFileService useFileService) {
+        EvaluationContext context = new StandardEvaluationContext(joinPoint.getTarget());
+        var allArgNames = methodSignature.getParameterNames();
+        var allArgTypes = methodSignature.getParameterTypes();
+
+        Object dto = null;
+        for (int i = 0; i < allArgNames.length; i++) {
+            context.setVariable(allArgNames[i], joinPoint.getArgs()[i]);
+            // 选中第一个类型符合的dto
+            if (dto == null && allArgTypes[i].equals(useFileService.param()))
+                dto = joinPoint.getArgs()[i];
+        }
+        if (dto == null) throw new RuntimeException("未找到对应参数");
+
+        var targetFolder = (useFileService.folder() == null || useFileService.folder().isBlank())
+                ? null
+                : (String) spelExpressionParser.parseExpression(useFileService.folder()).getValue(context);
+        var targetName = (useFileService.name() == null || useFileService.name().isBlank())
+                ? null
+                : (String) spelExpressionParser.parseExpression(useFileService.name()).getValue(context);
+
+        return new Result(dto, targetFolder, targetName);
+    }
+
+    private record Result(Object dto, String targetFolder, String targetName) {
+    }
+
+    private void tryConvertImageFromString(String[] needConvertProperties, UseFileService useFileService, Result result, ArrayList<String> imgList) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        for (var property : needConvertProperties) {
+            // 获取图片属性
+            var suffix = StringUtils.capitalize(property);
+            Method getMethod = useFileService.param().getMethod("get"+suffix);
+            String imgValue = (String) getMethod.invoke(result.dto());
+
+            if (imgValue != null) {
+                try {
+                    imgValue = fileService.changeTmpFileToStatic(imgValue, result.targetFolder(), result.targetName());
+                } catch (IOException e) {
+                    throw new BaseException("文件链接异常");
+                }
+                Method setMethod = useFileService.param().getMethod("set"+suffix, String.class);
+                // 转正成功，换新链接
+                if (!imgValue.isEmpty()) {
+                    setMethod.invoke(result.dto(), imgValue);
+                } else {
+                    if (useFileService.strict()) throw new BaseException("文件链接异常");
+                    // 不严格模式下，不进行额外设置，保持原样
+                    imgValue = null;
+                }
+            }
+            // 用于回滚
+            if (imgValue != null) imgList.add(imgValue);
+        }
+    }
+
+    private void tryConvertImageFromStringArr(String[] needConvertProperties, UseFileService useFileService, Result result, ArrayList<String> imgList) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        for (var property : needConvertProperties) {
+            // 获取图片属性
+            var suffix = StringUtils.capitalize(property);
+            Method getMethod = useFileService.param().getMethod("get"+suffix);
+            final String[] oldImgArr = (String[]) getMethod.invoke(result.dto());
+            String[] imgArr = oldImgArr == null ? null : Arrays.copyOf(oldImgArr, oldImgArr.length);
+
+            // 尝试转正
+            if (imgArr != null) {
+                try {
+                    for (int i = 0; i < imgArr.length; i++) {
+                        imgArr[i] = fileService.changeTmpFileToStatic(imgArr[i], result.targetFolder(), result.targetName());
+                    }
+                } catch (IOException e) {
+                    // 只要有错误就直接返回
+                    throw new BaseException("文件链接异常");
+                }
+                // ["str", "", "str"] -> ["str", "old", "str"]
+                // 并记录回滚
+                Method setMethod = useFileService.param().getMethod("set"+suffix, String[].class);
+                for (int i = 0; i < imgArr.length; i++) {
+                    if (imgArr[i].isEmpty()) {
+                        if (useFileService.strict()) throw new BaseException("文件链接异常");
+                        // 不严格模式下，保持原样
+                        imgArr[i] = oldImgArr[i];
+                    } else {
+                        // 用于回滚
+                        imgList.add(imgArr[i]);
+                    }
+                }
+                setMethod.invoke(result.dto(), (Object) imgArr);
+            }
         }
     }
 }
