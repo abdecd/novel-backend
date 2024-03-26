@@ -58,9 +58,10 @@ public class NovelChapterController {
         return Result.success(list);
     }
 
+    @Async
     @Operation(summary = "获取小说章节", description = "包括文章内容")
     @GetMapping("")
-    public Result<NovelChapterVO> getNovelChapter(
+    public CompletableFuture<Result<NovelChapterVO>> getNovelChapter(
             @NotNull @Schema(description = "小说id") Integer nid,
             @NotNull @Schema(description = "卷num") Integer vNum,
             @NotNull @Schema(description = "章num") Integer cNum,
@@ -68,7 +69,7 @@ public class NovelChapterController {
             HttpServletResponse response
     ) {
         var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
-        if (currentLocalDateTime == null) return Result.success(null);
+        if (currentLocalDateTime == null) return CompletableFuture.completedFuture(Result.success(null));
         // 更新阅读记录
         if (UserContext.getUserId() != null) {
             taskExecutor.execute(() -> readerService.saveReaderHistory(
@@ -81,12 +82,13 @@ public class NovelChapterController {
         if (HttpCacheUtils.tryUseCache(request, response, currentLocalDateTime)) return null;
 
         var novelChapter = novelChapterService.getNovelChapterVO(nid, vNum, cNum);
-        return Result.success(novelChapter);
+        return CompletableFuture.completedFuture(Result.success(novelChapter));
     }
 
+    @Async
     @Operation(summary = "上一章")
     @GetMapping("previous")
-    public Result<NovelChapterVO> previousChapter(
+    public CompletableFuture<Result<NovelChapterVO>> previousChapter(
             @NotNull @Schema(description = "小说id") Integer nid,
             @NotNull @Schema(description = "卷num") Integer vNum,
             @NotNull @Schema(description = "章num") Integer cNum,
@@ -94,12 +96,12 @@ public class NovelChapterController {
             HttpServletResponse response
     ) {
         var contents = novelService.getContents(nid);
-        if (contents == null) return Result.success(null);
+        if (contents == null) return CompletableFuture.completedFuture(Result.success(null));
         var chapters = contents.values().stream().flatMap(Collection::stream).toList();
         for (int i = 0; i < chapters.size(); i++) {
             if (Objects.equals(chapters.get(i).getVolumeNumber(), vNum)
                     && Objects.equals(chapters.get(i).getChapterNumber(), cNum)) {
-                if (i == 0) return Result.success(null);
+                if (i == 0) return CompletableFuture.completedFuture(Result.success(null));
                 var previous = chapters.get(i - 1);
                 return getNovelChapter(
                         nid,
@@ -110,12 +112,13 @@ public class NovelChapterController {
                 );
             }
         }
-        return Result.success(null);
+        return CompletableFuture.completedFuture(Result.success(null));
     }
 
+    @Async
     @Operation(summary = "下一章")
     @GetMapping("next")
-    public Result<NovelChapterVO> nextChapter(
+    public CompletableFuture<Result<NovelChapterVO>> nextChapter(
             @NotNull @Schema(description = "小说id") Integer nid,
             @NotNull @Schema(description = "卷num") Integer vNum,
             @NotNull @Schema(description = "章num") Integer cNum,
@@ -123,12 +126,12 @@ public class NovelChapterController {
             HttpServletResponse response
     ) {
         var contents = novelService.getContents(nid);
-        if (contents == null) return Result.success(null);
+        if (contents == null) return CompletableFuture.completedFuture(Result.success(null));
         var chapters = contents.values().stream().flatMap(Collection::stream).toList();
         for (int i = 0; i < chapters.size(); i++) {
             if (Objects.equals(chapters.get(i).getVolumeNumber(), vNum)
                     && Objects.equals(chapters.get(i).getChapterNumber(), cNum)) {
-                if (i == chapters.size() - 1) return Result.success(null);
+                if (i == chapters.size() - 1) return CompletableFuture.completedFuture(Result.success(null));
                 var next = chapters.get(i + 1);
                 return getNovelChapter(
                         nid,
@@ -139,7 +142,7 @@ public class NovelChapterController {
                 );
             }
         }
-        return Result.success(null);
+        return CompletableFuture.completedFuture(Result.success(null));
     }
 
     @Operation(summary = "新增小说章节", description = "不添加小说内容, 成功时返回novelChapterId(String)")
@@ -161,11 +164,12 @@ public class NovelChapterController {
         return CompletableFuture.completedFuture(Result.success());
     }
 
+    @Async
     @Operation(summary = "删除小说章节")
     @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("delete")
-    public Result<String> deleteNovelChapter(@RequestBody @Valid DeleteNovelChapterDTO deleteNovelChapterDTO) {
+    public CompletableFuture<Result<String>> deleteNovelChapter(@RequestBody @Valid DeleteNovelChapterDTO deleteNovelChapterDTO) {
         novelChapterService.deleteNovelChapter(deleteNovelChapterDTO);
-        return Result.success();
+        return CompletableFuture.completedFuture(Result.success());
     }
 }

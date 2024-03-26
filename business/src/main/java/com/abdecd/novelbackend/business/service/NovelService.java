@@ -88,10 +88,11 @@ public class NovelService {
             folder = "'/novel_data/' + #updateNovelInfoDTOWithUrl.id"
     )
     public void updateNovelInfo(UpdateNovelInfoDTOWithUrl updateNovelInfoDTOWithUrl) {
-        // 更新小说
         var novelInfo = novelInfoMapper.selectById(updateNovelInfoDTOWithUrl.getId());
         if (novelInfo == null) throw new BaseException("更新失败");
-        var cover = updateNovelInfoDTOWithUrl.getCover() == null ? null : novelInfo.getCover();
+
+        // 更新小说
+        var oldCover = updateNovelInfoDTOWithUrl.getCover() == null ? null : novelInfo.getCover();
         BeanUtils.copyProperties(updateNovelInfoDTOWithUrl, novelInfo);
         novelInfoMapper.updateById(novelInfo);
         // 更新tags 必须有才更
@@ -106,8 +107,8 @@ public class NovelService {
                 );
             }
         }
-        if (cover != null) {
-            fileService.deleteFile(cover);// todo 同名覆盖
+        if (oldCover != null && !oldCover.equals(updateNovelInfoDTOWithUrl.getCover())) {
+            fileService.deleteFile(oldCover);
         }
         saveNovelToElasticSearch(novelInfo);
     }
@@ -183,7 +184,7 @@ public class NovelService {
     @Transactional
     public void deleteNovelInfoReally(NovelInfo novelInfo) {
         fileService.deleteFile(novelInfo.getCover());
-        // 章节内容没有外键约束, 手动删除
+        // 章节内容手动删除
         var volumeList = novelVolumeService.listNovelVolume(novelInfo.getId());
         for (var volume : volumeList) {
             var volumeNumber = volume.getVolumeNumber();

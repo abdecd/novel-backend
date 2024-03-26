@@ -35,12 +35,11 @@ public class FileAspect {
 
             // 获得方法参数
             Result result = getNeedArgs(joinPoint, methodSignature, useFileService);
-
+            // 用于回滚
             ArrayList<String> imgList = new ArrayList<>();
-            tryConvertImageFromString(useFileService.value(), useFileService, result, imgList);
-            tryConvertImageFromStringArr(useFileService.valueArr(), useFileService, result, imgList);
-
             try {
+                tryConvertImageFromString(useFileService.value(), useFileService, result, imgList);
+                tryConvertImageFromStringArr(useFileService.valueArr(), useFileService, result, imgList);
                 return joinPoint.proceed();
             } catch (Exception e) {
                 // 回滚
@@ -89,21 +88,21 @@ public class FileAspect {
             if (imgValue != null) {
                 try {
                     imgValue = fileService.changeTmpFileToStatic(imgValue, result.targetFolder(), result.targetName());
+                    if (!imgValue.isEmpty()) {
+                        // 用于回滚
+                        imgList.add(imgValue);
+                    } else {
+                        if (useFileService.strict()) throw new BaseException("文件链接异常");
+                        // 不严格模式下，不换链接，保持原样
+                        imgValue = null;
+                    }
                 } catch (IOException e) {
                     throw new BaseException("文件链接异常");
                 }
                 Method setMethod = useFileService.param().getMethod("set"+suffix, String.class);
                 // 转正成功，换新链接
-                if (!imgValue.isEmpty()) {
-                    setMethod.invoke(result.dto(), imgValue);
-                } else {
-                    if (useFileService.strict()) throw new BaseException("文件链接异常");
-                    // 不严格模式下，不进行额外设置，保持原样
-                    imgValue = null;
-                }
+                if (imgValue != null) setMethod.invoke(result.dto(), imgValue);
             }
-            // 用于回滚
-            if (imgValue != null) imgList.add(imgValue);
         }
     }
 
@@ -120,24 +119,20 @@ public class FileAspect {
                 try {
                     for (int i = 0; i < imgArr.length; i++) {
                         imgArr[i] = fileService.changeTmpFileToStatic(imgArr[i], result.targetFolder(), result.targetName());
+                        // 用于回滚
+                        if (!imgArr[i].isEmpty()) {
+                            imgList.add(imgArr[i]);
+                        } else {
+                            if (useFileService.strict()) throw new BaseException("文件链接异常");
+                            // 不严格模式下，保持原样
+                            imgArr[i] = oldImgArr[i];
+                        }
                     }
                 } catch (IOException e) {
                     // 只要有错误就直接返回
                     throw new BaseException("文件链接异常");
                 }
-                // ["str", "", "str"] -> ["str", "old", "str"]
-                // 并记录回滚
                 Method setMethod = useFileService.param().getMethod("set"+suffix, String[].class);
-                for (int i = 0; i < imgArr.length; i++) {
-                    if (imgArr[i].isEmpty()) {
-                        if (useFileService.strict()) throw new BaseException("文件链接异常");
-                        // 不严格模式下，保持原样
-                        imgArr[i] = oldImgArr[i];
-                    } else {
-                        // 用于回滚
-                        imgList.add(imgArr[i]);
-                    }
-                }
                 setMethod.invoke(result.dto(), (Object) imgArr);
             }
         }

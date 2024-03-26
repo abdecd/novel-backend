@@ -14,9 +14,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Tag(name = "小说卷接口")
 @RestController
@@ -58,11 +60,12 @@ public class NovelVolumeController {
         return Result.success();
     }
 
+    @Async
     @Operation(summary = "删除小说卷")
     @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("delete")
-    public Result<String> deleteNovelVolume(@RequestBody @Valid DeleteNovelVolumeDTO deleteNovelVolumeDTO) {
+    public CompletableFuture<Result<String>> deleteNovelVolume(@RequestBody @Valid DeleteNovelVolumeDTO deleteNovelVolumeDTO) {
         novelVolumeService.deleteNovelVolume(deleteNovelVolumeDTO);
-        return Result.success();
+        return CompletableFuture.completedFuture(Result.success());
     }
 }

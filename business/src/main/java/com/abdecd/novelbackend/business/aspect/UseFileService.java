@@ -18,12 +18,12 @@ public @interface UseFileService {
     Class<?> param();
 
     /**
-     * 上传文件的路径属性名 可以传多个 该属性类型为字符串
+     * 上传文件的路径属性名 可以传多个 该属性类型为字符串 为null则忽略
      */
     String[] value() default {};
 
     /**
-     * 上传文件的路径属性名 可以传多个 该属性类型为字符串数组
+     * 上传文件的路径属性名 可以传多个 该属性类型为字符串数组 为null则忽略
      */
     String[] valueArr() default {};
 

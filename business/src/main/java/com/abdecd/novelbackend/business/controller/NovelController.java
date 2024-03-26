@@ -75,12 +75,13 @@ public class NovelController {
         return CompletableFuture.completedFuture(Result.success(novelId + ""));
     }
 
+    @Async
     @Operation(summary = "删除小说")
     @RequirePermission(value = 99, exception = BaseException.class)
     @PostMapping("delete")
-    public Result<String> deleteNovelInfo(@RequestBody @Valid DeleteNovelInfoDTO deleteNovelInfoDTO) {
+    public CompletableFuture<Result<String>> deleteNovelInfo(@RequestBody @Valid DeleteNovelInfoDTO deleteNovelInfoDTO) {
         novelService.deleteNovelInfo(deleteNovelInfoDTO.getId());
-        return Result.success();
+        return CompletableFuture.completedFuture(Result.success());
     }
 
     @Operation(summary = "获取小说目录")

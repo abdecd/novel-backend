@@ -11,6 +11,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -36,7 +37,6 @@ public class LocalFileServiceImpl implements FileService {
     private String basicUpload(MultipartFile file, String folder, String fileName) throws IOException {
         if (FILE_BASE_PATH.equals("empty")) return "";
         var dest = new File(FILE_BASE_PATH + folder + "/" + fileName);
-        if (dest.exists()) throw new IOException("文件已存在");
         // 保存文件
         dest.getParentFile().mkdirs();
         file.transferTo(dest);
@@ -47,10 +47,9 @@ public class LocalFileServiceImpl implements FileService {
     private String basicUpload(InputStream inputStream, String folder, String fileName) throws IOException {
         if (FILE_BASE_PATH.equals("empty")) return "";
         var dest = new File(FILE_BASE_PATH + folder + "/" + fileName);
-        if (dest.exists()) throw new IOException("文件已存在");
         // 保存文件
         dest.getParentFile().mkdirs();
-        Files.copy(inputStream, dest.toPath());
+        Files.copy(inputStream, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
         // 适配前端
         return URL_PREFIX + folder + "/" + dest.getName();
     }
@@ -95,7 +94,7 @@ public class LocalFileServiceImpl implements FileService {
         var tmp = new File(oldPath);
         var newFile = new File(newPath);
         newFile.getParentFile().mkdirs();
-        Files.move(tmp.toPath(), new File(newPath).toPath());
+        Files.move(tmp.toPath(), new File(newPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
         return URL_PREFIX + folder + tmpFilePath.substring(tmpFilePath.lastIndexOf("/"));
     }
 
@@ -105,6 +104,14 @@ public class LocalFileServiceImpl implements FileService {
         if (!path.startsWith(URL_PREFIX)) return;
         var tmpFilePath = path.substring(URL_PREFIX.length());
         var oldPath = FILE_BASE_PATH + tmpFilePath;
+        var file = new File(oldPath);
+        if (file.exists() && file.isFile()) file.delete();
+    }
+
+    @Override
+    public void deleteFileInSystem(String path) {
+        if (FILE_BASE_PATH.equals("empty")) return;
+        var oldPath = FILE_BASE_PATH + path;
         var file = new File(oldPath);
         if (file.exists() && file.isFile()) file.delete();
     }

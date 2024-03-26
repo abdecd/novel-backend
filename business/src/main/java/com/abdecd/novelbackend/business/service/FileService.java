@@ -82,6 +82,14 @@ public interface FileService {
     }
 
     /**
+     * 文件删除
+     * @param path 相对路径，如 /img/xxx
+     */
+    default void deleteFileInSystem(String path) {
+        throw new RuntimeException("未实现");
+    }
+
+    /**
      * 文件获取 输入流记得关
      * @param path 相对路径，如 /img/xxx
      * @throws IOException :

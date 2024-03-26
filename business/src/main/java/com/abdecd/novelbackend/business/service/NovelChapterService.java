@@ -1,14 +1,14 @@
 package com.abdecd.novelbackend.business.service;
 
+import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.mapper.NovelChapterMapper;
-import com.abdecd.novelbackend.business.mapper.NovelContentMapper;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.AddNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.DeleteNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.UpdateNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
-import com.abdecd.novelbackend.business.pojo.entity.NovelContent;
 import com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -16,6 +16,8 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,7 +26,7 @@ public class NovelChapterService {
     @Autowired
     private NovelChapterMapper novelChapterMapper;
     @Autowired
-    private NovelContentMapper novelContentMapper;
+    private FileService fileService;
 
     @Cacheable(value = "novelChapterList", key = "#nid + ':' + #vNum", unless="#result.isEmpty()")
     public List<NovelChapter> listNovelChapter(Integer nid, Integer vNum) {
@@ -45,7 +47,22 @@ public class NovelChapterService {
     }
 
     public NovelChapterVO getNovelChapterVO(Integer nid, Integer vNum, Integer cNum) {
-        return novelChapterMapper.getNovelChapterVO(nid, vNum, cNum);
+        var entity = novelChapterMapper.getNovelChapter(nid, vNum, cNum);
+        var vo = new NovelChapterVO();
+        BeanUtils.copyProperties(entity, vo);
+        // 获取内容
+        try (var in = new BufferedReader(new InputStreamReader(fileService.getFileInSystem("/novel_data"
+                        + "/" + entity.getNovelId()
+                        + "/" + entity.getVolumeNumber()
+                        + "/" + entity.getChapterNumber() + ".txt"
+        ), StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            in.lines().forEach(line -> sb.append(line).append("\n"));
+            vo.setContent(sb.toString());
+        } catch (Exception e) {
+            throw new BaseException("文章获取出错");
+        }
+        return vo;
     }
 
     @CacheEvict(value = "novelChapterList", key = "#addNovelChapterDTO.novelId + ':' + #addNovelChapterDTO.volumeNumber")
@@ -67,26 +84,35 @@ public class NovelChapterService {
                 .eq(NovelChapter::getChapterNumber, updateNovelChapterDTO.getChapterNumber())
         );
         if (novelChapter == null) return;
-        var cid = novelChapter.getId();
         // 更新novelChapter
         var entity = updateNovelChapterDTO.toEntity();
         novelChapterMapper.updateById(entity);
         // 更新novelContent
         if (updateNovelChapterDTO.getContent() != null) {
-            novelContentMapper.delete(new LambdaQueryWrapper<NovelContent>()
-                    .eq(NovelContent::getNovelChapterId, cid)
-            );
-            novelContentMapper.insert(new NovelContent()
-                    .setNovelChapterId(cid)
-                    .setContent(updateNovelChapterDTO.getContent())
-            );
+            try (ByteArrayInputStream inputStream
+                         = new ByteArrayInputStream(updateNovelChapterDTO.getContent().getBytes())) {
+                fileService.uploadFile(
+                        inputStream,
+                        "/novel_data"
+                                + "/" + entity.getNovelId()
+                                + "/" + entity.getVolumeNumber(),
+                        entity.getChapterNumber() + ".txt"
+                );// todo 更新的时候网断了 然后文件没了
+            } catch (Exception e) {
+                throw new BaseException("更新失败");
+            }
         }
     }
 
     @Transactional
     public void deleteNovelChapter(long id) {
+        var entity = novelChapterMapper.selectById(id);
         novelChapterMapper.deleteById(id);
-        novelContentMapper.deleteById(id);
+        fileService.deleteFileInSystem("/novel_data"
+                + "/" + entity.getNovelId()
+                + "/" + entity.getVolumeNumber()
+                + "/" + entity.getChapterNumber() + ".txt"
+        );
     }
 
     @Caching(evict = {
