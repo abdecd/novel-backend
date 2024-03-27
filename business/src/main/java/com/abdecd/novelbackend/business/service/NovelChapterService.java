@@ -7,12 +7,14 @@ import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.DeleteNovelChapte
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.UpdateNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO;
+import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class NovelChapterService {
@@ -27,6 +30,8 @@ public class NovelChapterService {
     private NovelChapterMapper novelChapterMapper;
     @Autowired
     private FileService fileService;
+    @Autowired
+    private RedisTemplate<String, Integer> redisTemplate;
 
     @Cacheable(value = "novelChapterList", key = "#nid + ':' + #vNum", unless="#result.isEmpty()")
     public List<NovelChapter> listNovelChapter(Integer nid, Integer vNum) {
@@ -46,6 +51,11 @@ public class NovelChapterService {
         }
     }
 
+    @Cacheable(
+            value = "getNovelChapterVO#S120960", // 1.4 天
+            key = "#nid + ':' + #vNum + ':' + #cNum",
+            unless="!#root.target.getNovelChapterVOCanCache(#nid)"
+    )
     public NovelChapterVO getNovelChapterVO(Integer nid, Integer vNum, Integer cNum) {
         var entity = novelChapterMapper.getNovelChapter(nid, vNum, cNum);
         var vo = new NovelChapterVO();
@@ -63,6 +73,20 @@ public class NovelChapterService {
             throw new BaseException("文章获取出错");
         }
         return vo;
+    }
+
+    /**
+     * 点击量前 100 名并且当日阅读量大于 50 才能缓存
+     */
+    public boolean getNovelChapterVOCanCache(Integer nid) {
+        var set = redisTemplate.opsForZSet()
+                .reverseRangeWithScores(RedisConstant.NOVEL_DAILY_READ_CNT, 0, 100);
+        if (set == null) return false;
+        var set2 = set.stream()
+                .filter(e -> e.getScore() != null && e.getScore() > 50)
+                .map(e -> Objects.requireNonNull(e.getValue()))
+                .toList();
+        return set2.contains(nid);
     }
 
     @CacheEvict(value = "novelChapterList", key = "#addNovelChapterDTO.novelId + ':' + #addNovelChapterDTO.volumeNumber")

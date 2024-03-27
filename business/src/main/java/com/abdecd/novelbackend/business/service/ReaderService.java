@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ReaderService {
@@ -47,6 +48,8 @@ public class ReaderService {
     private ReaderHistoryMapper readerHistoryMapper;
     @Autowired
     private RedisTemplate<String, ReaderHistoryVO> redisTemplate;
+    @Autowired
+    private RedisTemplate<String, Integer> redisTemplateForInt;
     @Autowired
     private RedisTemplate<String, LocalDateTime> redisTemplateForTime;
 
@@ -124,6 +127,13 @@ public class ReaderService {
                 .setTimestamp(LocalDateTime.now());
         readerHistoryMapper.insert(newRecord);
         addReaderHistoryCache(userId, newRecord);
+        // 记录每日点击量
+        if (Boolean.FALSE.equals(redisTemplateForInt.hasKey(RedisConstant.NOVEL_DAILY_READ_CNT))) {
+            redisTemplateForInt.opsForZSet().add(RedisConstant.NOVEL_DAILY_READ_CNT, novelId, 0);
+            redisTemplateForInt.expire(RedisConstant.NOVEL_DAILY_READ_CNT, 1, TimeUnit.DAYS);
+        }
+        redisTemplateForInt.opsForZSet().incrementScore(RedisConstant.NOVEL_DAILY_READ_CNT, novelId, 1);
+        // 记录更新时间戳
         redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_TIMESTAMP + userId, LocalDateTime.now());
         redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + userId + ':' + novelId, LocalDateTime.now());
     }
