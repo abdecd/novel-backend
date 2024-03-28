@@ -4,14 +4,13 @@ import com.abdecd.novelbackend.business.aspect.UseFileService;
 import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
-import com.abdecd.novelbackend.business.mapper.ReaderFavoritesMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTOWithUrl;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
-import com.abdecd.novelbackend.business.pojo.entity.ReaderFavorites;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
+import com.abdecd.novelbackend.business.service.lib.CacheByFrequency;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
@@ -20,14 +19,14 @@ import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import jakarta.annotation.Nonnull;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,22 +35,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class ReaderService {
     @Autowired
     private ReaderDetailMapper readerDetailMapper;
     @Autowired
-    private ReaderFavoritesMapper readerFavoritesMapper;
-    @Autowired
     private ReaderHistoryMapper readerHistoryMapper;
     @Autowired
     private RedisTemplate<String, ReaderHistoryVO> redisTemplate;
     @Autowired
+    private RedisTemplate<String, LocalDateTime> redisTemplateForTime;
+    @Autowired
+    private RedisTemplate<String, List<ReaderHistoryVO>> redisTemplateHistoryList;
+    @Autowired
     private RedisTemplate<String, Integer> redisTemplateForInt;
     @Autowired
-    private RedisTemplate<String, LocalDateTime> redisTemplateForTime;
+    private StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private RedissonClient redissonClient;
 
     public ReaderDetail getReaderDetail(Integer uid) {
         return readerDetailMapper.selectById(uid);
@@ -65,47 +67,93 @@ public class ReaderService {
         readerDetailMapper.updateById(readerDetail);
     }
 
+    // 以下注释内容为使用数据库的实现，现优化为使用redis的实现
+//    public PageVO<ReaderFavoritesVO> pageReaderFavoritesVO(Integer uid, Integer page, Integer pageSize) {
+//        var readerService = SpringContextUtil.getBean(ReaderService.class);
+//        var novelService = SpringContextUtil.getBean(NovelService.class);
+//        var list = readerService.listReaderFavoritesVO(uid);
+//        var total = list.size();
+//        list = list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize));
+//        var resultList = list.stream().parallel()
+//                .peek(vo -> {
+//                    var novelInfoVO = novelService.getNovelInfoVO(vo.getNovelId());
+//                    var recordId = vo.getId();
+//                    BeanUtils.copyProperties(novelInfoVO, vo);
+//                    vo.setNovelId(novelInfoVO.getId());
+//                    vo.setId(recordId);
+//                })
+//                .toList();
+//        return new PageVO<>(total, resultList);
+//    }
+
+//    @Cacheable(value = "listReaderFavoritesVO", key = "#userId")
+//    public List<ReaderFavoritesVO> listReaderFavoritesVO(Integer userId) {
+//        return readerFavoritesMapper.listReaderFavoritesVO(userId);
+//    }
+
+//    @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
+//    public void addReaderFavorites(Integer userId, int[] novelIdsRaw) {
+//        var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
+//        var count = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
+//                .eq(ReaderFavorites::getUserId, userId)
+//                .in(ReaderFavorites::getNovelId, (Object[]) novelIds)
+//        );
+//        if (count > 0) throw new BaseException(MessageConstant.FAVORITES_EXIST);
+//        readerFavoritesMapper.insertBatch(userId, novelIds);
+//    }
+
+//    @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
+//    public void deleteReaderFavorites(Integer userId, int[] novelIdsRaw) {
+//        var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
+//        readerFavoritesMapper.delete(new LambdaQueryWrapper<ReaderFavorites>()
+//                .eq(ReaderFavorites::getUserId, userId)
+//                .in(ReaderFavorites::getNovelId, (Object[]) novelIds)
+//        );
+//    }
+
     public PageVO<ReaderFavoritesVO> pageReaderFavoritesVO(Integer uid, Integer page, Integer pageSize) {
-        var readerService = SpringContextUtil.getBean(ReaderService.class);
-        var novelService = SpringContextUtil.getBean(NovelService.class);
-        var list = readerService.listReaderFavoritesVO(uid);
+        var list = listReaderFavoritesVO(uid);
         var total = list.size();
         list = list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize));
-        var resultList = list.stream().parallel()
-                .peek(vo -> {
-                    var novelInfoVO = novelService.getNovelInfoVO(vo.getNovelId());
-                    var recordId = vo.getId();
-                    BeanUtils.copyProperties(novelInfoVO, vo);
-                    vo.setNovelId(novelInfoVO.getId());
-                    vo.setId(recordId);
+        return new PageVO<>(total, list);
+    }
+
+    public List<ReaderFavoritesVO> listReaderFavoritesVO(Integer userId) {
+        var set = redisTemplateForInt.opsForSet().members(RedisConstant.READER_FAVORITES + userId);
+        if (set == null) return new ArrayList<>();
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        return set.stream().parallel()
+                .map(id -> {
+                    var vo = new ReaderFavoritesVO();
+                    BeanUtils.copyProperties(novelService.getNovelInfoVO(id), vo);
+                    vo.setNovelId(id);
+                    return vo;
                 })
                 .toList();
-        return new PageVO<>(total, resultList);
     }
 
-    @Cacheable(value = "listReaderFavoritesVO", key = "#userId")
-    public List<ReaderFavoritesVO> listReaderFavoritesVO(Integer userId) {
-        return readerFavoritesMapper.listReaderFavoritesVO(userId);
-    }
-
-    @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
+    /**
+     * 最多添加 100 个收藏
+     */
     public void addReaderFavorites(Integer userId, int[] novelIdsRaw) {
         var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
-        var count = readerFavoritesMapper.selectCount(new LambdaQueryWrapper<ReaderFavorites>()
-                .eq(ReaderFavorites::getUserId, userId)
-                .in(ReaderFavorites::getNovelId, (Object[]) novelIds)
-        );
-        if (count > 0) throw new BaseException(MessageConstant.FAVORITES_EXIST);
-        readerFavoritesMapper.insertBatch(userId, novelIds);
+        // 进行校验
+        var novelService = SpringContextUtil.getBean(NovelService.class);
+        var allNovelIds = novelService.getNovelIds();
+        for (var novelId : novelIds) {
+            if (!allNovelIds.contains(novelId))
+                throw new BaseException(MessageConstant.NOVEL_NOT_EXIST);
+        }
+        var count = redisTemplateForInt.opsForSet().size(RedisConstant.READER_FAVORITES + userId);
+        if (count == null) count = 0L;
+        if (novelIds.length + count > 100)
+            throw new BaseException(MessageConstant.FAVORITES_EXCEED_LIMIT);
+        redisTemplateForInt.opsForSet().add(RedisConstant.READER_FAVORITES + userId, novelIds);
     }
 
-    @CacheEvict(value = "listReaderFavoritesVO", key = "#userId")
     public void deleteReaderFavorites(Integer userId, int[] novelIdsRaw) {
         var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
-        readerFavoritesMapper.delete(new LambdaQueryWrapper<ReaderFavorites>()
-                .eq(ReaderFavorites::getUserId, userId)
-                .in(ReaderFavorites::getNovelId, (Object[]) novelIds)
-        );
+        redisTemplateForInt.opsForSet().remove(RedisConstant.READER_FAVORITES + userId, (Object[]) novelIds);
     }
 
     @Transactional
@@ -126,13 +174,17 @@ public class ReaderService {
                 .setStatus(StatusConstant.ENABLE)
                 .setTimestamp(LocalDateTime.now());
         readerHistoryMapper.insert(newRecord);
+        // 更新缓存
         addReaderHistoryCache(userId, newRecord);
-        // 记录每日点击量
-        if (Boolean.FALSE.equals(redisTemplateForInt.hasKey(RedisConstant.NOVEL_DAILY_READ_CNT))) {
-            redisTemplateForInt.opsForZSet().add(RedisConstant.NOVEL_DAILY_READ_CNT, novelId, 0);
-            redisTemplateForInt.expire(RedisConstant.NOVEL_DAILY_READ_CNT, 1, TimeUnit.DAYS);
-        }
-        redisTemplateForInt.opsForZSet().incrementScore(RedisConstant.NOVEL_DAILY_READ_CNT, novelId, 1);
+        var cacheHistoryForANovelByFrequency = new CacheByFrequency<>(
+                redisTemplateHistoryList,
+                stringRedisTemplate,
+                redissonClient,
+                RedisConstant.READER_HISTORY_A_NOVEL + ":" + userId,
+                5,
+                86400
+        );
+        cacheHistoryForANovelByFrequency.delete(novelId + "");// todo 更好的更新方式
         // 记录更新时间戳
         redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_TIMESTAMP + userId, LocalDateTime.now());
         redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + userId + ':' + novelId, LocalDateTime.now());
@@ -173,8 +225,22 @@ public class ReaderService {
         return new PageVO<>(list.size(), list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize)));
     }
 
-    public List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Long startId, Integer pageSize) {
-        return readerHistoryMapper.listReaderHistoryByNovel(userId, novelId, startId, pageSize, StatusConstant.ENABLE);// todo 优化
+    /**
+     * 默认小说章节数量不超过 1000
+     */
+    public List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Integer page, Integer pageSize) {
+        var cacheHistoryForANovelByFrequency = new CacheByFrequency<>(
+                redisTemplateHistoryList,
+                stringRedisTemplate,
+                redissonClient,
+                RedisConstant.READER_HISTORY_A_NOVEL + ":" + userId,
+                5,
+                86400
+        );
+        cacheHistoryForANovelByFrequency.recordFrequency(novelId + "");
+        var list = cacheHistoryForANovelByFrequency.get(novelId + "", () -> readerHistoryMapper.listReaderHistoryByNovel(userId, novelId, null, 1000, StatusConstant.ENABLE), null, 172800); // 2 天
+        if (list == null) return new ArrayList<>();
+        return list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize));
     }
 
     public void deleteReaderHistory(Integer userId, int[] novelIdsRaw) {
@@ -184,12 +250,23 @@ public class ReaderService {
                 .in(ReaderHistory::getNovelId, (Object[]) novelIds)
                 .set(ReaderHistory::getStatus, StatusConstant.DISABLE)
         );
+        // 删除缓存
         removeReaderHistoryCache(userId, novelIds);
+        var cacheHistoryForANovelByFrequency = new CacheByFrequency<>(
+                redisTemplateHistoryList,
+                stringRedisTemplate,
+                redissonClient,
+                RedisConstant.READER_HISTORY_A_NOVEL + ":" + userId,
+                5,
+                86400
+        );
         redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_TIMESTAMP + userId, LocalDateTime.now());
         var novelService = SpringContextUtil.getBean(NovelService.class);
         var allNovelIds = novelService.getNovelIds();
-        for (var novelId : novelIds) if (allNovelIds.contains(novelId))
+        for (var novelId : novelIds) if (allNovelIds.contains(novelId)) {
             redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + userId + ':' + novelId, LocalDateTime.now());
+            cacheHistoryForANovelByFrequency.delete(novelId + "");
+        }
     }
 
     private void addReaderHistoryCache(Integer userId, ReaderHistory newRecord) {

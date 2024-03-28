@@ -11,7 +11,9 @@ import com.abdecd.novelbackend.business.service.NovelChapterService;
 import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.business.service.NovelVolumeService;
 import com.abdecd.novelbackend.business.service.ReaderService;
+import com.abdecd.novelbackend.business.service.lib.CacheByFrequency;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
+import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.aspect.RequirePermission;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -24,6 +26,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,6 +50,19 @@ public class NovelChapterController {
     private ReaderService readerService;
     @Resource
     private Executor taskExecutor;
+    private CacheByFrequency<Void> cacheNovelChapterByFrequency;
+
+    @Autowired
+    public void setCacheNovelChapterByFrequency(StringRedisTemplate stringRedisTemplate) {
+        this.cacheNovelChapterByFrequency = new CacheByFrequency<>(
+                null,
+                stringRedisTemplate,
+                null,
+                RedisConstant.NOVEL_DAILY_READ,
+                100,
+                86400
+        );
+    }
 
     @Operation(summary = "获取小说章节列表")
     @GetMapping("list")
@@ -69,6 +85,7 @@ public class NovelChapterController {
             HttpServletResponse response
     ) {
         var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
+        cacheNovelChapterByFrequency.recordFrequency(nid + "");
         if (currentLocalDateTime == null) return CompletableFuture.completedFuture(Result.success(null));
         // 更新阅读记录
         if (UserContext.getUserId() != null) {

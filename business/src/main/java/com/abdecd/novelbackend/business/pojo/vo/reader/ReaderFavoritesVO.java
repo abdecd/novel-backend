@@ -8,6 +8,7 @@ import java.util.List;
 
 @Data
 public class ReaderFavoritesVO {
+    @Deprecated
     @Schema(description = "收藏id")
     private Integer id;
     private Integer novelId;
