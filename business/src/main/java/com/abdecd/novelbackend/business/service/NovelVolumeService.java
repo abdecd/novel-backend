@@ -61,7 +61,7 @@ public class NovelVolumeService {
     @CacheEvict(value = "novelVolumeList", key = "#deleteNovelVolumeDTO.novelId")
     @Transactional
     public void deleteNovelVolume(DeleteNovelVolumeDTO deleteNovelVolumeDTO) {
-        // 章节内容没有外键约束, 手动删除
+        // 章节内容手动删除
         var chapterList = novelChapterService.listNovelChapter(deleteNovelVolumeDTO.getNovelId(), deleteNovelVolumeDTO.getVolumeNumber());
         for (var chapter : chapterList) {
             novelChapterService.deleteNovelChapter(chapter.getId());

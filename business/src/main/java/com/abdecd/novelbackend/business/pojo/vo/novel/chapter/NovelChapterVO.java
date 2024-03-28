@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class NovelChapterVO {
-    private Long id;
+//    private Long id;
     private Integer novelId;
     private Integer volumeNumber;
     private Integer chapterNumber;

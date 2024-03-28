@@ -132,3 +132,71 @@ public class ElasticSearchService {
                 .stream().map(CompletionSuggestOption::text).toList();
     }
 }
+
+/*
+curl -X PUT "http://localhost:9200/novels" \
+-H 'Content-Type: application/json' \
+-d '
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_py": {
+          "tokenizer": "ik_max_word",
+          "filter": "py"
+        },
+        "my_suggestion_py": {
+          "tokenizer": "keyword",
+          "filter": "py"
+        }
+      },
+      "filter": {
+        "py": {
+          "type": "pinyin",
+          "keep_full_pinyin": false,
+          "keep_joined_full_pinyin": true,
+          "keep_original": true,
+          "limit_first_letter_length": 16,
+          "remove_duplicated_term": true,
+          "none_chinese_pinyin_tokenize": false
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "integer",
+        "index": "false"
+      },
+      "title": {
+        "type": "text",
+        "analyzer": "my_py",
+        "search_analyzer": "ik_smart"
+      },
+      "author": {
+        "type": "text",
+        "analyzer": "ik_max_word"
+      },
+      "description": {
+        "type": "text",
+        "analyzer": "ik_smart"
+      },
+      "tags": {
+        "type": "keyword",
+        "copy_to": "tags_text"
+      },
+      "tags_text": {
+        "type": "text",
+        "analyzer": "ik_smart"
+      },
+      "suggestion": {
+        "type": "completion",
+        "analyzer": "my_suggestion_py",
+        "search_analyzer": "keyword"
+      }
+    }
+  }
+}
+'
+ */

@@ -44,8 +44,13 @@ class CustomizedRedisCacheManager extends RedisCacheManager {
         String[] array = name.split("#",2);
         name = array[0];
         if (array.length > 1) {
-            long ttl = Long.parseLong(array[1]);
-            cacheConfig = cacheConfig.entryTtl(Duration.ofDays(ttl)); // 缓存时间按日设置
+            if (array[1].startsWith("S")) {
+                long ttl = Long.parseLong(array[1].substring(1));
+                cacheConfig = cacheConfig.entryTtl(Duration.ofSeconds(ttl)); // 缓存时间按秒设置
+            } else {
+                long ttl = Long.parseLong(array[1]);
+                cacheConfig = cacheConfig.entryTtl(Duration.ofDays(ttl)); // 缓存时间按日设置
+            }
         }
         return super.createRedisCache(name, cacheConfig);
     }

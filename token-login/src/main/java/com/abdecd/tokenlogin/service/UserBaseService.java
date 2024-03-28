@@ -36,9 +36,10 @@ public class UserBaseService {
             String accountLockedMsg
     ) {
         var user = userMapper.selectById(id);
-        //2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
+        // 用户不存在
         if (user == null) return null;
 
+        // 密码解密并验证格式
         try {
             password = PwdUtils.getEncryptedPwd(password);
         } catch (RuntimeException e) {
@@ -47,6 +48,7 @@ public class UserBaseService {
         if (!Constant.PASSWORD_PATTERN.matcher(password).find()) {
             throwException(exceptionClass, pwdErrMsg);
         }
+        // 密码验证
         String hashPwd = "";
         try {
             hashPwd = PwdUtils.encodePwd(user.getId().toString(), password);
@@ -96,12 +98,13 @@ public class UserBaseService {
 
     @Transactional
     public int signup(String password, byte permission, Class<? extends RuntimeException> exceptionClass) {
-        // 注册
         try {
+            // 解密并验证密码格式
             password = PwdUtils.getEncryptedPwd(password);
             if (!Constant.PASSWORD_PATTERN.matcher(password).find()) {
                 throwException(exceptionClass, "invalid password");
             }
+            // 创建账号
             var user = User.ofEmpty()
                     .setPassword("")
                     .setPermission(permission)
@@ -123,6 +126,7 @@ public class UserBaseService {
      */
     public void forgetPassword(Integer id, String newPassword, Class<? extends RuntimeException> exceptionClass) {
         try {
+            // 解密并验证密码格式
             newPassword = PwdUtils.getEncryptedPwd(newPassword);
             if (!Constant.PASSWORD_PATTERN.matcher(newPassword).find()) {
                 throwException(exceptionClass, "invalid password");
@@ -137,7 +141,7 @@ public class UserBaseService {
     }
 
     /**
-     * 返回Base64编码的公钥
+     * 返回Base64编码的公钥 为pem格式去掉开头和结尾的-----BEGIN PUBLIC KEY-----和-----END PUBLIC KEY-----
      */
     public String getPublicKey() {
         return Base64.getEncoder().encodeToString(PwdUtils.publicKey.getEncoded());

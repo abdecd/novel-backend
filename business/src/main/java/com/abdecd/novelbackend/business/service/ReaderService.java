@@ -3,12 +3,10 @@ package com.abdecd.novelbackend.business.service;
 import com.abdecd.novelbackend.business.aspect.UseFileService;
 import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
-import com.abdecd.novelbackend.business.mapper.NovelAndTagsMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderFavoritesMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;
 import com.abdecd.novelbackend.business.pojo.dto.reader.UpdateReaderDetailDTOWithUrl;
-import com.abdecd.novelbackend.business.pojo.entity.NovelAndTags;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderFavorites;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
@@ -34,7 +32,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ReaderService {
@@ -45,9 +47,9 @@ public class ReaderService {
     @Autowired
     private ReaderHistoryMapper readerHistoryMapper;
     @Autowired
-    private NovelAndTagsMapper novelAndTagsMapper;
-    @Autowired
     private RedisTemplate<String, ReaderHistoryVO> redisTemplate;
+    @Autowired
+    private RedisTemplate<String, Integer> redisTemplateForInt;
     @Autowired
     private RedisTemplate<String, LocalDateTime> redisTemplateForTime;
 
@@ -125,6 +127,13 @@ public class ReaderService {
                 .setTimestamp(LocalDateTime.now());
         readerHistoryMapper.insert(newRecord);
         addReaderHistoryCache(userId, newRecord);
+        // 记录每日点击量
+        if (Boolean.FALSE.equals(redisTemplateForInt.hasKey(RedisConstant.NOVEL_DAILY_READ_CNT))) {
+            redisTemplateForInt.opsForZSet().add(RedisConstant.NOVEL_DAILY_READ_CNT, novelId, 0);
+            redisTemplateForInt.expire(RedisConstant.NOVEL_DAILY_READ_CNT, 1, TimeUnit.DAYS);
+        }
+        redisTemplateForInt.opsForZSet().incrementScore(RedisConstant.NOVEL_DAILY_READ_CNT, novelId, 1);
+        // 记录更新时间戳
         redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_TIMESTAMP + userId, LocalDateTime.now());
         redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + userId + ':' + novelId, LocalDateTime.now());
     }
@@ -244,41 +253,5 @@ public class ReaderService {
                 return operations.exec();
             }
         });
-    }
-
-
-    @Cacheable(value = "readerFavoriteTagIds#1", key = "#userId")
-    public List<Integer> getReaderFavoriteTagIds(Integer userId) {
-        return readerHistoryMapper.getReaderFavoriteTagIds(userId);
-    }
-
-    @Cacheable(value = "getHotTagIds#32", key = "#startTime.toString() + ':' + #endTime.toString()")
-    public List<Integer> getHotTagIds(LocalDateTime startTime, LocalDateTime endTime) {
-        var list = readerHistoryMapper.getHotTagIds(startTime, endTime);
-        if (list.isEmpty() || list.size() < 5) {
-            var novelService = SpringContextUtil.getBean(NovelService.class);
-            var tags = novelService.getAvailableTags();
-            Collections.shuffle(tags);
-            while (list.size() < 5 && !tags.isEmpty()) {
-                var tag = tags.removeFirst();
-                var id = tag.getId();
-                if (!list.contains(id)) list.add(id);
-            }
-        }
-        return list;
-    }
-
-    @Cacheable(value = "getNovelIdsByTagId", key = "#tagId", unless = "#result.isEmpty()")
-    public List<Integer> getNovelIdsByTagId(int tagId) {
-        return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
-                .eq(NovelAndTags::getTagId, tagId)
-        ).stream().map(NovelAndTags::getNovelId).toList());
-    }
-
-    @Cacheable(value = "getTagIdsByNovelId", key = "#novelId", unless = "#result.isEmpty()")
-    public List<Integer> getTagIdsByNovelId(int novelId) {
-        return new ArrayList<>(novelAndTagsMapper.selectList(new LambdaQueryWrapper<NovelAndTags>()
-                .eq(NovelAndTags::getNovelId, novelId)
-        ).stream().map(NovelAndTags::getTagId).toList());
     }
 }
