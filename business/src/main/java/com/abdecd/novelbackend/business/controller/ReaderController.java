@@ -130,7 +130,7 @@ public class ReaderController {
     @GetMapping("history/novel")
     public Result<List<ReaderHistoryVO>> getReaderHistoryByNovel(
             @NotNull @Schema(description = "小说id") Integer novelId,
-            @Nullable @Schema(description = "起始记录id(倒序)") Long startId,
+            @NotNull @Schema(description = "页码") Integer page,
             @NotNull @Schema(description = "每页数量") Integer pageSize,
             HttpServletRequest request,
             HttpServletResponse response
@@ -141,7 +141,7 @@ public class ReaderController {
                 redisTemplate.opsForValue().get(
                         RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + UserContext.getUserId() + ':' + novelId
                 ))) return null;
-        var readerHistory = readerService.listReaderHistoryByNovel(UserContext.getUserId(), novelId, startId, pageSize);
+        var readerHistory = readerService.listReaderHistoryByNovel(UserContext.getUserId(), novelId, page, pageSize);
         return Result.success(readerHistory);
     }
 
