@@ -1,6 +1,7 @@
 package com.abdecd.novelbackend.business.interceptor;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,11 +21,11 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     private StringRedisTemplate redisTemplate;
     @Override
     public boolean preHandle(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull Object handler) {
-        if (Boolean.FALSE.equals(redisTemplate.hasKey(RedisConstant.LIMIT_IP_RATE + request.getRemoteAddr()))) {
+        while (Boolean.FALSE.equals(redisTemplate.hasKey(RedisConstant.LIMIT_IP_RATE + request.getRemoteAddr()))) {
             redisTemplate.opsForValue().set(RedisConstant.LIMIT_IP_RATE + request.getRemoteAddr(), "0", 30, TimeUnit.SECONDS);
         }
         RedisAtomicInteger atomicInteger = new RedisAtomicInteger(RedisConstant.LIMIT_IP_RATE + request.getRemoteAddr(), Objects.requireNonNull(redisTemplate.getConnectionFactory()));
-        if (atomicInteger.incrementAndGet() > 200) throw new BaseException("请求过于频繁，请稍后再试");
+        if (atomicInteger.incrementAndGet() > 200) throw new BaseException(MessageConstant.RATE_LIMIT);
         return true;
     }
 }
