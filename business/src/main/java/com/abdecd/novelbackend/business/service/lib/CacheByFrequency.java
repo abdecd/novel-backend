@@ -6,6 +6,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,11 +39,28 @@ public class CacheByFrequency<T> {
     }
 
     public void recordFrequency(String key) {
-        if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(rootKey + ":zSet"))) {
-            stringRedisTemplate.opsForZSet().add(rootKey + ":zSet", key, 0);
-            if (ttlSeconds != null) stringRedisTemplate.expire(rootKey + ":zSet", ttlSeconds, TimeUnit.SECONDS);
-        }
-        stringRedisTemplate.opsForZSet().incrementScore(rootKey + ":zSet", key, 1);
+        var scriptText = """
+                -- 定义变量
+                local rootKey = ARGV[1]
+                local key = ARGV[2]
+                local ttlSeconds = tonumber(ARGV[3])
+
+                -- 检查根键对应的有序集合是否存在
+                if not redis.call('exists', rootKey .. ":zSet") then
+                    -- 如果不存在，则添加元素到有序集合中，score 设为 1
+                    redis.call('zadd', rootKey .. ":zSet", 1, key)
+
+                    -- 如果 ttlSeconds 不为空，则设置过期时间
+                    if ttlSeconds ~= nil and ttlSeconds > 0 then
+                        redis.call('expire', rootKey .. ":zSet", ttlSeconds)
+                    end
+                else
+                    -- 将指定 key 在有序集合中的 score 增加 1
+                    redis.call('zincrby', rootKey .. ":zSet", 1, key)
+                end
+                """;
+        var script = new DefaultRedisScript<>(scriptText, Long.class);
+        redisTemplate.execute(script, Collections.singletonList(rootKey), key, ttlSeconds);
     }
     @Nullable public T get(
             String key,
@@ -59,8 +77,10 @@ public class CacheByFrequency<T> {
             if (set == null || !set.contains(keyForJudgeFunc.apply(key))) {
                 return failCb.get();
             } else {
+                // 去数据库拿数据并缓存
                 RLock lock = redissonClient.getLock(rootKey + ":lock");
                 lock.lock();
+                // 第一个拿过了后面直接走缓存
                 if (Boolean.TRUE.equals(redisTemplate.hasKey(rootKey + ":value:" + key)))
                     return redisTemplate.opsForValue().get(rootKey + ":value:" + key);
                 redisTemplate.opsForValue().set(rootKey + ":value:" + key, failCb.get());
@@ -73,7 +93,10 @@ public class CacheByFrequency<T> {
     }
 
     public void delete(String key) {
+        RLock lock = redissonClient.getLock(rootKey + ":lock");
+        lock.lock();
         redisTemplate.delete(rootKey + ":value:" + key);
+        lock.unlock();
     }
 
     /**
@@ -95,6 +118,9 @@ public class CacheByFrequency<T> {
         });
         if (needDeleted.isEmpty()) return;
         Collections.shuffle(needDeleted);
+        RLock lock = redissonClient.getLock(rootKey + ":lock");
+        lock.lock();
         redisTemplate.delete(needDeleted.getFirst());
+        lock.unlock();
     }
 }

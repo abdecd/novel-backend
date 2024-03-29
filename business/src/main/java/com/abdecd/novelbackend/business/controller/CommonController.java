@@ -81,8 +81,10 @@ public class CommonController {
             if (file.getSize() > 1024 * 1024 * 3) throw new BaseException("文件过大");
             // 300次/天
             var key = RedisConstant.LIMIT_UPLOAD_IMG + UserContext.getUserId();
+            while (Boolean.FALSE.equals(redisTemplate.hasKey(key))) {
+                redisTemplate.opsForValue().set(key, "0", 1, TimeUnit.DAYS);
+            }
             RedisAtomicInteger redisAtomicInteger = new RedisAtomicInteger(key, Objects.requireNonNull(redisTemplate.getConnectionFactory()));
-            if (redisAtomicInteger.get() == 0) redisAtomicInteger.expire(1, TimeUnit.DAYS);
             if (redisAtomicInteger.incrementAndGet() > 300) return CompletableFuture.completedFuture(Result.error("图片上传次数达到上限"));
             return CompletableFuture.completedFuture(Result.success(fileService.uploadTmpFile(file)));
         } catch (IOException e) {

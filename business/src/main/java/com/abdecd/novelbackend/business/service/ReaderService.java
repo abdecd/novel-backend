@@ -18,14 +18,10 @@ import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import jakarta.annotation.Nonnull;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -270,65 +266,75 @@ public class ReaderService {
     }
 
     private void addReaderHistoryCache(Integer userId, ReaderHistory newRecord) {
-        // 更新redis
+        var lock = redissonClient.getLock(RedisConstant.READER_HISTORY + userId + ":lock");
+        lock.lock();
         List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
-        redisTemplate.execute(new SessionCallback<List<Object>>() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public List<Object> execute(@Nonnull RedisOperations operations) throws DataAccessException {
-                operations.multi();
-                if (list != null) {
-                    for (var readerHistoryVO : list) {
-                        if (Objects.equals(readerHistoryVO.getNovelId(), newRecord.getNovelId())) {
-                            operations.opsForList().remove(RedisConstant.READER_HISTORY + userId, -1, readerHistoryVO);
-                        }
-                    }
+        if (list != null) {
+            for (var readerHistoryVO : list) {
+                if (Objects.equals(readerHistoryVO.getNovelId(), newRecord.getNovelId())) {
+                    redisTemplate.opsForList().remove(RedisConstant.READER_HISTORY + userId, 0, readerHistoryVO);
                 }
-                operations.opsForList().leftPush(RedisConstant.READER_HISTORY + userId, readerHistoryMapper.getReaderHistoryVO(newRecord.getId()));
-                operations.opsForList().trim(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
-                return operations.exec();
             }
-        });
+        }
+        redisTemplate.opsForList().leftPush(RedisConstant.READER_HISTORY + userId, readerHistoryMapper.getReaderHistoryVO(newRecord.getId()));
+        redisTemplate.opsForList().trim(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
+        // 如果有效最大数量存在则更新
+        if (Boolean.TRUE.equals(redisTemplateForInt.hasKey(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId)))
+            redisTemplateForInt.opsForValue().increment(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId);
+        lock.unlock();
     }
 
     public List<ReaderHistoryVO> getReaderHistoryCache(Integer uid) {
         List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + uid, 0, RedisConstant.READER_HISTORY_SIZE);
         if (list == null) list = new ArrayList<>();
-        if (list.size() < RedisConstant.READER_HISTORY_SIZE) {
-            Long willStartId = null;
-            if (!list.isEmpty()) willStartId = list.getLast().getId();
-            List<ReaderHistoryVO> tmpList;
-            if (willStartId == null) {
-                tmpList = readerHistoryMapper.listReaderHistoryVO(uid, null, RedisConstant.READER_HISTORY_SIZE, StatusConstant.ENABLE);
-            } else {
-                var novelIdsNot = list.stream().map(ReaderHistoryVO::getNovelId).toArray(Integer[]::new);
-                // 已将重复列表排除，不用多拿一个
-                tmpList = readerHistoryMapper.listReaderHistoryVO(uid, willStartId, RedisConstant.READER_HISTORY_SIZE - list.size(), StatusConstant.ENABLE, novelIdsNot);
+        var listSize = list.size();
+        // 确实不足 RedisConstant.READER_HISTORY_SIZE 就不要去拿了
+        var nowMaxCnt = redisTemplateForInt.opsForValue().get(RedisConstant.READER_HISTORY_NOW_MAX_CNT + uid);
+        if (nowMaxCnt != null && nowMaxCnt <= RedisConstant.READER_HISTORY_SIZE) return list;
+        if (listSize < RedisConstant.READER_HISTORY_SIZE) {
+            // 数量不足则补充数据
+            var lock = redissonClient.getLock(RedisConstant.READER_HISTORY + uid + ":lock");
+            lock.lock();
+            List<ReaderHistoryVO> currentList = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + uid, 0, RedisConstant.READER_HISTORY_SIZE);
+            if (currentList != null && currentList.size() != listSize) return currentList;
+            try {
+                Long willStartId = null;
+                if (!list.isEmpty()) willStartId = list.getLast().getId();
+                List<ReaderHistoryVO> tmpList;
+                if (willStartId == null) {
+                    tmpList = readerHistoryMapper.listReaderHistoryVO(uid, null, RedisConstant.READER_HISTORY_SIZE, StatusConstant.ENABLE);
+                } else {
+                    var novelIdsNot = list.stream().map(ReaderHistoryVO::getNovelId).toArray(Integer[]::new);
+                    // 已将重复列表排除，不用多拿一个
+                    tmpList = readerHistoryMapper.listReaderHistoryVO(uid, willStartId, RedisConstant.READER_HISTORY_SIZE - list.size(), StatusConstant.ENABLE, novelIdsNot);
+                }
+                if (!tmpList.isEmpty()) redisTemplate.opsForList().rightPushAll(RedisConstant.READER_HISTORY + uid, tmpList);
+                list.addAll(tmpList);
+                // 记录当前有效最大数量
+                if (list.size() < RedisConstant.READER_HISTORY_SIZE) redisTemplateForInt.opsForValue().set(RedisConstant.READER_HISTORY_NOW_MAX_CNT + uid, list.size());
+            } finally {
+                lock.unlock();
             }
-            if (!tmpList.isEmpty()) redisTemplate.opsForList().rightPushAll(RedisConstant.READER_HISTORY + uid, tmpList);
-            list.addAll(tmpList);
         }
         return list;
     }
 
     private void removeReaderHistoryCache(Integer userId, Integer[] novelIds) {
-        // 更新redis
+        var lock = redissonClient.getLock(RedisConstant.READER_HISTORY + userId + ":lock");
+        lock.lock();
         List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
         var novelIdsList = Arrays.asList(novelIds);
-        redisTemplate.execute(new SessionCallback<List<Object>>() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public List<Object> execute(@Nonnull RedisOperations operations) throws DataAccessException {
-                operations.multi();
-                if (list != null) {
-                    for (var readerHistoryVO : list) {
-                        if (novelIdsList.contains(readerHistoryVO.getNovelId())) {
-                            operations.opsForList().remove(RedisConstant.READER_HISTORY + userId, 0, readerHistoryVO);
-                        }
-                    }
+
+        if (list != null) {
+            for (var readerHistoryVO : list) {
+                if (novelIdsList.contains(readerHistoryVO.getNovelId())) {
+                    redisTemplate.opsForList().remove(RedisConstant.READER_HISTORY + userId, 0, readerHistoryVO);
                 }
-                return operations.exec();
             }
-        });
+        }
+        // 如果有效最大数量存在则更新
+        if (Boolean.TRUE.equals(redisTemplateForInt.hasKey(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId)))
+            redisTemplateForInt.opsForValue().decrement(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId);
+        lock.unlock();
     }
 }
