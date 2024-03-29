@@ -60,7 +60,7 @@ public class CacheByFrequency<T> {
                 end
                 """;
         var script = new DefaultRedisScript<>(scriptText, Long.class);
-        redisTemplate.execute(script, Collections.singletonList(rootKey), key, ttlSeconds);
+        stringRedisTemplate.execute(script, Collections.emptyList(), rootKey, key, ttlSeconds);
     }
     @Nullable public T get(
             String key,
