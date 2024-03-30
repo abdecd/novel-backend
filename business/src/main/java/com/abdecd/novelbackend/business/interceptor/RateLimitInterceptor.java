@@ -23,7 +23,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     public boolean preHandle(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull Object handler) {
         var realIp = request.getHeader("X-Real-IP");
         while (Boolean.FALSE.equals(redisTemplate.hasKey(RedisConstant.LIMIT_IP_RATE + realIp))) {
-            redisTemplate.opsForValue().set(RedisConstant.LIMIT_IP_RATE + realIp, "0", 30, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(RedisConstant.LIMIT_IP_RATE + realIp, "0", 3, TimeUnit.SECONDS);
         }
         RedisAtomicInteger atomicInteger = new RedisAtomicInteger(RedisConstant.LIMIT_IP_RATE + realIp, Objects.requireNonNull(redisTemplate.getConnectionFactory()));
         if (atomicInteger.incrementAndGet() > 200) throw new BaseException(MessageConstant.RATE_LIMIT);
