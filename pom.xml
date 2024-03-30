@@ -89,6 +89,11 @@
 				<artifactId>redisson-spring-boot-starter</artifactId>
 				<version>3.27.2</version>
 			</dependency>
+			<dependency>
+				<groupId>cn.hutool</groupId>
+				<artifactId>hutool-dfa</artifactId>
+				<version>5.8.26</version>
+			</dependency>
 
 			<dependency>
 				<groupId>com.aliyun.oss</groupId>
