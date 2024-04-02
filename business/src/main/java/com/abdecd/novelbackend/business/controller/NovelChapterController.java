@@ -17,14 +17,15 @@ import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.aspect.RequirePermission;
 import com.abdecd.tokenlogin.common.context.UserContext;
+import com.alibaba.ttl.threadpool.TtlExecutors;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -33,10 +34,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 
 @Tag(name = "小说章节接口")
+@Slf4j
 @RestController
 @RequestMapping("/novel/chapter")
 public class NovelChapterController {
@@ -48,8 +49,8 @@ public class NovelChapterController {
     private NovelService novelService;
     @Autowired
     private ReaderService readerService;
-    @Resource
-    private Executor taskExecutor;
+    private static final Executor recordHistoryExecutor =
+            TtlExecutors.getTtlExecutor(Executors.newVirtualThreadPerTaskExecutor());
     private CacheByFrequency<Void> cacheNovelChapterByFrequency;
 
     @Autowired
@@ -89,12 +90,18 @@ public class NovelChapterController {
         if (currentLocalDateTime == null) return CompletableFuture.completedFuture(Result.success(null));
         // 更新阅读记录
         if (UserContext.getUserId() != null) {
-            taskExecutor.execute(() -> readerService.saveReaderHistory(
-                    UserContext.getUserId(),
-                    nid,
-                    vNum,
-                    cNum
-            ));
+            if (recordHistoryExecutor != null) {
+                recordHistoryExecutor.execute(() ->
+                        readerService.saveReaderHistory(
+                                UserContext.getUserId(),
+                                nid,
+                                vNum,
+                                cNum
+                        )
+                );
+            } else {
+                log.warn("recordHistoryExecutor is null");
+            }
         }
         if (HttpCacheUtils.tryUseCache(request, response, currentLocalDateTime)) return null;
 
