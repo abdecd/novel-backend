@@ -16,8 +16,9 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelVolume;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.common.result.PageVO;
+import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -30,8 +31,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 
+@Slf4j
 @Service
 public class NovelService {
     @Autowired
@@ -50,8 +52,8 @@ public class NovelService {
     private NovelTagsMapper novelTagsMapper;
     @Autowired
     private ElasticSearchService elasticSearchService;
-    @Resource
-    private Executor taskExecutor;
+    private static final Executor saveToESExecutor =
+            TtlExecutors.getTtlExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
     @Cacheable(value = "novelInfoVO", key = "#nid", unless = "#result == null")
     public NovelInfoVO getNovelInfoVO(int nid) {
@@ -144,7 +146,11 @@ public class NovelService {
 
     private void saveNovelToElasticSearch(NovelInfo novelInfo) {
         var novelService = SpringContextUtil.getBean(NovelService.class);
-        taskExecutor.execute(() -> {
+        if (saveToESExecutor == null) {
+            log.warn("saveToESExecutor is null");
+            return;
+        }
+        saveToESExecutor.execute(() -> {
             try {
                 // 等小说缓存清掉
                 Thread.sleep(1000);

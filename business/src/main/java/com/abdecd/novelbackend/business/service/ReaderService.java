@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -152,16 +151,15 @@ public class ReaderService {
         redisTemplateForInt.opsForSet().remove(RedisConstant.READER_FAVORITES + userId, (Object[]) novelIds);
     }
 
-    @Transactional
     public void saveReaderHistory(Integer userId, Integer novelId, Integer volumeNumber, Integer chapterNumber) {
-        // 删掉同样的旧记录
-        readerHistoryMapper.delete(new LambdaQueryWrapper<ReaderHistory>()
+        // 获取旧记录
+        var oldRecord = readerHistoryMapper.selectOne(new LambdaQueryWrapper<ReaderHistory>()
                 .eq(ReaderHistory::getUserId, userId)
                 .eq(ReaderHistory::getNovelId, novelId)
                 .eq(ReaderHistory::getVolumeNumber, volumeNumber)
                 .eq(ReaderHistory::getChapterNumber, chapterNumber)
         );
-        // 插入新记录
+        // 插入或更新新记录
         var newRecord = new ReaderHistory()
                 .setUserId(userId)
                 .setNovelId(novelId)
@@ -169,7 +167,12 @@ public class ReaderService {
                 .setChapterNumber(chapterNumber)
                 .setStatus(StatusConstant.ENABLE)
                 .setTimestamp(LocalDateTime.now());
-        readerHistoryMapper.insert(newRecord);
+        if (oldRecord != null) {
+            newRecord.setId(oldRecord.getId());
+            readerHistoryMapper.updateById(newRecord);
+        } else {
+            readerHistoryMapper.insert(newRecord);
+        }
         // 更新缓存
         addReaderHistoryCache(userId, newRecord);
         var cacheHistoryForANovelByFrequency = new CacheByFrequency<>(
