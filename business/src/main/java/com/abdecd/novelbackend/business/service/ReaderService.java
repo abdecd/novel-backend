@@ -44,7 +44,7 @@ public class ReaderService {
     @Autowired
     private RedisTemplate<String, List<ReaderHistoryVO>> redisTemplateHistoryList;
     @Autowired
-    private RedisTemplate<String, Integer> redisTemplateForInt;
+    private StringRedisTemplate redisTemplateForInt;
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
@@ -118,7 +118,8 @@ public class ReaderService {
         if (set == null) return new ArrayList<>();
         var novelService = SpringContextUtil.getBean(NovelService.class);
         return set.stream().parallel()
-                .map(id -> {
+                .map(idStr -> {
+                    var id = Integer.parseInt(idStr);
                     var vo = new ReaderFavoritesVO();
                     BeanUtils.copyProperties(novelService.getNovelInfoVO(id), vo);
                     vo.setNovelId(id);
@@ -143,7 +144,7 @@ public class ReaderService {
         if (count == null) count = 0L;
         if (novelIds.length + count > 100)
             throw new BaseException(MessageConstant.FAVORITES_EXCEED_LIMIT);
-        redisTemplateForInt.opsForSet().add(RedisConstant.READER_FAVORITES + userId, novelIds);
+        redisTemplateForInt.opsForSet().add(RedisConstant.READER_FAVORITES + userId, Arrays.stream(novelIds).map(Object::toString).toArray(String[]::new));
     }
 
     public void deleteReaderFavorites(Integer userId, int[] novelIdsRaw) {
@@ -271,20 +272,24 @@ public class ReaderService {
     private void addReaderHistoryCache(Integer userId, ReaderHistory newRecord) {
         var lock = redissonClient.getLock(RedisConstant.READER_HISTORY + userId + ":lock");
         lock.lock();
-        List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
-        if (list != null) {
-            for (var readerHistoryVO : list) {
-                if (Objects.equals(readerHistoryVO.getNovelId(), newRecord.getNovelId())) {
-                    redisTemplate.opsForList().remove(RedisConstant.READER_HISTORY + userId, 0, readerHistoryVO);
+        try {
+            List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
+            if (list != null) {
+                for (var readerHistoryVO : list) {
+                    if (Objects.equals(readerHistoryVO.getNovelId(), newRecord.getNovelId())) {
+                        redisTemplate.opsForList().remove(RedisConstant.READER_HISTORY + userId, 0, readerHistoryVO);
+                    }
                 }
             }
+            redisTemplate.opsForList().leftPush(RedisConstant.READER_HISTORY + userId, readerHistoryMapper.getReaderHistoryVO(newRecord.getId()));
+            redisTemplate.opsForList().trim(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
+            // 如果有效最大数量存在则更新
+            System.out.println("userid"+userId);
+            if (Boolean.TRUE.equals(redisTemplateForInt.hasKey(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId)))
+                redisTemplateForInt.opsForValue().increment(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId);
+        } finally {
+            lock.unlock();
         }
-        redisTemplate.opsForList().leftPush(RedisConstant.READER_HISTORY + userId, readerHistoryMapper.getReaderHistoryVO(newRecord.getId()));
-        redisTemplate.opsForList().trim(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
-        // 如果有效最大数量存在则更新
-        if (Boolean.TRUE.equals(redisTemplateForInt.hasKey(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId)))
-            redisTemplateForInt.opsForValue().increment(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId);
-        lock.unlock();
     }
 
     public List<ReaderHistoryVO> getReaderHistoryCache(Integer uid) {
@@ -292,7 +297,8 @@ public class ReaderService {
         if (list == null) list = new ArrayList<>();
         var listSize = list.size();
         // 确实不足 RedisConstant.READER_HISTORY_SIZE 就不要去拿了
-        var nowMaxCnt = redisTemplateForInt.opsForValue().get(RedisConstant.READER_HISTORY_NOW_MAX_CNT + uid);
+        var nowMaxCntStr = redisTemplateForInt.opsForValue().get(RedisConstant.READER_HISTORY_NOW_MAX_CNT + uid);
+        var nowMaxCnt = nowMaxCntStr == null ? null : Integer.parseInt(nowMaxCntStr);
         if (nowMaxCnt != null && nowMaxCnt <= RedisConstant.READER_HISTORY_SIZE) return list;
         if (listSize < RedisConstant.READER_HISTORY_SIZE) {
             // 数量不足则补充数据
@@ -314,7 +320,7 @@ public class ReaderService {
                 if (!tmpList.isEmpty()) redisTemplate.opsForList().rightPushAll(RedisConstant.READER_HISTORY + uid, tmpList);
                 list.addAll(tmpList);
                 // 记录当前有效最大数量
-                if (list.size() < RedisConstant.READER_HISTORY_SIZE) redisTemplateForInt.opsForValue().set(RedisConstant.READER_HISTORY_NOW_MAX_CNT + uid, list.size());
+                if (list.size() < RedisConstant.READER_HISTORY_SIZE) redisTemplateForInt.opsForValue().set(RedisConstant.READER_HISTORY_NOW_MAX_CNT + uid, list.size() + "");
             } finally {
                 lock.unlock();
             }
@@ -325,19 +331,22 @@ public class ReaderService {
     private void removeReaderHistoryCache(Integer userId, Integer[] novelIds) {
         var lock = redissonClient.getLock(RedisConstant.READER_HISTORY + userId + ":lock");
         lock.lock();
-        List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
-        var novelIdsList = Arrays.asList(novelIds);
+        try {
+            List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
+            var novelIdsList = Arrays.asList(novelIds);
 
-        if (list != null) {
-            for (var readerHistoryVO : list) {
-                if (novelIdsList.contains(readerHistoryVO.getNovelId())) {
-                    redisTemplate.opsForList().remove(RedisConstant.READER_HISTORY + userId, 0, readerHistoryVO);
+            if (list != null) {
+                for (var readerHistoryVO : list) {
+                    if (novelIdsList.contains(readerHistoryVO.getNovelId())) {
+                        redisTemplate.opsForList().remove(RedisConstant.READER_HISTORY + userId, 0, readerHistoryVO);
+                    }
                 }
             }
+            // 如果有效最大数量存在则更新
+            if (Boolean.TRUE.equals(redisTemplateForInt.hasKey(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId)))
+                redisTemplateForInt.opsForValue().decrement(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId);
+        } finally {
+            lock.unlock();
         }
-        // 如果有效最大数量存在则更新
-        if (Boolean.TRUE.equals(redisTemplateForInt.hasKey(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId)))
-            redisTemplateForInt.opsForValue().decrement(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId);
-        lock.unlock();
     }
 }

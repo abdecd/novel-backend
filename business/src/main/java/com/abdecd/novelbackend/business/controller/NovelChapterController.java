@@ -17,7 +17,6 @@ import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.aspect.RequirePermission;
 import com.abdecd.tokenlogin.common.context.UserContext;
-import com.alibaba.ttl.threadpool.TtlExecutors;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -50,7 +49,7 @@ public class NovelChapterController {
     @Autowired
     private ReaderService readerService;
     private static final Executor recordHistoryExecutor =
-            TtlExecutors.getTtlExecutor(Executors.newVirtualThreadPerTaskExecutor());
+            new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(1000000));
     private CacheByFrequency<Void> cacheNovelChapterByFrequency;
 
     @Autowired
@@ -90,18 +89,15 @@ public class NovelChapterController {
         if (currentLocalDateTime == null) return CompletableFuture.completedFuture(Result.success(null));
         // 更新阅读记录
         if (UserContext.getUserId() != null) {
-            if (recordHistoryExecutor != null) {
-                recordHistoryExecutor.execute(() ->
-                        readerService.saveReaderHistory(
-                                UserContext.getUserId(),
-                                nid,
-                                vNum,
-                                cNum
-                        )
-                );
-            } else {
-                log.warn("recordHistoryExecutor is null");
-            }
+            var currentUserId = UserContext.getUserId();
+            recordHistoryExecutor.execute(() ->
+                    readerService.saveReaderHistory(
+                            currentUserId,
+                            nid,
+                            vNum,
+                            cNum
+                    )
+            );
         }
         if (HttpCacheUtils.tryUseCache(request, response, currentLocalDateTime)) return null;
 
