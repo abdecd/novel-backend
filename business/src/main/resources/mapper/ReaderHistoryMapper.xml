@@ -37,7 +37,7 @@
         SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp,
         ni.title as novelTitle, ni.author, ni.cover,
         nc.title as chapterTitle
-        FROM reader_history rh USE INDEX (user_id_novelId)
+        FROM reader_history rh
         LEFT JOIN novel_info ni ON rh.novel_id = ni.id
         LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
         <where>
@@ -52,7 +52,7 @@
             </if>
             and status = #{enableStatus}
         </where>
-        ORDER BY rh.id desc
+        ORDER BY rh.timestamp desc
         limit #{pageSize}
     </select>
     <select id="getRankList" resultType="java.lang.Integer">
