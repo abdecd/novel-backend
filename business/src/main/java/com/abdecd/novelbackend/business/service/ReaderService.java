@@ -114,10 +114,10 @@ public class ReaderService {
     }
 
     public List<ReaderFavoritesVO> listReaderFavoritesVO(Integer userId) {
-        var set = redisTemplateForInt.opsForSet().members(RedisConstant.READER_FAVORITES + userId);
-        if (set == null) return new ArrayList<>();
+        var list = redisTemplateForInt.opsForList().range(RedisConstant.READER_FAVORITES + userId, 0, RedisConstant.READER_FAVORITES_SIZE);
+        if (list == null) return new ArrayList<>();
         var novelService = SpringContextUtil.getBean(NovelService.class);
-        return set.stream().parallel()
+        return list.stream().parallel()
                 .map(idStr -> {
                     var id = Integer.parseInt(idStr);
                     var vo = new ReaderFavoritesVO();
@@ -129,29 +129,34 @@ public class ReaderService {
     }
 
     /**
-     * 最多添加 100 个收藏
+     * 最多添加 RedisConstant.READER_FAVORITES_SIZE 个收藏
      */
     public void addReaderFavorites(Integer userId, int[] novelIdsRaw) {
         var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
-        // 进行校验
+        // 如果小说不存在
         var novelService = SpringContextUtil.getBean(NovelService.class);
         var allNovelIds = novelService.getNovelIds();
         for (var novelId : novelIds) {
             if (!allNovelIds.contains(novelId))
                 throw new BaseException(MessageConstant.NOVEL_NOT_EXIST);
         }
-        var count = redisTemplateForInt.opsForSet().size(RedisConstant.READER_FAVORITES + userId);
-        if (count == null) count = 0L;
-        if (novelIds.length + count > 100)
+        // 如果超过最大收藏数
+        var list = redisTemplateForInt.opsForList().range(RedisConstant.READER_FAVORITES + userId, 0, RedisConstant.READER_FAVORITES_SIZE);
+        var count = list == null ? 0L : list.size();
+        if (novelIds.length + count > RedisConstant.READER_FAVORITES_SIZE)
             throw new BaseException(MessageConstant.FAVORITES_EXCEED_LIMIT);
-        redisTemplateForInt.opsForSet().add(RedisConstant.READER_FAVORITES + userId, Arrays.stream(novelIds).map(Object::toString).toArray(String[]::new));
+        var needAdd = Arrays.stream(novelIds)
+                .map(Object::toString)
+                .filter(idStr -> list == null || !list.contains(idStr))
+                .toArray(String[]::new);
+        if (needAdd.length == 0) throw new BaseException(MessageConstant.FAVORITES_EXIST);
+        redisTemplateForInt.opsForList().leftPushAll(RedisConstant.READER_FAVORITES + userId, needAdd);
     }
 
     public void deleteReaderFavorites(Integer userId, int[] novelIdsRaw) {
-        var novelIdsStr = Arrays.stream(novelIdsRaw)
-                .boxed()
-                .map(Object::toString).toArray(String[]::new);
-        redisTemplateForInt.opsForSet().remove(RedisConstant.READER_FAVORITES + userId, (Object[]) novelIdsStr);
+        for (int novelId : novelIdsRaw) {
+            redisTemplateForInt.opsForList().remove(RedisConstant.READER_FAVORITES + userId, 0,novelId + "");
+        }
     }
 
     public void saveReaderHistory(Integer userId, Integer novelId, Integer volumeNumber, Integer chapterNumber) {
