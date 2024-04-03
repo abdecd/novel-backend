@@ -16,7 +16,6 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelVolume;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
 import com.abdecd.novelbackend.common.result.PageVO;
-import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -31,7 +30,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 @Slf4j
 @Service
@@ -53,7 +53,7 @@ public class NovelService {
     @Autowired
     private ElasticSearchService elasticSearchService;
     private static final Executor saveToESExecutor =
-            TtlExecutors.getTtlExecutor(Executors.newVirtualThreadPerTaskExecutor());
+            Executors.newVirtualThreadPerTaskExecutor();
 
     @Cacheable(value = "novelInfoVO", key = "#nid", unless = "#result == null")
     public NovelInfoVO getNovelInfoVO(int nid) {
@@ -146,14 +146,10 @@ public class NovelService {
 
     private void saveNovelToElasticSearch(NovelInfo novelInfo) {
         var novelService = SpringContextUtil.getBean(NovelService.class);
-        if (saveToESExecutor == null) {
-            log.warn("saveToESExecutor is null");
-            return;
-        }
         saveToESExecutor.execute(() -> {
             try {
                 // 等小说缓存清掉
-                Thread.sleep(1000);
+                Thread.sleep(1000); // todo 可能有更好的实现
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

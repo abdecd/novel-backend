@@ -80,13 +80,17 @@ public class CacheByFrequency<T> {
                 // 去数据库拿数据并缓存
                 RLock lock = redissonClient.getLock(rootKey + ":lock");
                 lock.lock();
-                // 第一个拿过了后面直接走缓存
-                if (Boolean.TRUE.equals(redisTemplate.hasKey(rootKey + ":value:" + key)))
-                    return redisTemplate.opsForValue().get(rootKey + ":value:" + key);
-                redisTemplate.opsForValue().set(rootKey + ":value:" + key, failCb.get());
-                if (keyTtlSeconds != null) redisTemplate.expire(rootKey + ":value:" + key, keyTtlSeconds, TimeUnit.SECONDS);
-                clearUnusedOne(keyForJudgeFunc);
-                lock.unlock();
+                try {
+                    // 第一个拿过了后面直接走缓存
+                    if (Boolean.TRUE.equals(redisTemplate.hasKey(rootKey + ":value:" + key)))
+                        return redisTemplate.opsForValue().get(rootKey + ":value:" + key);
+                    redisTemplate.opsForValue().set(rootKey + ":value:" + key, failCb.get());
+                    if (keyTtlSeconds != null)
+                        redisTemplate.expire(rootKey + ":value:" + key, keyTtlSeconds, TimeUnit.SECONDS);
+                    clearUnusedOne(keyForJudgeFunc);
+                } finally {
+                    lock.unlock();
+                }
                 return redisTemplate.opsForValue().get(rootKey + ":value:" + key);
             }
         }
@@ -95,8 +99,11 @@ public class CacheByFrequency<T> {
     public void delete(String key) {
         RLock lock = redissonClient.getLock(rootKey + ":lock");
         lock.lock();
-        redisTemplate.delete(rootKey + ":value:" + key);
-        lock.unlock();
+        try {
+            redisTemplate.delete(rootKey + ":value:" + key);
+        } finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -120,7 +127,10 @@ public class CacheByFrequency<T> {
         Collections.shuffle(needDeleted);
         RLock lock = redissonClient.getLock(rootKey + ":lock");
         lock.lock();
-        redisTemplate.delete(needDeleted.getFirst());
-        lock.unlock();
+        try {
+            redisTemplate.delete(needDeleted.getFirst());
+        } finally {
+            lock.unlock();
+        }
     }
 }
