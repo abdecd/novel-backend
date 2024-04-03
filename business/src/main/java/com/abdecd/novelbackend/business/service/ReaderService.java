@@ -148,8 +148,10 @@ public class ReaderService {
     }
 
     public void deleteReaderFavorites(Integer userId, int[] novelIdsRaw) {
-        var novelIds = Arrays.stream(novelIdsRaw).boxed().toArray(Integer[]::new);
-        redisTemplateForInt.opsForSet().remove(RedisConstant.READER_FAVORITES + userId, (Object[]) novelIds);
+        var novelIdsStr = Arrays.stream(novelIdsRaw)
+                .boxed()
+                .map(Object::toString).toArray(String[]::new);
+        redisTemplateForInt.opsForSet().remove(RedisConstant.READER_FAVORITES + userId, (Object[]) novelIdsStr);
     }
 
     public void saveReaderHistory(Integer userId, Integer novelId, Integer volumeNumber, Integer chapterNumber) {
