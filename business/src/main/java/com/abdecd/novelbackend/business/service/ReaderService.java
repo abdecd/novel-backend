@@ -150,7 +150,7 @@ public class ReaderService {
                 .filter(idStr -> list == null || !list.contains(idStr))
                 .toArray(String[]::new);
         if (needAdd.length == 0) throw new BaseException(MessageConstant.FAVORITES_EXIST);
-        redisTemplateForInt.opsForList().leftPushAll(RedisConstant.READER_FAVORITES + userId, needAdd);
+        redisTemplateForInt.opsForList().rightPushAll(RedisConstant.READER_FAVORITES + userId, needAdd);
     }
 
     public void deleteReaderFavorites(Integer userId, int[] novelIdsRaw) {
