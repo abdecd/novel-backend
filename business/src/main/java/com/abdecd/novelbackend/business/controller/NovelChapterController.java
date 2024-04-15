@@ -166,7 +166,7 @@ public class NovelChapterController {
     }
 
     @Operation(summary = "新增小说章节", description = "不添加小说内容, 成功时返回novelChapterId(String)")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("add")
     public Result<String> addNovelChapter(@RequestBody @Valid AddNovelChapterDTO addNovelChapterDTO) {
         if (novelVolumeService.getNovelVolume(addNovelChapterDTO.getNovelId(), addNovelChapterDTO.getVolumeNumber()) == null)
@@ -177,7 +177,7 @@ public class NovelChapterController {
 
     @Async
     @Operation(summary = "修改小说章节")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("update")
     public CompletableFuture<Result<String>> updateNovelChapter(@RequestBody @Valid UpdateNovelChapterDTO updateNovelChapterDTO) {
         novelChapterService.updateNovelChapter(updateNovelChapterDTO);
@@ -186,7 +186,7 @@ public class NovelChapterController {
 
     @Async
     @Operation(summary = "删除小说章节")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("delete")
     public CompletableFuture<Result<String>> deleteNovelChapter(@RequestBody @Valid DeleteNovelChapterDTO deleteNovelChapterDTO) {
         novelChapterService.deleteNovelChapter(deleteNovelChapterDTO);

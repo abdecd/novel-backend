@@ -14,7 +14,7 @@ public class User {
     private Integer id;
     private String password;
     private String email;
-    private Byte permission;
+    private String permission;
     private Byte status;
 
     public static User ofEmpty() {
@@ -22,7 +22,7 @@ public class User {
                 .setId(null)
                 .setPassword("")
                 .setEmail("")
-                .setPermission((byte) 0)
+                .setPermission("")
                 .setStatus((byte) 0);
     }
 }

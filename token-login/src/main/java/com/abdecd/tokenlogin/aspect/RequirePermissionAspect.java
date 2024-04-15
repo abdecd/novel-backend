@@ -8,6 +8,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 @Component
 @Aspect
@@ -19,9 +20,9 @@ public class RequirePermissionAspect {
             RequirePermission requirePermission = method.getAnnotation(RequirePermission.class);
 
             var permissions = requirePermission.value();
-            var userPermission = (byte) UserContext.getPermission();
+            var userPermissions = List.of(UserContext.getPermission().split(","));
             for (var permission : permissions) {
-                if (permission == userPermission) return joinPoint.proceed();
+                if (userPermissions.contains(permission)) return joinPoint.proceed();
             }
             throwException(requirePermission.exception(), "Permission denied");
         } else {

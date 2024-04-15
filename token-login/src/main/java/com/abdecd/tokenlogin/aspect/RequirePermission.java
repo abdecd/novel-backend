@@ -11,7 +11,7 @@ public @interface RequirePermission {
     /**
      * 允许的权限值, 可以写多个
      */
-    byte[] value();
+    String[] value();
 
     /**
      * 抛出异常的类型

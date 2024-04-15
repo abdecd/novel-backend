@@ -65,7 +65,7 @@ public class UserService {
         // 验证邮箱
         commonService.verifyEmail(signUpDTO.getEmail(), signUpDTO.getVerifyCode());
         // 注册
-        var userId = userBaseService.signup(signUpDTO.getPassword(), (byte) 1, BaseException.class);
+        var userId = userBaseService.signup(signUpDTO.getPassword(), "1", BaseException.class);
         userMapper.updateById(new User()
                 .setId(userId)
                 .setEmail(signUpDTO.getEmail())
