@@ -112,6 +112,7 @@ public class NovelChapterService {
         if (novelChapter == null) return;
         // 更新novelChapter
         var entity = updateNovelChapterDTO.toEntity();
+        entity.setId(novelChapter.getId());
         novelChapterMapper.updateById(entity);
         // 更新novelContent
         if (updateNovelChapterDTO.getContent() != null) {
@@ -133,7 +134,7 @@ public class NovelChapterService {
     }
 
     @Transactional
-    public void deleteNovelChapter(long id) {
+    protected void deleteNovelChapter(long id) {
         var entity = novelChapterMapper.selectById(id);
         novelChapterMapper.deleteById(id);
         fileService.deleteFileInSystem("/novel_data"

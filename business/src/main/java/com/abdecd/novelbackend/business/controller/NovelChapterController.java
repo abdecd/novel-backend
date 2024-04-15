@@ -84,8 +84,8 @@ public class NovelChapterController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
         cacheNovelChapterByFrequency.recordFrequency(nid + "");
+        var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
         if (currentLocalDateTime == null) return CompletableFuture.completedFuture(Result.success(null));
         // 更新阅读记录
         if (UserContext.getUserId() != null) {
