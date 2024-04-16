@@ -2,7 +2,6 @@ package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.NovelVolumeMapper;
-import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.DeleteNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.volume.AddNovelVolumeDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.volume.DeleteNovelVolumeDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.volume.UpdateNovelVolumeDTO;
@@ -65,11 +64,7 @@ public class NovelVolumeService {
         // 章节内容手动删除
         var chapterList = novelChapterService.listNovelChapter(deleteNovelVolumeDTO.getNovelId(), deleteNovelVolumeDTO.getVolumeNumber());
         for (var chapter : chapterList) {
-            novelChapterService.deleteNovelChapter(new DeleteNovelChapterDTO()
-                    .setNovelId(chapter.getNovelId())
-                    .setVolumeNumber(chapter.getVolumeNumber())
-                    .setChapterNumber(chapter.getChapterNumber())
-            );
+            novelChapterService.deleteNovelChapter(chapter);
         }
         novelVolumeMapper.delete(new LambdaQueryWrapper<NovelVolume>()
                 .eq(NovelVolume::getNovelId, deleteNovelVolumeDTO.getNovelId())
