@@ -125,16 +125,15 @@ public class NovelChapterService {
     }
 
     @Transactional
-    protected void deleteNovelChapter(long id) {
-        var entity = novelChapterMapper.selectById(id);
-        novelChapterMapper.deleteById(id);
+    protected void deleteNovelChapterReally(NovelChapter chapter) {
+        novelChapterMapper.deleteById(chapter.getId());
         fileService.deleteFileInSystem("/novel_data"
-                + "/" + entity.getNovelId()
-                + "/" + entity.getVolumeNumber()
-                + "/" + entity.getChapterNumber() + ".txt"
+                + "/" + chapter.getNovelId()
+                + "/" + chapter.getVolumeNumber()
+                + "/" + chapter.getChapterNumber() + ".txt"
         );
         // 刷新缓存
-        cacheNovelChapterByFrequency.delete(entity.getNovelId() + ":" + entity.getVolumeNumber() + ":" + entity.getChapterNumber());
+        cacheNovelChapterByFrequency.delete(chapter.getNovelId() + ":" + chapter.getVolumeNumber() + ":" + chapter.getChapterNumber());
     }
 
     @Caching(evict = {
@@ -149,6 +148,15 @@ public class NovelChapterService {
                 .eq(NovelChapter::getChapterNumber, deleteNovelChapterDTO.getChapterNumber())
         );
         if (novelChapter == null) return;
-        deleteNovelChapter(novelChapter.getId());
+        deleteNovelChapterReally(novelChapter);
+    }
+
+    @Caching(evict = {
+            @CacheEvict(value = "novelChapterList", key = "#chapter.novelId + ':' + #chapter.volumeNumber"),
+            @CacheEvict(value = "getNovelChapterVOOnlyTimestamp", key = "#chapter.novelId + ':' + #chapter.volumeNumber + ':' + #chapter.chapterNumber")
+    })
+    @Transactional
+    public void deleteNovelChapter(NovelChapter chapter) {
+        deleteNovelChapterReally(chapter);
     }
 }

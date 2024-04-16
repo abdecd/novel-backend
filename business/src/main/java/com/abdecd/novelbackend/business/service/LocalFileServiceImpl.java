@@ -3,6 +3,8 @@ package com.abdecd.novelbackend.business.service;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -14,7 +16,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.UUID;
 
-//@Service
+@Service
+@ConditionalOnProperty(name = "novel.local-file-service.enable", havingValue = "true")
 @Slf4j
 @SuppressWarnings("all")
 public class LocalFileServiceImpl implements FileService {

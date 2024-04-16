@@ -7,6 +7,7 @@ import com.aliyun.oss.model.CopyObjectRequest;
 import com.aliyun.oss.model.GetObjectRequest;
 import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,6 +17,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Service
+@ConditionalOnProperty(name = "ali.oss.enable", havingValue = "true")
 public class AliFileServiceImpl implements FileService {
     @Value("${ali.oss.endpoint:empty}")
     String endpoint;

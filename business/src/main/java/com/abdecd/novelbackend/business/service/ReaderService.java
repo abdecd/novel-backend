@@ -280,7 +280,6 @@ public class ReaderService {
             redisTemplate.opsForList().leftPush(RedisConstant.READER_HISTORY + userId, readerHistoryMapper.getReaderHistoryVO(newRecord.getId()));
             redisTemplate.opsForList().trim(RedisConstant.READER_HISTORY + userId, 0, RedisConstant.READER_HISTORY_SIZE);
             // 如果有效最大数量存在则更新
-            System.out.println("userid"+userId);
             if (Boolean.TRUE.equals(redisTemplateForInt.hasKey(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId)))
                 redisTemplateForInt.opsForValue().increment(RedisConstant.READER_HISTORY_NOW_MAX_CNT + userId);
         } finally {
