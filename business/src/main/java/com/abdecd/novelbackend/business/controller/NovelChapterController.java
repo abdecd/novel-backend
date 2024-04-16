@@ -12,6 +12,7 @@ import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.business.service.NovelVolumeService;
 import com.abdecd.novelbackend.business.service.ReaderService;
 import com.abdecd.novelbackend.business.service.lib.CacheByFrequency;
+import com.abdecd.novelbackend.business.service.lib.CacheByFrequencyFactory;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.Result;
@@ -26,7 +27,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,16 +48,13 @@ public class NovelChapterController {
     private NovelService novelService;
     @Autowired
     private ReaderService readerService;
+    private CacheByFrequency<Void> cacheNovelChapterByFrequency;
     private static final Executor recordHistoryExecutor =
             new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(1000000));
-    private CacheByFrequency<Void> cacheNovelChapterByFrequency;
 
     @Autowired
-    public void setCacheNovelChapterByFrequency(StringRedisTemplate stringRedisTemplate) {
-        this.cacheNovelChapterByFrequency = new CacheByFrequency<>(
-                null,
-                stringRedisTemplate,
-                null,
+    public void setCacheNovelChapterByFrequency(CacheByFrequencyFactory cacheNovelChapterByFrequencyFactory) {
+        this.cacheNovelChapterByFrequency = cacheNovelChapterByFrequencyFactory.create(
                 RedisConstant.NOVEL_DAILY_READ,
                 100,
                 86400

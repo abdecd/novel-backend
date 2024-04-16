@@ -8,16 +8,14 @@ import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.UpdateNovelChapte
 import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO;
 import com.abdecd.novelbackend.business.service.lib.CacheByFrequency;
+import com.abdecd.novelbackend.business.service.lib.CacheByFrequencyFactory;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,15 +35,8 @@ public class NovelChapterService {
     private CacheByFrequency<NovelChapterVO> cacheNovelChapterByFrequency;
 
     @Autowired
-    public void setCacheNovelChapterByFrequency(
-            RedisTemplate<String, NovelChapterVO> redisTemplate,
-            StringRedisTemplate stringRedisTemplate,
-            RedissonClient redissonClient
-    ) {
-        this.cacheNovelChapterByFrequency = new CacheByFrequency<>(
-                redisTemplate,
-                stringRedisTemplate,
-                redissonClient,
+    public void setCacheNovelChapterByFrequency(CacheByFrequencyFactory cacheNovelChapterByFrequencyFactory) {
+        this.cacheNovelChapterByFrequency = cacheNovelChapterByFrequencyFactory.create(
                 RedisConstant.NOVEL_DAILY_READ,
                 100,
                 86400

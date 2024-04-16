@@ -10,7 +10,7 @@ import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderFavoritesVO;
 import com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO;
-import com.abdecd.novelbackend.business.service.lib.CacheByFrequency;
+import com.abdecd.novelbackend.business.service.lib.CacheByFrequencyFactory;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
@@ -42,13 +42,11 @@ public class ReaderService {
     @Autowired
     private RedisTemplate<String, LocalDateTime> redisTemplateForTime;
     @Autowired
-    private RedisTemplate<String, List<ReaderHistoryVO>> redisTemplateHistoryList;
-    @Autowired
     private StringRedisTemplate redisTemplateForInt;
     @Autowired
-    private StringRedisTemplate stringRedisTemplate;
-    @Autowired
     private RedissonClient redissonClient;
+    @Autowired
+    private CacheByFrequencyFactory cacheByFrequencyFactory;
 
     public ReaderDetail getReaderDetail(Integer uid) {
         return readerDetailMapper.selectById(uid);
@@ -183,10 +181,7 @@ public class ReaderService {
         }
         // 更新缓存
         addReaderHistoryCache(userId, newRecord);
-        var cacheHistoryForANovelByFrequency = new CacheByFrequency<>(
-                redisTemplateHistoryList,
-                stringRedisTemplate,
-                redissonClient,
+        var cacheHistoryForANovelByFrequency = cacheByFrequencyFactory.<List<ReaderHistoryVO>>create(
                 RedisConstant.READER_HISTORY_A_NOVEL + ":" + userId,
                 5,
                 86400
@@ -236,10 +231,7 @@ public class ReaderService {
      * 默认小说章节数量不超过 1000
      */
     public List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Integer page, Integer pageSize) {
-        var cacheHistoryForANovelByFrequency = new CacheByFrequency<>(
-                redisTemplateHistoryList,
-                stringRedisTemplate,
-                redissonClient,
+        var cacheHistoryForANovelByFrequency = cacheByFrequencyFactory.<List<ReaderHistoryVO>>create(
                 RedisConstant.READER_HISTORY_A_NOVEL + ":" + userId,
                 5,
                 86400
@@ -259,10 +251,7 @@ public class ReaderService {
         );
         // 删除缓存
         removeReaderHistoryCache(userId, novelIds);
-        var cacheHistoryForANovelByFrequency = new CacheByFrequency<>(
-                redisTemplateHistoryList,
-                stringRedisTemplate,
-                redissonClient,
+        var cacheHistoryForANovelByFrequency = cacheByFrequencyFactory.<List<ReaderHistoryVO>>create(
                 RedisConstant.READER_HISTORY_A_NOVEL + ":" + userId,
                 5,
                 86400
