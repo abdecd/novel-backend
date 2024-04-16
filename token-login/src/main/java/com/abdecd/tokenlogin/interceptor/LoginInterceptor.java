@@ -54,7 +54,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         try {
             Map<String, Object> claims = JwtUtils.getInstance().decodeJWT(token);
             Integer userId = Integer.valueOf(claims.get(Constant.JWT_ID).toString());
-            Byte permission = Byte.parseByte(claims.get(Constant.JWT_PERMISSION).toString());
+            String permission = claims.get(Constant.JWT_PERMISSION).toString();
             log.info("userId：{}, permission: {}", userId, permission);
             UserContext.setUserId(userId);
             UserContext.setPermission(permission);

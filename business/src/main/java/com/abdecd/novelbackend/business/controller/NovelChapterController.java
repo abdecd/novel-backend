@@ -12,6 +12,7 @@ import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.business.service.NovelVolumeService;
 import com.abdecd.novelbackend.business.service.ReaderService;
 import com.abdecd.novelbackend.business.service.lib.CacheByFrequency;
+import com.abdecd.novelbackend.business.service.lib.CacheByFrequencyFactory;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.Result;
@@ -26,7 +27,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,16 +48,13 @@ public class NovelChapterController {
     private NovelService novelService;
     @Autowired
     private ReaderService readerService;
+    private CacheByFrequency<Void> cacheNovelChapterByFrequency;
     private static final Executor recordHistoryExecutor =
             new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(1000000));
-    private CacheByFrequency<Void> cacheNovelChapterByFrequency;
 
     @Autowired
-    public void setCacheNovelChapterByFrequency(StringRedisTemplate stringRedisTemplate) {
-        this.cacheNovelChapterByFrequency = new CacheByFrequency<>(
-                null,
-                stringRedisTemplate,
-                null,
+    public void setCacheNovelChapterByFrequency(CacheByFrequencyFactory cacheNovelChapterByFrequencyFactory) {
+        this.cacheNovelChapterByFrequency = cacheNovelChapterByFrequencyFactory.create(
                 RedisConstant.NOVEL_DAILY_READ,
                 100,
                 86400
@@ -84,8 +81,8 @@ public class NovelChapterController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
         cacheNovelChapterByFrequency.recordFrequency(nid + "");
+        var currentLocalDateTime = novelChapterService.getNovelChapterVOOnlyTimestamp(nid, vNum, cNum);
         if (currentLocalDateTime == null) return CompletableFuture.completedFuture(Result.success(null));
         // 更新阅读记录
         if (UserContext.getUserId() != null) {
@@ -166,7 +163,7 @@ public class NovelChapterController {
     }
 
     @Operation(summary = "新增小说章节", description = "不添加小说内容, 成功时返回novelChapterId(String)")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("add")
     public Result<String> addNovelChapter(@RequestBody @Valid AddNovelChapterDTO addNovelChapterDTO) {
         if (novelVolumeService.getNovelVolume(addNovelChapterDTO.getNovelId(), addNovelChapterDTO.getVolumeNumber()) == null)
@@ -177,7 +174,7 @@ public class NovelChapterController {
 
     @Async
     @Operation(summary = "修改小说章节")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("update")
     public CompletableFuture<Result<String>> updateNovelChapter(@RequestBody @Valid UpdateNovelChapterDTO updateNovelChapterDTO) {
         novelChapterService.updateNovelChapter(updateNovelChapterDTO);
@@ -186,7 +183,7 @@ public class NovelChapterController {
 
     @Async
     @Operation(summary = "删除小说章节")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("delete")
     public CompletableFuture<Result<String>> deleteNovelChapter(@RequestBody @Valid DeleteNovelChapterDTO deleteNovelChapterDTO) {
         novelChapterService.deleteNovelChapter(deleteNovelChapterDTO);

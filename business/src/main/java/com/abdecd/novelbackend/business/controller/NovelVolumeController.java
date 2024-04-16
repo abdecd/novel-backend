@@ -45,7 +45,7 @@ public class NovelVolumeController {
     }
 
     @Operation(summary = "新增小说卷")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("add")
     public Result<String> addNovelVolume(@RequestBody @Valid AddNovelVolumeDTO addNovelVolumeDTO) {
         novelVolumeService.addNovelVolume(addNovelVolumeDTO);
@@ -53,7 +53,7 @@ public class NovelVolumeController {
     }
 
     @Operation(summary = "修改小说卷")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("update")
     public Result<String> updateNovelVolume(@RequestBody @Valid UpdateNovelVolumeDTO updateNovelVolumeDTO) {
         novelVolumeService.updateNovelVolume(updateNovelVolumeDTO);
@@ -62,7 +62,7 @@ public class NovelVolumeController {
 
     @Async
     @Operation(summary = "删除小说卷")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("delete")
     public CompletableFuture<Result<String>> deleteNovelVolume(@RequestBody @Valid DeleteNovelVolumeDTO deleteNovelVolumeDTO) {
         novelVolumeService.deleteNovelVolume(deleteNovelVolumeDTO);

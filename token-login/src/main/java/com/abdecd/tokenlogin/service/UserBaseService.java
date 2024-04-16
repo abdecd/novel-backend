@@ -85,19 +85,19 @@ public class UserBaseService {
     public String generateUserToken(@Nonnull User user) {
         var claims = new HashMap<String, String>();
         claims.put(Constant.JWT_ID, user.getId().toString());
-        claims.put(Constant.JWT_PERMISSION, user.getPermission().toString());
+        claims.put(Constant.JWT_PERMISSION, user.getPermission());
         return JwtUtils.getInstance().encodeJWT(allProperties.getJwtTtlSeconds(), claims);
     }
 
     public String refreshUserToken() {
         var claims = new HashMap<String, String>();
         claims.put(Constant.JWT_ID, UserContext.getUserId().toString());
-        claims.put(Constant.JWT_PERMISSION, UserContext.getPermission().toString());
+        claims.put(Constant.JWT_PERMISSION, UserContext.getPermission());
         return JwtUtils.getInstance().encodeJWT(allProperties.getJwtTtlSeconds(), claims);
     }
 
     @Transactional
-    public int signup(String password, byte permission, Class<? extends RuntimeException> exceptionClass) {
+    public int signup(String password, String permission, Class<? extends RuntimeException> exceptionClass) {
         try {
             // 解密并验证密码格式
             password = PwdUtils.getEncryptedPwd(password);

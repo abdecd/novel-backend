@@ -47,7 +47,7 @@ public class NovelController {
 
     @Async
     @Operation(summary = "修改小说信息")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping(value = "update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<Result<String>> updateNovelInfo(@Valid UpdateNovelInfoDTO updateNovelInfoDTO) throws ExecutionException, InterruptedException {
         var tmp = new UpdateNovelInfoDTOWithUrl();
@@ -63,7 +63,7 @@ public class NovelController {
 
     @Async
     @Operation(summary = "新增小说", description = "data字段返回小说id")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping(value = "add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<Result<String>> addNovelInfo(@Valid AddNovelInfoDTO addNovelInfoDTO) throws ExecutionException, InterruptedException {
         var coverResult = commonController.uploadImg(addNovelInfoDTO.getCover());
@@ -77,7 +77,7 @@ public class NovelController {
 
     @Async
     @Operation(summary = "删除小说")
-    @RequirePermission(value = 99, exception = BaseException.class)
+    @RequirePermission(value = "99", exception = BaseException.class)
     @PostMapping("delete")
     public CompletableFuture<Result<String>> deleteNovelInfo(@RequestBody @Valid DeleteNovelInfoDTO deleteNovelInfoDTO) {
         novelService.deleteNovelInfo(deleteNovelInfoDTO.getId());

@@ -24,7 +24,7 @@ public class CacheByFrequency<T> {
 
     public CacheByFrequency(
             RedisTemplate<String, T> redisTemplate,
-            @Nonnull StringRedisTemplate stringRedisTemplate,
+            StringRedisTemplate stringRedisTemplate,
             RedissonClient redissonClient,
             @Nonnull String rootKey,
             int maxCount,

@@ -13,11 +13,11 @@ public class UserContext {
         return userContext.get().getUserId();
     }
 
-    public static void setPermission(Byte permission) {
+    public static void setPermission(String permission) {
         userContext.get().setPermission(permission);
     }
 
-    public static Byte getPermission() {
+    public static String getPermission() {
         return userContext.get().getPermission();
     }
 
@@ -27,7 +27,7 @@ public class UserContext {
 
     public static class UserContextHolder {
         private Integer userId;
-        private Byte permission;
+        private String permission;
 
         public Integer getUserId() {
             return userId;
@@ -37,11 +37,11 @@ public class UserContext {
             this.userId = userId;
         }
 
-        public Byte getPermission() {
+        public String getPermission() {
             return permission;
         }
 
-        public void setPermission(Byte permission) {
+        public void setPermission(String permission) {
             this.permission = permission;
         }
     }
