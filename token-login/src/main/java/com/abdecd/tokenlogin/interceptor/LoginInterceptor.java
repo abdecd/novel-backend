@@ -32,10 +32,7 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull Object handler) throws Exception {
-        var canPass = false;
-        if (!(handler instanceof HandlerMethod)) {
-            canPass = true;
-        }
+        var canPass = !(handler instanceof HandlerMethod);
         PathPatternParser pathPatternParser = new PathPatternParser();
         for (String pattern : allProperties.getExcludePatterns()) {
             if (pathPatternParser.parse(pattern).matches(PathContainer.parsePath(request.getRequestURI()))) {

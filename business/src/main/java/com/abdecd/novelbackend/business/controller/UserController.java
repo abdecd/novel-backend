@@ -1,10 +1,12 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.pojo.dto.user.LoginByEmailDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.LoginDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.ResetPwdDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.SignUpDTO;
 import com.abdecd.novelbackend.business.service.CommonService;
 import com.abdecd.novelbackend.business.service.UserService;
+import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +31,18 @@ public class UserController {
         commonService.verifyCaptcha(loginDTO.getVerifyCodeId(), loginDTO.getCaptcha());
         var user = userService.login(loginDTO);
         if (user == null) {
-            return Result.error("账号或密码错误");
+            return Result.error(MessageConstant.LOGIN_PASSWORD_ERROR);
+        }
+        var token = userService.generateUserToken(user);
+        return Result.success(token);
+    }
+
+    @Operation(summary = "用户使用邮箱登录", description = "data字段返回用户token")
+    @PostMapping("/login-by-email")
+    public Result<String> loginByEmail(@RequestBody @Valid LoginByEmailDTO loginByEmailDTO) {
+        var user = userService.loginByEmail(loginByEmailDTO);
+        if (user == null) {
+            return Result.error(MessageConstant.LOGIN_FAIL);
         }
         var token = userService.generateUserToken(user);
         return Result.success(token);

@@ -4,7 +4,7 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 6MB
+      max-file-size: 5MB
   threads:
     virtual:
       enabled: true
@@ -12,7 +12,7 @@ novel:
   ttl:
     captcha-ttl-seconds: 300
 token-login:
-  jwt-ttl-seconds: 259200 # 3天
+  jwt-ttl-seconds: 604800 # 7天
   jwt-refresh-ttl-seconds: 86400 # 1天
   exclude-patterns:
     - /error
@@ -20,6 +20,7 @@ token-login:
     - /swagger-ui.html/**
     - /v3/api-docs/**
     - /user/login
+    - /user/login-by-email
     - /user/signup
     - /user/forget-password
     - /common/captcha

@@ -2,6 +2,7 @@ package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
+import com.abdecd.novelbackend.business.pojo.dto.user.LoginByEmailDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.LoginDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.ResetPwdDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.SignUpDTO;
@@ -54,6 +55,13 @@ public class UserService {
             );
         }
         return user;
+    }
+
+    public User loginByEmail(LoginByEmailDTO loginByEmailDTO) {
+        // 验证邮箱
+        commonService.verifyEmail(loginByEmailDTO.getEmail(), loginByEmailDTO.getVerifyCode());
+        // 登录
+        return userBaseService.forceLogin(User::getEmail, loginByEmailDTO.getEmail());
     }
 
     public String generateUserToken(@Nonnull User user) {

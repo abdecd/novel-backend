@@ -82,6 +82,14 @@ public class UserBaseService {
         return loginById(user.getId(), password, exceptionClass, pwdErrMsg, accountLockedMsg);
     }
 
+    public User forceLogin(
+            SFunction<User, ?> queryKey,
+            Object queryValue
+    ) {
+        return userMapper.selectOne(new LambdaQueryWrapper<User>()
+                .eq(queryKey, queryValue));
+    }
+
     public String generateUserToken(@Nonnull User user) {
         var claims = new HashMap<String, String>();
         claims.put(Constant.JWT_ID, user.getId().toString());
