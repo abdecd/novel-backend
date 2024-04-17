@@ -133,6 +133,22 @@ public class CommentService {
         }
     }
 
+    @CacheEvict(value = "getCommentsByNovelId", key = "#root.target.getNovelIdByCommentId(#id)")
+    public void deleteCommentByAdmin(Integer id) {
+        var effectedRows = userCommentMapper.update(new LambdaUpdateWrapper<UserComment>()
+                .eq(UserComment::getId, id)
+                .set(UserComment::getStatus, StatusConstant.DISABLE)
+                .set(UserComment::getTimestamp, LocalDateTime.now())
+        );
+        if (effectedRows != 0) {
+            var obj = userCommentMapper.selectOne(new LambdaQueryWrapper<UserComment>()
+                    .select(UserComment::getNovelId, UserComment::getTimestamp)
+                    .eq(UserComment::getId, id)
+            );
+            redisTemplate.opsForValue().set(RedisConstant.COMMENT_FOR_NOVEL_TIMESTAMP + obj.getNovelId(), obj.getTimestamp());
+        }
+    }
+
     public Integer getNovelIdByCommentId(Integer id) {
         var obj = userCommentMapper.selectById(id);
         if (obj == null) return -1;

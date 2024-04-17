@@ -27,6 +27,8 @@ public class UserBaseService {
     UserMapper userMapper;
     @Resource
     AllProperties allProperties;
+    @Resource
+    LoginBlackListManager loginBlackListManager;
 
     public User loginById(
             Integer id,
@@ -82,6 +84,14 @@ public class UserBaseService {
         return loginById(user.getId(), password, exceptionClass, pwdErrMsg, accountLockedMsg);
     }
 
+    public User forceLogin(
+            SFunction<User, ?> queryKey,
+            Object queryValue
+    ) {
+        return userMapper.selectOne(new LambdaQueryWrapper<User>()
+                .eq(queryKey, queryValue));
+    }
+
     public String generateUserToken(@Nonnull User user) {
         var claims = new HashMap<String, String>();
         claims.put(Constant.JWT_ID, user.getId().toString());
@@ -97,7 +107,7 @@ public class UserBaseService {
     }
 
     @Transactional
-    public int signup(String password, String permission, Class<? extends RuntimeException> exceptionClass) {
+    public User signup(String password, String permission, Class<? extends RuntimeException> exceptionClass) {
         try {
             // 解密并验证密码格式
             password = PwdUtils.getEncryptedPwd(password);
@@ -114,11 +124,11 @@ public class UserBaseService {
             userMapper.updateById(user
                     .setPassword(PwdUtils.encodePwd(userId.toString(), password))
             );
-            return userId;
+            return user;
         } catch (RuntimeException e) {
             throwException(exceptionClass, e.getMessage());
         }
-        return -1; // never reach
+        return null; // never reach
     }
 
     /**
@@ -138,6 +148,20 @@ public class UserBaseService {
         } catch (RuntimeException e) {
             throwException(exceptionClass, e.getMessage());
         }
+        forceLogout(id);
+    }
+
+    public void forceLogout(Integer userId) {
+        loginBlackListManager.forceLogout(userId);
+    }
+
+    public void deleteAccount(User user) {
+        forceLogout(user.getId());
+        userMapper.deleteById(user);
+    }
+    public void deleteAccount(Integer userId) {
+        forceLogout(userId);
+        userMapper.deleteById(userId);
     }
 
     /**

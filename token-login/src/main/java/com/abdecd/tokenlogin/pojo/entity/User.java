@@ -11,11 +11,11 @@ import lombok.experimental.Accessors;
 @TableName("user")
 public class User {
     @TableId(type = IdType.AUTO)
-    private Integer id;
-    private String password;
+    private Integer id; // 必须
+    private String password; // 必须
     private String email;
-    private String permission;
-    private Byte status;
+    private String permission; // 必须
+    private Byte status; // 必须
 
     public static User ofEmpty() {
         return new User()

@@ -1,5 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.user.AddCommentDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.DeleteCommentDTO;
@@ -8,6 +9,7 @@ import com.abdecd.novelbackend.business.service.CommentService;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
+import com.abdecd.tokenlogin.aspect.RequirePermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,6 +58,14 @@ public class CommentController {
     @PostMapping("delete")
     public Result<String> deleteComment(@RequestBody @Valid DeleteCommentDTO deleteCommentDTO) {
         commentService.deleteComment(deleteCommentDTO.getId());
+        return Result.success();
+    }
+
+    @Operation(summary = "管理员删除评论")
+    @RequirePermission(value = "99", exception = BaseException.class)
+    @PostMapping("delete-by-admin")
+    public Result<String> deleteCommentByAdmin(@RequestBody @Valid DeleteCommentDTO deleteCommentDTO) {
+        commentService.deleteCommentByAdmin(deleteCommentDTO.getId());
         return Result.success();
     }
 }
