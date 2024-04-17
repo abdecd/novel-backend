@@ -2,10 +2,7 @@ package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
-import com.abdecd.novelbackend.business.pojo.dto.user.LoginByEmailDTO;
-import com.abdecd.novelbackend.business.pojo.dto.user.LoginDTO;
-import com.abdecd.novelbackend.business.pojo.dto.user.ResetPwdDTO;
-import com.abdecd.novelbackend.business.pojo.dto.user.SignUpDTO;
+import com.abdecd.novelbackend.business.pojo.dto.user.*;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
@@ -110,5 +107,23 @@ public class UserService {
         commonService.verifyEmail(user.getEmail(), verifyCode);
         // 删除账号
         userBaseService.deleteAccount(user);
+    }
+
+    public void changeEmail(Integer userId, ChangeEmailDTO changeEmailDTO) {
+        var user = userMapper.selectById(userId);
+        if (user == null) return;
+        // 验证邮箱
+        commonService.verifyEmail(changeEmailDTO.getNewEmail(), changeEmailDTO.getVerifyCode());
+        userMapper.updateById(user.setEmail(changeEmailDTO.getNewEmail()));
+    }
+
+    public void banAccount(BanAccountDTO banAccountDTO) {
+        var user = userMapper.selectById(banAccountDTO.getUserId());
+        if (user == null) return;
+        userBaseService.forceLogout(user.getId());
+        var newStatus = Objects.equals(user.getStatus(), StatusConstant.DISABLE)
+                ? StatusConstant.ENABLE
+                : StatusConstant.DISABLE;
+        userMapper.updateById(user.setStatus(newStatus));
     }
 }

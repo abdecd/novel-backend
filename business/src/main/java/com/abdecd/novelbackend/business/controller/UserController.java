@@ -1,10 +1,12 @@
 package com.abdecd.novelbackend.business.controller;
 
+import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.pojo.dto.user.*;
 import com.abdecd.novelbackend.business.service.CommonService;
 import com.abdecd.novelbackend.business.service.UserService;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.result.Result;
+import com.abdecd.tokenlogin.aspect.RequirePermission;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -72,6 +74,21 @@ public class UserController {
     @PostMapping("/delete-account")
     public Result<String> deleteAccount(@RequestBody @Valid DeleteAccountDTO deleteAccountDTO) {
         userService.deleteAccount(UserContext.getUserId(), deleteAccountDTO.getVerifyCode());
+        return Result.success();
+    }
+
+    @Operation(summary = "用户修改邮箱")
+    @PostMapping("/change-email")
+    public Result<String> changeEmail(@RequestBody @Valid ChangeEmailDTO changeEmailDTO) {
+        userService.changeEmail(UserContext.getUserId(), changeEmailDTO);
+        return Result.success();
+    }
+
+    @Operation(summary = "管理员封禁/解封账号")
+    @RequirePermission(value = "99", exception = BaseException.class)
+    @PostMapping("/ban-account")
+    public Result<String> banAccount(@RequestBody @Valid BanAccountDTO banAccountDTO) {
+        userService.banAccount(banAccountDTO);
         return Result.success();
     }
 }
