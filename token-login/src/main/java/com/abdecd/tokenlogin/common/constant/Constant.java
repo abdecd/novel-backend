@@ -11,4 +11,9 @@ public class Constant {
     public static final byte ENABLE = 1;
     public static final byte DISABLE = 0;
     public static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*?&]{6,20}$");
+
+    /**
+     * 在该值之前的token全部无效，单位ms
+     */
+    public static final String LOGIN_TOKEN_BLACKLIST = "loginTokenBlacklist:";
 }

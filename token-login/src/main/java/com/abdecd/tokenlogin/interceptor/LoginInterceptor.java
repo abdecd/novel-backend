@@ -4,6 +4,7 @@ import com.abdecd.tokenlogin.common.constant.Constant;
 import com.abdecd.tokenlogin.common.context.UserContext;
 import com.abdecd.tokenlogin.common.property.AllProperties;
 import com.abdecd.tokenlogin.common.util.JwtUtils;
+import com.abdecd.tokenlogin.service.LoginBlackListManager;
 import com.abdecd.tokenlogin.service.UserBaseService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Resource;
@@ -29,6 +30,8 @@ public class LoginInterceptor implements HandlerInterceptor {
     private AllProperties allProperties;
     @Resource
     private UserBaseService userBaseService;
+    @Resource
+    private LoginBlackListManager loginBlackListManager;
 
     @Override
     public boolean preHandle(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull Object handler) throws Exception {
@@ -52,13 +55,15 @@ public class LoginInterceptor implements HandlerInterceptor {
             Map<String, Object> claims = JwtUtils.getInstance().decodeJWT(token);
             Integer userId = Integer.valueOf(claims.get(Constant.JWT_ID).toString());
             String permission = claims.get(Constant.JWT_PERMISSION).toString();
+            long tokenTtlms = Long.parseLong(claims.get(Constant.JWT_EXPIRE_TIME).toString());
+            // 黑名单上的 token 无效
+            if (loginBlackListManager.checkInBlackList(userId, tokenTtlms)) return ret401(response);
             log.info("userId：{}, permission: {}", userId, permission);
+
             UserContext.setUserId(userId);
             UserContext.setPermission(permission);
             // 即将过期时返回刷新的token
-            if (claims.get(Constant.JWT_EXPIRE_TIME) != null
-                    && (Long.parseLong(claims.get(Constant.JWT_EXPIRE_TIME).toString())
-                    - new Date().getTime())/1000 < allProperties.getJwtRefreshTtlSeconds()) {
+            if ((tokenTtlms - new Date().getTime())/1000 < allProperties.getJwtRefreshTtlSeconds()) {
                 response.setHeader(Constant.JWT_TOKEN_NAME, userBaseService.refreshUserToken());
             }
             //3、通过，放行

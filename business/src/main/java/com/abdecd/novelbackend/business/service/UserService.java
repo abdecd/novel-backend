@@ -8,6 +8,7 @@ import com.abdecd.novelbackend.business.pojo.dto.user.ResetPwdDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.SignUpDTO;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
+import com.abdecd.novelbackend.common.constant.StatusConstant;
 import com.abdecd.tokenlogin.mapper.UserMapper;
 import com.abdecd.tokenlogin.pojo.entity.User;
 import com.abdecd.tokenlogin.service.UserBaseService;
@@ -17,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -41,7 +44,7 @@ public class UserService {
                     password,
                     BaseException.class,
                     MessageConstant.LOGIN_PASSWORD_ERROR,
-                    MessageConstant.LOGIN_ACCOUNT_LOCKED
+                    MessageConstant.ACCOUNT_LOCKED
             );
         } catch (NumberFormatException ignored) {}
         if (user == null) {
@@ -51,7 +54,7 @@ public class UserService {
                     password,
                     BaseException.class,
                     MessageConstant.LOGIN_PASSWORD_ERROR,
-                    MessageConstant.LOGIN_ACCOUNT_LOCKED
+                    MessageConstant.ACCOUNT_LOCKED
             );
         }
         return user;
@@ -97,5 +100,15 @@ public class UserService {
 
     public String refreshUserToken() {
         return userBaseService.refreshUserToken();
+    }
+
+    public void deleteAccount(Integer userId, String verifyCode) {
+        var user = userMapper.selectById(userId);
+        if (Objects.equals(user.getStatus(), StatusConstant.DISABLE))
+            throw new BaseException(MessageConstant.ACCOUNT_LOCKED);
+        // 验证邮箱
+        commonService.verifyEmail(user.getEmail(), verifyCode);
+        // 删除账号
+        userBaseService.deleteAccount(user);
     }
 }

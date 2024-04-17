@@ -27,6 +27,8 @@ public class UserBaseService {
     UserMapper userMapper;
     @Resource
     AllProperties allProperties;
+    @Resource
+    LoginBlackListManager loginBlackListManager;
 
     public User loginById(
             Integer id,
@@ -146,6 +148,20 @@ public class UserBaseService {
         } catch (RuntimeException e) {
             throwException(exceptionClass, e.getMessage());
         }
+        forceLogout(id);
+    }
+
+    public void forceLogout(Integer userId) {
+        loginBlackListManager.forceLogout(userId);
+    }
+
+    public void deleteAccount(User user) {
+        forceLogout(user.getId());
+        userMapper.deleteById(user);
+    }
+    public void deleteAccount(Integer userId) {
+        forceLogout(userId);
+        userMapper.deleteById(userId);
     }
 
     /**
