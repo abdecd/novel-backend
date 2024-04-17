@@ -105,7 +105,7 @@ public class UserBaseService {
     }
 
     @Transactional
-    public int signup(String password, String permission, Class<? extends RuntimeException> exceptionClass) {
+    public User signup(String password, String permission, Class<? extends RuntimeException> exceptionClass) {
         try {
             // 解密并验证密码格式
             password = PwdUtils.getEncryptedPwd(password);
@@ -122,11 +122,11 @@ public class UserBaseService {
             userMapper.updateById(user
                     .setPassword(PwdUtils.encodePwd(userId.toString(), password))
             );
-            return userId;
+            return user;
         } catch (RuntimeException e) {
             throwException(exceptionClass, e.getMessage());
         }
-        return -1; // never reach
+        return null; // never reach
     }
 
     /**

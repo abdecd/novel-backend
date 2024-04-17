@@ -73,18 +73,16 @@ public class UserService {
         // 验证邮箱
         commonService.verifyEmail(signUpDTO.getEmail(), signUpDTO.getVerifyCode());
         // 注册
-        var userId = userBaseService.signup(signUpDTO.getPassword(), "1", BaseException.class);
-        userMapper.updateById(new User()
-                .setId(userId)
-                .setEmail(signUpDTO.getEmail())
-        );
+        var user = userBaseService.signup(signUpDTO.getPassword(), "1", BaseException.class);
+        if (user == null) throw new BaseException(MessageConstant.SIGNUP_FAILED);
+        userMapper.updateById(user.setEmail(signUpDTO.getEmail()));
         readerDetailMapper.insert(new ReaderDetail()
-                .setUserId(userId)
+                .setUserId(user.getId())
                 .setNickname(signUpDTO.getNickname())
                 .setAvatar("")
                 .setSignature("")
         );
-        return userMapper.selectById(userId);
+        return user;
     }
 
     public void forgetPassword(ResetPwdDTO resetPwdDTO) {
