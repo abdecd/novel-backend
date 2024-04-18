@@ -192,33 +192,6 @@ public class ReaderService {
         redisTemplateForTime.opsForValue().set(RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + userId + ':' + novelId, LocalDateTime.now());
     }
 
-    @Deprecated
-    public List<ReaderHistoryVO> listReaderHistoryVO(Integer uid, Long startId, Integer pageSize) {
-        List<ReaderHistoryVO> list = getReaderHistoryCache(uid);
-        // 计算 startIndex
-        var startIndex = 0;
-        if (startId != null) {
-            for (var i = 0; i < list.size(); i++) {
-                if (Objects.equals(list.get(i).getId(), startId)) {
-                    startIndex = i;
-                    break;
-                }
-            }
-            if (startIndex == 0) startIndex = Integer.MAX_VALUE;
-        }
-        if (startIndex == Integer.MAX_VALUE)
-            return readerHistoryMapper.listReaderHistoryVO(uid, startId, pageSize, StatusConstant.ENABLE);
-        if (startIndex + pageSize <= list.size()) {
-            return list.subList(startIndex, pageSize);
-        } else {
-            list = list.subList(startIndex, list.size());
-            var remainList = readerHistoryMapper.listReaderHistoryVO(uid, list.getLast().getId(), pageSize - list.size() + startIndex + 1, StatusConstant.ENABLE);
-            remainList.removeFirst();
-            list.addAll(remainList);
-            return list;
-        }
-    }
-
     /**
      * 最多返回 RedisConstant.READER_HISTORY_SIZE 条
      */
@@ -228,7 +201,7 @@ public class ReaderService {
     }
 
     /**
-     * 默认小说章节数量不超过 1000
+     * 默认小说章节数量不超过 RedisConstant.READER_HISTORY_SIZE
      */
     public List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, Integer page, Integer pageSize) {
         var cacheHistoryForANovelByFrequency = cacheByFrequencyFactory.<List<ReaderHistoryVO>>create(
@@ -237,7 +210,7 @@ public class ReaderService {
                 86400
         );
         cacheHistoryForANovelByFrequency.recordFrequency(novelId + "");
-        var list = cacheHistoryForANovelByFrequency.get(novelId + "", () -> readerHistoryMapper.listReaderHistoryByNovel(userId, novelId, null, 1000, StatusConstant.ENABLE), null, 172800); // 2 天
+        var list = cacheHistoryForANovelByFrequency.get(novelId + "", () -> readerHistoryMapper.listReaderHistoryByNovel(userId, novelId, null, RedisConstant.READER_HISTORY_SIZE, StatusConstant.ENABLE), null, 172800); // 2 天
         if (list == null) return new ArrayList<>();
         return list.subList(Math.max(0, (page - 1) * pageSize), Math.min(list.size(), page * pageSize));
     }
@@ -291,10 +264,10 @@ public class ReaderService {
         List<ReaderHistoryVO> list = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + uid, 0, RedisConstant.READER_HISTORY_SIZE);
         if (list == null) list = new ArrayList<>();
         var listSize = list.size();
-        // 确实不足 RedisConstant.READER_HISTORY_SIZE 就不要去拿了
+        // 数量和 nowMaxCnt 相同 就不要去拿了
         var nowMaxCntStr = redisTemplateForInt.opsForValue().get(RedisConstant.READER_HISTORY_NOW_MAX_CNT + uid);
         var nowMaxCnt = nowMaxCntStr == null ? null : Integer.parseInt(nowMaxCntStr);
-        if (nowMaxCnt != null && nowMaxCnt <= RedisConstant.READER_HISTORY_SIZE) return list;
+        if (nowMaxCnt != null && nowMaxCnt == listSize) return list;
         if (listSize < RedisConstant.READER_HISTORY_SIZE) {
             // 数量不足则补充数据
             var lock = redissonClient.getLock(RedisConstant.READER_HISTORY + uid + ":lock");
@@ -302,20 +275,23 @@ public class ReaderService {
             List<ReaderHistoryVO> currentList = redisTemplate.opsForList().range(RedisConstant.READER_HISTORY + uid, 0, RedisConstant.READER_HISTORY_SIZE);
             if (currentList != null && currentList.size() != listSize) return currentList;
             try {
-                Long willStartId = null;
-                if (!list.isEmpty()) willStartId = list.getLast().getId();
+                LocalDateTime lastDateTime = list.isEmpty() ? null : list.getLast().getTimestamp();
                 List<ReaderHistoryVO> tmpList;
-                if (willStartId == null) {
+                if (lastDateTime == null) {
                     tmpList = readerHistoryMapper.listReaderHistoryVO(uid, null, RedisConstant.READER_HISTORY_SIZE, StatusConstant.ENABLE);
                 } else {
                     var novelIdsNot = list.stream().map(ReaderHistoryVO::getNovelId).toArray(Integer[]::new);
                     // 已将重复列表排除，不用多拿一个
-                    tmpList = readerHistoryMapper.listReaderHistoryVO(uid, willStartId, RedisConstant.READER_HISTORY_SIZE - list.size(), StatusConstant.ENABLE, novelIdsNot);
+                    tmpList = readerHistoryMapper.listReaderHistoryVO(uid, lastDateTime, RedisConstant.READER_HISTORY_SIZE - list.size(), StatusConstant.ENABLE, novelIdsNot);
                 }
                 if (!tmpList.isEmpty()) redisTemplate.opsForList().rightPushAll(RedisConstant.READER_HISTORY + uid, tmpList);
                 list.addAll(tmpList);
                 // 记录当前有效最大数量
-                if (list.size() < RedisConstant.READER_HISTORY_SIZE) redisTemplateForInt.opsForValue().set(RedisConstant.READER_HISTORY_NOW_MAX_CNT + uid, list.size() + "");
+                if (nowMaxCnt == null || nowMaxCnt < list.size()) {
+                    var tmp = list.size();
+                    if (tmp == RedisConstant.READER_HISTORY_SIZE) tmp = RedisConstant.READER_HISTORY_SIZE + 1000;
+                    redisTemplateForInt.opsForValue().set(RedisConstant.READER_HISTORY_NOW_MAX_CNT + uid, tmp + "");
+                }
             } finally {
                 lock.unlock();
             }
