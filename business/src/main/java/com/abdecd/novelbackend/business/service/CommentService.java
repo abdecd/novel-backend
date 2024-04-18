@@ -82,7 +82,7 @@ public class CommentService {
                 result.get(unionFind.find(Math.toIntExact(userComment.getId()))).add(userComment);
             } else {
                 // 建立根评论块
-                // 第一个一般是根评论（最早）
+                // 第一个一般是根评论（最早创建）
                 // 不是根评论说明根评论删掉了，整块不显示
                 if (userComment.getToId() != -1) continue;
                 ArrayList<UserCommentVOBasic> list = new ArrayList<>();

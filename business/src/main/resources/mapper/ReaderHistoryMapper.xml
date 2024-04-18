@@ -13,8 +13,8 @@
                 <if test="userId != null">
                     and rh.user_id = #{userId}
                 </if>
-                <if test="startId != null">
-                    and rh.id &lt;= #{startId}
+                <if test="maxDateTime != null">
+                    and rh.timestamp &lt;= #{maxDateTime}
                 </if>
                 <if test="novelIdsNot != null">
                     and rh.novel_id not in
@@ -44,8 +44,8 @@
             <if test="userId != null">
                 and rh.user_id = #{userId}
             </if>
-            <if test="startId != null">
-                and rh.id &lt;= #{startId}
+            <if test="maxDateTime != null">
+                and rh.timestamp &lt;= #{maxDateTime}
             </if>
             <if test="novelId != null">
                 and rh.novel_id = #{novelId}
