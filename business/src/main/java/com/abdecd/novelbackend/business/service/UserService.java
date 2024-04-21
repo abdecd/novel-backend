@@ -6,6 +6,7 @@ import com.abdecd.novelbackend.business.pojo.dto.user.*;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.StatusConstant;
+import com.abdecd.tokenlogin.common.dataencrypt.EncryptStrHandler;
 import com.abdecd.tokenlogin.mapper.UserMapper;
 import com.abdecd.tokenlogin.pojo.entity.User;
 import com.abdecd.tokenlogin.service.UserBaseService;
@@ -34,34 +35,32 @@ public class UserService {
         String username = loginDTO.getUsername();
         String password = loginDTO.getPassword();
 
-        User user = null;
+        User willLoginUser = null;
         try {
-            user = userBaseService.loginById(
-                    Integer.parseInt(username),
-                    password,
-                    BaseException.class,
-                    MessageConstant.LOGIN_PASSWORD_ERROR,
-                    MessageConstant.ACCOUNT_LOCKED
-            );
+            willLoginUser = userMapper.selectById(Integer.parseInt(username));
         } catch (NumberFormatException ignored) {}
-        if (user == null) {
-            user = userBaseService.login(
-                    User::getEmail,
-                    username,
-                    password,
-                    BaseException.class,
-                    MessageConstant.LOGIN_PASSWORD_ERROR,
-                    MessageConstant.ACCOUNT_LOCKED
+        if (willLoginUser == null) {
+            willLoginUser = userMapper.selectOne(
+                    new LambdaQueryWrapper<User>().eq(User::getEmail, EncryptStrHandler.encrypt(username))
             );
         }
-        return user;
+        return userBaseService.login(
+                willLoginUser,
+                password,
+                BaseException.class,
+                MessageConstant.LOGIN_PASSWORD_ERROR,
+                MessageConstant.ACCOUNT_LOCKED
+        );
     }
 
     public User loginByEmail(LoginByEmailDTO loginByEmailDTO) {
         // 验证邮箱
         commonService.verifyEmail(loginByEmailDTO.getEmail(), loginByEmailDTO.getVerifyCode());
         // 登录
-        return userBaseService.forceLogin(User::getEmail, loginByEmailDTO.getEmail());
+        var willLoginUser = userMapper.selectOne(new LambdaQueryWrapper<User>()
+                .eq(User::getEmail, EncryptStrHandler.encrypt(loginByEmailDTO.getEmail()))
+        );
+        return userBaseService.forceLogin(willLoginUser);
     }
 
     public String generateUserToken(@Nonnull User user) {
