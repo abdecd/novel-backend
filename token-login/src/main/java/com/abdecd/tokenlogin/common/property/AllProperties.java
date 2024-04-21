@@ -11,4 +11,5 @@ public class AllProperties {
     private Integer jwtTtlSeconds;
     private Integer jwtRefreshTtlSeconds;
     private String[] excludePatterns;
+    private String encryptStrAesKey; // 见 EncryptStrHandler
 }

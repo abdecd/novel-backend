@@ -7,8 +7,6 @@ import com.abdecd.tokenlogin.common.util.JwtUtils;
 import com.abdecd.tokenlogin.common.util.PwdUtils;
 import com.abdecd.tokenlogin.mapper.UserMapper;
 import com.abdecd.tokenlogin.pojo.entity.User;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -30,14 +28,22 @@ public class UserBaseService {
     @Resource
     LoginBlackListManager loginBlackListManager;
 
-    public User loginById(
-            Integer id,
+    /**
+     * 登录
+     * @param user 需要是从表里直接查出来的
+     * @param password :
+     * @param exceptionClass :
+     * @param pwdErrMsg :
+     * @param accountLockedMsg :
+     * @return :
+     */
+    public User login(
+            User user,
             String password,
             Class<? extends RuntimeException> exceptionClass,
             String pwdErrMsg,
             String accountLockedMsg
     ) {
-        var user = userMapper.selectById(id);
         // 用户不存在
         if (user == null) return null;
 
@@ -70,26 +76,13 @@ public class UserBaseService {
         return user;
     }
 
-    public User login(
-            SFunction<User, ?> queryKey,
-            Object queryValue,
-            String password,
-            Class<? extends RuntimeException> exceptionClass,
-            String pwdErrMsg,
-            String accountLockedMsg
-    ) {
-        var user = userMapper.selectOne(new LambdaQueryWrapper<User>()
-                .eq(queryKey, queryValue));
-        if (user == null) return null;
-        return loginById(user.getId(), password, exceptionClass, pwdErrMsg, accountLockedMsg);
-    }
-
-    public User forceLogin(
-            SFunction<User, ?> queryKey,
-            Object queryValue
-    ) {
-        return userMapper.selectOne(new LambdaQueryWrapper<User>()
-                .eq(queryKey, queryValue));
+    /**
+     * 强制登录
+     * @param user 需要是从表里直接查出来的
+     * @return :
+     */
+    public User forceLogin(User user) {
+        return user;
     }
 
     public String generateUserToken(@Nonnull User user) {
