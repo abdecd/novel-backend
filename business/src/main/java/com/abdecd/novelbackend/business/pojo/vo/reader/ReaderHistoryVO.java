@@ -2,9 +2,11 @@ package com.abdecd.novelbackend.business.pojo.vo.reader;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 import java.time.LocalDateTime;
 
+@Accessors(chain = true)
 @Data
 public class ReaderHistoryVO {
     private Long id;

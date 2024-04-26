@@ -1,59 +1,36 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper">
-    <select id="listReaderHistoryVO"
+    <select id="listReaderHistoryByNovel"
             resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO">
-        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp,
-            ni.title as novelTitle, ni.author, ni.cover,
-            nc.title as chapterTitle
+        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, t1.timestamp,
+        ni.title as novelTitle, ni.author, ni.cover,
+        nc.title as chapterTitle
         FROM (
-            SELECT rh.novel_id, MAX(rh.timestamp) as timestamp
+            SELECT MAX(rh.id) as id, MAX(rh.timestamp) as timestamp
             FROM reader_history rh
             <where>
                 <if test="userId != null">
                     and rh.user_id = #{userId}
                 </if>
+                <if test="minDateTime != null">
+                    and rh.timestamp &gt;= #{minDateTime}
+                </if>
                 <if test="maxDateTime != null">
                     and rh.timestamp &lt;= #{maxDateTime}
                 </if>
-                <if test="novelIdsNot != null">
-                    and rh.novel_id not in
-                        (<foreach collection="novelIdsNot" item="item" separator=",">#{item}</foreach>)
+                <if test="novelId != null">
+                    and rh.novel_id = #{novelId}
                 </if>
-                <if test="enableStatus != null">
-                    and rh.status = #{enableStatus}
-                </if>
+                and status = #{enableStatus}
             </where>
-            GROUP BY rh.novel_id
+            GROUP BY rh.novel_id, rh.volume_number, rh.chapter_number
             ORDER BY timestamp desc
             limit #{pageSize}
         ) t1
-        LEFT JOIN reader_history rh ON rh.novel_id = t1.novel_id and rh.timestamp = t1.timestamp
+        LEFT JOIN reader_history rh ON rh.id = t1.id
         LEFT JOIN novel_info ni ON rh.novel_id = ni.id
         LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
-    </select>
-    <select id="listReaderHistoryByNovel"
-            resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO">
-        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp,
-        ni.title as novelTitle, ni.author, ni.cover,
-        nc.title as chapterTitle
-        FROM reader_history rh
-        LEFT JOIN novel_info ni ON rh.novel_id = ni.id
-        LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
-        <where>
-            <if test="userId != null">
-                and rh.user_id = #{userId}
-            </if>
-            <if test="maxDateTime != null">
-                and rh.timestamp &lt;= #{maxDateTime}
-            </if>
-            <if test="novelId != null">
-                and rh.novel_id = #{novelId}
-            </if>
-            and status = #{enableStatus}
-        </where>
-        ORDER BY rh.timestamp desc
-        limit #{pageSize}
     </select>
     <select id="getRankList" resultType="java.lang.Integer">
         SELECT t1.novel_id
@@ -132,15 +109,5 @@
         GROUP BY nat.tag_id
         ORDER BY SUM(LEAST(count, 10)) desc
         LIMIT 5
-    </select>
-    <select id="getReaderHistoryVO"
-            resultType="com.abdecd.novelbackend.business.pojo.vo.reader.ReaderHistoryVO">
-        SELECT rh.id, rh.novel_id, rh.volume_number, rh.chapter_number, rh.timestamp,
-            ni.title as novelTitle, ni.author, ni.cover,
-            nc.title as chapterTitle
-        FROM reader_history rh
-        LEFT JOIN novel_info ni ON rh.novel_id = ni.id
-        LEFT JOIN novel_chapter nc ON rh.novel_id = nc.novel_id AND rh.volume_number = nc.volume_number AND rh.chapter_number = nc.chapter_number
-        WHERE rh.id = #{id}
     </select>
 </mapper>
