@@ -38,6 +38,6 @@ jobs:
           cd ~/novel-backend
           docker stop novel-backend | true
           docker rm novel-backend | true
-          docker build -t novel-backend-img .
-          docker run --name novel-backend -p 8080:8080 --restart unless-stopped -v /home/${{ secrets.USER_NAME }}/novel-backend:/novel-backend -d novel-backend-img
+          docker build -t novel-backend:latest .
+          docker run --name novel-backend -p 8080:8080 --restart unless-stopped -v /home/${{ secrets.USER_NAME }}/novel-backend:/novel-backend -d novel-backend:latest
         '
