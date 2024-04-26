@@ -65,16 +65,16 @@ public class CacheByFrequency<T> {
     @Nullable public T get(
             String key,
             @Nonnull Supplier<T> failCb,
-            @Nullable Function<String, String> keyForJudgeFunc,
+            @Nullable Function<String, String> valueKeyToZSetKeyFunc,
             @Nullable Integer keyTtlSeconds
     ) {
-        if (keyForJudgeFunc == null) keyForJudgeFunc = k -> k;
+        if (valueKeyToZSetKeyFunc == null) valueKeyToZSetKeyFunc = k -> k;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(rootKey + ":value:" + key))) {
             return redisTemplate.opsForValue().get(rootKey + ":value:" + key);
         } else {
             // 判断是否可缓
             var set = stringRedisTemplate.opsForZSet().reverseRange(rootKey + ":zSet", 0, maxCount);
-            if (set == null || !set.contains(keyForJudgeFunc.apply(key))) {
+            if (set == null || !set.contains(valueKeyToZSetKeyFunc.apply(key))) {
                 return failCb.get();
             } else {
                 // 去数据库拿数据并缓存
@@ -87,7 +87,7 @@ public class CacheByFrequency<T> {
                     redisTemplate.opsForValue().set(rootKey + ":value:" + key, failCb.get());
                     if (keyTtlSeconds != null)
                         redisTemplate.expire(rootKey + ":value:" + key, keyTtlSeconds, TimeUnit.SECONDS);
-                    clearUnusedOne(keyForJudgeFunc);
+                    clearUnusedOne(valueKeyToZSetKeyFunc);
                 } finally {
                     lock.unlock();
                 }
@@ -108,19 +108,19 @@ public class CacheByFrequency<T> {
 
     /**
      * 清理缓存 随机清掉一个
-     * @param keyForJudgeFunc key的判断函数，用于判断是否可缓
+     * @param valueKeyToZSetKeyFunc key的判断函数，用于判断是否可缓
      */
-    private void clearUnusedOne(@Nullable Function<String, String> keyForJudgeFunc) {
-        if (keyForJudgeFunc == null) keyForJudgeFunc = k -> k;
+    private void clearUnusedOne(@Nullable Function<String, String> valueKeyToZSetKeyFunc) {
+        if (valueKeyToZSetKeyFunc == null) valueKeyToZSetKeyFunc = k -> k;
         var set = stringRedisTemplate.opsForZSet().reverseRange(rootKey + ":zSet", 0, maxCount);
         if (set == null) return;
         var fullKeys = redisTemplate.keys(rootKey + ":value:*");
         if (fullKeys == null) return;
         var needDeleted = new ArrayList<String>();
-        Function<String, String> finalKeyForJudgeFunc = keyForJudgeFunc;
+        Function<String, String> finalValueKeyToZSetKeyFunc = valueKeyToZSetKeyFunc;
         fullKeys.forEach(fullKey -> {
             if (!set.contains(
-                    finalKeyForJudgeFunc.apply(fullKey.substring(fullKey.indexOf(":value:")+":value:".length()))
+                    finalValueKeyToZSetKeyFunc.apply(fullKey.substring(fullKey.indexOf(":value:")+":value:".length()))
             )) needDeleted.add(fullKey);
         });
         if (needDeleted.isEmpty()) return;
