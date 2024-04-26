@@ -8,9 +8,17 @@ spring:
   threads:
     virtual:
       enabled: true
+server:
+  http2:
+    enabled: true
+  ssl:
+    key-store: classpath:keystore.p12
+    key-store-password: 123456
+
 novel:
   ttl:
     captcha-ttl-seconds: 300
+
 token-login:
   jwt-ttl-seconds: 604800 # 7天
   jwt-refresh-ttl-seconds: 86400 # 1天
