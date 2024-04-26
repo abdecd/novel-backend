@@ -135,4 +135,8 @@
             </dependencies>
         </profile>
     </profiles>
+
+    <build>
+        <finalName>novel-backend-main</finalName>
+    </build>
 </project>
