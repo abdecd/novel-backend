@@ -15,6 +15,6 @@ public class ChangeEmailDTO {
 
     @NotBlank
     @Length(min = DTOConstant.EMAIL_VERIFY_CODE_LENGTH, max = DTOConstant.EMAIL_VERIFY_CODE_LENGTH)
-    @Schema(description = "6位邮箱验证码")
+    @Schema(description = "新邮箱收到的6位邮箱验证码")
     private String verifyCode;
 }

@@ -6,6 +6,7 @@ import com.abdecd.novelbackend.business.pojo.dto.common.VerifyEmailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.common.CaptchaVO;
 import com.abdecd.novelbackend.business.service.CommonService;
 import com.abdecd.novelbackend.business.service.FileService;
+import com.abdecd.novelbackend.business.service.lib.RateLimiter;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -19,7 +20,6 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.support.atomic.RedisAtomicInteger;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +27,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Base64;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +43,8 @@ public class CommonController {
     StringRedisTemplate redisTemplate;
     @Autowired
     private UserBaseService userBaseService;
+    @Autowired
+    private RateLimiter rateLimiter;
 
     @Async
     @Operation(summary = "获取验证码图片")
@@ -81,9 +82,8 @@ public class CommonController {
             if (file.getSize() > 1024 * 1024 * 3) throw new BaseException("文件过大");
             // 300次/天
             var key = RedisConstant.LIMIT_UPLOAD_IMG + UserContext.getUserId();
-            RedisAtomicInteger atomicInteger = new RedisAtomicInteger(key, Objects.requireNonNull(redisTemplate.getConnectionFactory()));
-            if (atomicInteger.getExpire() == null || atomicInteger.getExpire() < 0) atomicInteger.expire(1, TimeUnit.DAYS);
-            if (atomicInteger.incrementAndGet() > 300) return CompletableFuture.completedFuture(Result.error("图片上传次数达到上限"));
+            if (rateLimiter.isRateLimited(key, 300, 1, TimeUnit.DAYS))
+                return CompletableFuture.completedFuture(Result.error("图片上传次数达到上限"));
             return CompletableFuture.completedFuture(Result.success(fileService.uploadTmpFile(file)));
         } catch (IOException e) {
             log.warn("上传失败", e);

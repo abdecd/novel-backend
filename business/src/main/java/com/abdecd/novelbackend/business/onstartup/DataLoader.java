@@ -52,9 +52,6 @@ public class DataLoader implements ApplicationRunner {
         for (var user : users) {
             redisTemplateForTime.opsForValue().setIfAbsent(RedisConstant.READER_HISTORY_TIMESTAMP + user.getId(), now);
             redisTemplateForTime.opsForValue().setIfAbsent(RedisConstant.COMMENT_FOR_NOVEL_TIMESTAMP + user.getId(), now);
-            var allNovelIds = novelService.getNovelIds();
-            for (var novelId : allNovelIds)
-                redisTemplateForTime.opsForValue().setIfAbsent(RedisConstant.READER_HISTORY_A_NOVEL_TIMESTAMP + user.getId() + ':' + novelId, now);
         }
     }
 

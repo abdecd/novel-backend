@@ -10,15 +10,12 @@ import java.util.List;
 
 @Mapper
 public interface ReaderHistoryMapper extends BaseMapper<ReaderHistory> {
-    List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, LocalDateTime maxDateTime, Integer pageSize, Byte enableStatus, Integer[] novelIdsNot);
 
-    default List<ReaderHistoryVO> listReaderHistoryVO(Integer userId, LocalDateTime maxDateTime, Integer pageSize, Byte enableStatus) {
-        return listReaderHistoryVO(userId, maxDateTime, pageSize, enableStatus, null);
+    List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, LocalDateTime minDateTime, LocalDateTime maxDateTime, Integer pageSize, Byte enableStatus);
+    default List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, LocalDateTime maxDateTime, Integer pageSize, Byte enableStatus) {
+        var minDateTime = maxDateTime == null ? null : maxDateTime.minusMonths(3);
+        return listReaderHistoryByNovel(userId, novelId, minDateTime, maxDateTime, pageSize, enableStatus);
     }
-
-    ReaderHistoryVO getReaderHistoryVO(Long id);
-
-    List<ReaderHistoryVO> listReaderHistoryByNovel(Integer userId, Integer novelId, LocalDateTime maxDateTime, Integer pageSize, Byte enableStatus);
 
     /**
      * 获取前100名
