@@ -32,12 +32,12 @@ jobs:
       run: |
         cd business/target
         ssh ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} 'mkdir -p ~/novel-backend'
-        sleep 2
         scp novel-backend-main.jar ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }}:~/novel-backend
-        scp ../DockerFile ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }}:~/novel-backend
+        scp ../Dockerfile ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }}:~/novel-backend
         ssh ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} '
           cd ~/novel-backend
-          docker stop novel-backend
+          docker stop novel-backend | true
+          docker rm novel-backend | true
           docker build -t novel-backend-img .
           docker run --name novel-backend -p 8080:8080 --restart unless-stopped -v /home/${{ secrets.USER_NAME }}/novel-backend:/novel-backend -d novel-backend-img
         '
