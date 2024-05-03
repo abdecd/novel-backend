@@ -22,8 +22,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         var realIp = request.getHeader("X-Real-IP");
         if (rateLimiter.isRateLimited(
                 RedisConstant.LIMIT_IP_RATE + realIp,
-                200,
-                3,
+                RedisConstant.LIMIT_IP_RATE_CNT,
+                RedisConstant.LIMIT_IP_RATE_RESET_TIME,
                 TimeUnit.SECONDS
         )) throw new BaseException(MessageConstant.RATE_LIMIT);
         return true;
