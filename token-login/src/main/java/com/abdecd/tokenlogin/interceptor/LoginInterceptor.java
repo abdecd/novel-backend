@@ -35,6 +35,7 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull Object handler) throws Exception {
+        if (inTest()) return true;
         var canPass = !(handler instanceof HandlerMethod);
         PathPatternParser pathPatternParser = new PathPatternParser();
         for (String pattern : allProperties.getExcludePatterns()) {
@@ -80,6 +81,16 @@ public class LoginInterceptor implements HandlerInterceptor {
         response.getWriter().println("401 Unauthorized");
         response.getWriter().close();
         return false;
+    }
+
+    public boolean inTest() {
+        if (allProperties.getTest()) {
+            UserContext.setUserId(1);
+            UserContext.setPermission("99");
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
