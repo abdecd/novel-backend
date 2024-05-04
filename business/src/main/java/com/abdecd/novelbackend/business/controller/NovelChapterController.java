@@ -96,6 +96,7 @@ public class NovelChapterController {
                     )
             );
         }
+        // todo: 报错之前响应头已经设置了导致缓存错误的结果
         if (HttpCacheUtils.tryUseCache(request, response, currentLocalDateTime)) return null;
 
         var novelChapter = novelChapterService.getNovelChapterVO(nid, vNum, cNum);
