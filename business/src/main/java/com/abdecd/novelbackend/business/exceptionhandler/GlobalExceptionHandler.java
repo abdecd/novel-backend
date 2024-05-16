@@ -36,8 +36,9 @@ public class GlobalExceptionHandler {
     public Result<String> sqlExceptionHandler(SQLIntegrityConstraintViolationException ex) {
         var msg = ex.getMessage();
         log.error("异常信息：{}", msg);
+        var code = msg.split(" ")[5];
         if (msg.contains("Duplicate entry"))
-            return Result.error("重复的值："+msg.split(" ")[2]);
+            return Result.error("重复的值：" + code.substring(code.lastIndexOf('.') + 1, code.length() - 1));
         else return Result.error(MessageConstant.UNKNOWN_ERROR);
     }
 }
