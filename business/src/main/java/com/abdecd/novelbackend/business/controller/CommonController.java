@@ -7,6 +7,7 @@ import com.abdecd.novelbackend.business.pojo.vo.common.CaptchaVO;
 import com.abdecd.novelbackend.business.service.CommonService;
 import com.abdecd.novelbackend.business.service.FileService;
 import com.abdecd.novelbackend.business.service.lib.RateLimiter;
+import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.Result;
 import com.abdecd.tokenlogin.common.context.UserContext;
@@ -64,11 +65,16 @@ public class CommonController {
     @PostMapping("/verify-email")
     public CompletableFuture<Result<String>> verifyEmail(@RequestBody @Valid VerifyEmailDTO verifyEmailDTO, HttpServletRequest request) {
         // 接口限流
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(RedisConstant.LIMIT_VERIFY_EMAIL + request.getRemoteAddr())))
-            return CompletableFuture.completedFuture(Result.error("请求过于频繁"));
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(RedisConstant.LIMIT_VERIFY_EMAIL + request.getHeader("X-Real-IP"))))
+            return CompletableFuture.completedFuture(Result.error(MessageConstant.RATE_LIMIT));
         commonService.sendCodeToVerifyEmail(verifyEmailDTO.getEmail());
         // 成功后进行限流
-        redisTemplate.opsForValue().set(RedisConstant.LIMIT_VERIFY_EMAIL + request.getRemoteAddr(), "true", 60, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(
+                RedisConstant.LIMIT_VERIFY_EMAIL + request.getHeader("X-Real-IP"),
+                "true",
+                RedisConstant.LIMIT_VERIFY_EMAIL_RESET_TIME,
+                TimeUnit.SECONDS
+        );
         return CompletableFuture.completedFuture(Result.success());
     }
 
@@ -77,17 +83,21 @@ public class CommonController {
     @PostMapping("/upload")
     public CompletableFuture<Result<String>> uploadImg(@RequestParam MultipartFile file) {
         try {
-            if (file.isEmpty()) return CompletableFuture.completedFuture(Result.error("文件为空"));
-            if (!ImageChecker.isImage(file)) throw new BaseException("文件类型不正确");
-            if (file.getSize() > 1024 * 1024 * 3) throw new BaseException("文件过大");
-            // 300次/天
+            if (file.isEmpty()) return CompletableFuture.completedFuture(Result.error(MessageConstant.IMG_FILE_EMPTY));
+            if (!ImageChecker.isImage(file)) throw new BaseException(MessageConstant.IMG_FILE_TYPE_ERROR);
+            if (file.getSize() > 1024 * 1024 * 3) throw new BaseException(MessageConstant.IMG_FILE_SIZE_ERROR);
+
             var key = RedisConstant.LIMIT_UPLOAD_IMG + UserContext.getUserId();
-            if (rateLimiter.isRateLimited(key, 300, 1, TimeUnit.DAYS))
-                return CompletableFuture.completedFuture(Result.error("图片上传次数达到上限"));
+            if (rateLimiter.isRateLimited(
+                    key,
+                    RedisConstant.LIMIT_UPLOAD_IMG_CNT,
+                    RedisConstant.LIMIT_UPLOAD_IMG_RESET_TIME,
+                    TimeUnit.DAYS)
+            ) return CompletableFuture.completedFuture(Result.error(MessageConstant.IMG_FILE_UPLOAD_LIMIT));
             return CompletableFuture.completedFuture(Result.success(fileService.uploadTmpFile(file)));
         } catch (IOException e) {
-            log.warn("上传失败", e);
-            return CompletableFuture.completedFuture(Result.error("上传失败"));
+            log.warn(MessageConstant.IMG_FILE_UPLOAD_FAIL, e);
+            return CompletableFuture.completedFuture(Result.error(MessageConstant.IMG_FILE_UPLOAD_FAIL));
         }
     }
 
@@ -100,15 +110,15 @@ public class CommonController {
                 var inForCheck = fileService.getFileInSystem(path);
                 var in = fileService.getFileInSystem(path)
         ) {
-            response.setContentType("image/jpeg");
-            response.setHeader("Cache-Control", "public, max-age=31536000");
-            if (inForCheck != null && ImageChecker.isImage(inForCheck))
+            if (inForCheck != null && ImageChecker.isImage(inForCheck)) {
+                response.setContentType("image/jpeg");
+                response.setHeader("Cache-Control", "public, max-age=31536000");
                 FileCopyUtils.copy(in, response.getOutputStream());
-            else throw new BaseException("文件不存在或格式错误");
+            } else throw new BaseException(MessageConstant.IMG_FILE_NOT_FOUND);
             return null;
         } catch (IOException e) {
-            log.warn("查看失败", e);
-            return CompletableFuture.completedFuture(Result.error("查看失败"));
+            log.warn(MessageConstant.IMG_FILE_READ_FAIL, e);
+            return CompletableFuture.completedFuture(Result.error(MessageConstant.IMG_FILE_READ_FAIL));
         }
     }
 
