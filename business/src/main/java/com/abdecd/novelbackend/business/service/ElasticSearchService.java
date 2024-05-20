@@ -147,18 +147,32 @@ curl -X PUT "http://localhost:9200/novels" \
         },
         "my_suggestion_py": {
           "tokenizer": "keyword",
-          "filter": "py"
+          "filter": "suggestion_py"
         }
       },
       "filter": {
         "py": {
           "type": "pinyin",
+          "keep_first_letter": false,
           "keep_full_pinyin": false,
           "keep_joined_full_pinyin": true,
           "keep_original": true,
           "limit_first_letter_length": 16,
           "remove_duplicated_term": true,
-          "none_chinese_pinyin_tokenize": false
+          "none_chinese_pinyin_tokenize": false,
+          "keep_none_chinese_in_joined_full_pinyin": true
+        },
+        "suggestion_py": {
+          "type": "pinyin",
+          "keep_full_pinyin": false,
+          "keep_joined_full_pinyin": true,
+          "keep_original": true,
+          "keep_none_chinese": false,
+          "limit_first_letter_length": 16,
+          "remove_duplicated_term": true,
+          "none_chinese_pinyin_tokenize": false,
+          "keep_none_chinese_in_joined_full_pinyin": true,
+          "ignore_pinyin_offset": false
         }
       }
     }
@@ -199,4 +213,6 @@ curl -X PUT "http://localhost:9200/novels" \
   }
 }
 '
+
+curl -X DELETE "http://localhost:9200/novels"
  */
