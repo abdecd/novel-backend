@@ -5,11 +5,13 @@ import jakarta.annotation.Nullable;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -49,15 +51,15 @@ public class CacheByFrequency<T> {
                 if not redis.call('exists', rootKey .. ":zSet") then
                     -- 如果不存在，则添加元素到有序集合中，score 设为 1
                     redis.call('zadd', rootKey .. ":zSet", 1, key)
-
-                    -- 如果 ttlSeconds 不为空，则设置过期时间
-                    if ttlSeconds ~= nil and ttlSeconds > 0 then
-                        redis.call('expire', rootKey .. ":zSet", ttlSeconds)
-                    end
                 else
                     -- 将指定 key 在有序集合中的 score 增加 1
                     redis.call('zincrby', rootKey .. ":zSet", 1, key)
                 end
+                
+                local t = redis.call('ttl',rootKey .. ":zSet");
+                if t == -1 then
+                    redis.call('expire', rootKey .. ":zSet", ttlSeconds)
+                end;
                 """;
         var script = new DefaultRedisScript<>(scriptText, Long.class);
         stringRedisTemplate.execute(script, Collections.emptyList(), rootKey, key, ttlSeconds + "");
@@ -85,8 +87,11 @@ public class CacheByFrequency<T> {
                     if (Boolean.TRUE.equals(redisTemplate.hasKey(rootKey + ":value:" + key)))
                         return redisTemplate.opsForValue().get(rootKey + ":value:" + key);
                     redisTemplate.opsForValue().set(rootKey + ":value:" + key, failCb.get());
-                    if (keyTtlSeconds != null)
-                        redisTemplate.expire(rootKey + ":value:" + key, keyTtlSeconds, TimeUnit.SECONDS);
+                    redisTemplate.expire(
+                            rootKey + ":value:" + key,
+                            Objects.requireNonNullElseGet(keyTtlSeconds, () -> ttlSeconds * 2),
+                            TimeUnit.SECONDS
+                    );
                     clearUnusedOne(valueKeyToZSetKeyFunc);
                 } finally {
                     lock.unlock();
@@ -114,8 +119,19 @@ public class CacheByFrequency<T> {
         if (valueKeyToZSetKeyFunc == null) valueKeyToZSetKeyFunc = k -> k;
         var set = stringRedisTemplate.opsForZSet().reverseRange(rootKey + ":zSet", 0, maxCount);
         if (set == null) return;
-        var fullKeys = redisTemplate.keys(rootKey + ":value:*");
-        if (fullKeys == null) return;
+
+        var fullKeys = new ArrayList<String>(maxCount);
+        ScanOptions options = ScanOptions.scanOptions()
+                .match(rootKey + ":value:*")
+                .count(10)
+                .build();
+        try (var iter = redisTemplate.scan(options)) {
+            while (iter.hasNext()) {
+                fullKeys.add(iter.next());
+            }
+        }
+        if (fullKeys.isEmpty()) return;
+
         var needDeleted = new ArrayList<String>();
         Function<String, String> finalValueKeyToZSetKeyFunc = valueKeyToZSetKeyFunc;
         fullKeys.forEach(fullKey -> {
