@@ -1,4 +1,4 @@
-package com.abdecd.novelbackend.business.service.lib;
+package com.abdecd.novelbackend.business.lib;
 
 import com.abdecd.novelbackend.business.pojo.entity.ReaderHistory;
 import com.baomidou.mybatisplus.extension.toolkit.Db;

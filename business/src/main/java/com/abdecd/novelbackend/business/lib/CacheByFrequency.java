@@ -1,4 +1,4 @@
-package com.abdecd.novelbackend.business.service.lib;
+package com.abdecd.novelbackend.business.lib;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;

@@ -7,8 +7,8 @@ import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.DeleteNovelChapte
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.UpdateNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.entity.NovelChapter;
 import com.abdecd.novelbackend.business.pojo.vo.novel.chapter.NovelChapterVO;
-import com.abdecd.novelbackend.business.service.lib.CacheByFrequency;
-import com.abdecd.novelbackend.business.service.lib.CacheByFrequencyFactory;
+import com.abdecd.novelbackend.business.lib.CacheByFrequency;
+import com.abdecd.novelbackend.business.lib.CacheByFrequencyFactory;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.BeanUtils;
