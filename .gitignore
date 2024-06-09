@@ -4,6 +4,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 local-file-service
+business/src/main/resources/application-dev.yml
+business/src/main/resources/application-prod.yml
 
 ### STS ###
 .apt_generated
