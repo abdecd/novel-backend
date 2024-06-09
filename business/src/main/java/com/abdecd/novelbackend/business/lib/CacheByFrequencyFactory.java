@@ -1,4 +1,4 @@
-package com.abdecd.novelbackend.business.service.lib;
+package com.abdecd.novelbackend.business.lib;
 
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;

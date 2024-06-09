@@ -1,4 +1,4 @@
-package com.abdecd.novelbackend.business.service.lib;
+package com.abdecd.novelbackend.business.lib;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;

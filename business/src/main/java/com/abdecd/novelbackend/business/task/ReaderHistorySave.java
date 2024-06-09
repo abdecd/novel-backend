@@ -1,6 +1,6 @@
 package com.abdecd.novelbackend.business.task;
 
-import com.abdecd.novelbackend.business.service.lib.ReaderHistorySaver;
+import com.abdecd.novelbackend.business.lib.ReaderHistorySaver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.scheduling.annotation.Scheduled;

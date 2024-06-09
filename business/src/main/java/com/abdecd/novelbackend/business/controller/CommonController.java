@@ -6,7 +6,7 @@ import com.abdecd.novelbackend.business.pojo.dto.common.VerifyEmailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.common.CaptchaVO;
 import com.abdecd.novelbackend.business.service.CommonService;
 import com.abdecd.novelbackend.business.service.FileService;
-import com.abdecd.novelbackend.business.service.lib.RateLimiter;
+import com.abdecd.novelbackend.business.lib.RateLimiter;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;
 import com.abdecd.novelbackend.common.result.Result;
