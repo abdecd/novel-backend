@@ -15,6 +15,7 @@ import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.entity.NovelVolume;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
 import com.abdecd.novelbackend.business.pojo.vo.novel.contents.ContentsVO;
+import com.abdecd.novelbackend.business.service.search.SearchService;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,7 @@ public class NovelService {
     @Autowired
     private NovelTagsMapper novelTagsMapper;
     @Autowired
-    private ElasticSearchService elasticSearchService;
+    private SearchService searchService;
     private static final Executor saveToESExecutor =
             Executors.newVirtualThreadPerTaskExecutor();
 
@@ -154,7 +155,7 @@ public class NovelService {
                 throw new RuntimeException(e);
             }
             try {
-                elasticSearchService.saveSearchNovelEntity(novelService.getNovelInfoVO(novelInfo.getId()));
+                searchService.saveSearchNovelEntity(novelService.getNovelInfoVO(novelInfo.getId()));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -168,7 +169,7 @@ public class NovelService {
         var novelService = SpringContextUtil.getBean(NovelService.class);
         novelService.deleteNovelInfoReally(novelInfo);
         try {
-            elasticSearchService.deleteSearchNovelEntity(id);
+            searchService.deleteSearchNovelEntity(id);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

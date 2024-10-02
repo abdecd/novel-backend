@@ -1,4 +1,4 @@
-package com.abdecd.novelbackend.business.service;
+package com.abdecd.novelbackend.business.service.search;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -7,20 +7,24 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.pojo.entity.SearchNovelEntity;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
+import com.abdecd.novelbackend.business.service.NovelService;
 import com.abdecd.novelbackend.common.constant.ElasticSearchConstant;
 import com.abdecd.novelbackend.common.result.PageVO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+@ConditionalOnProperty(prefix = "spring.data.elasticsearch", name = "url")
 @Service
-public class ElasticSearchService {
+public class ElasticSearchService implements SearchService {
     @Autowired
     private ElasticsearchClient esClient;
 
+    @Override
     public void initData(List<String> tags, List<NovelInfoVO> novels) throws IOException {
         List<BulkOperation> operations = new ArrayList<>();
         // 插入tags
@@ -62,6 +66,7 @@ public class ElasticSearchService {
         }
     }
 
+    @Override
     public void saveSearchNovelEntity(NovelInfoVO novelInfoVO) throws IOException {
         esClient.index(u -> u
                 .index(ElasticSearchConstant.INDEX_NAME)
@@ -70,6 +75,7 @@ public class ElasticSearchService {
         );
     }
 
+    @Override
     public void deleteSearchNovelEntity(Integer id) throws IOException {
         esClient.delete(u -> u
                 .index(ElasticSearchConstant.INDEX_NAME)
@@ -77,6 +83,7 @@ public class ElasticSearchService {
         );
     }
 
+    @Override
     public PageVO<NovelInfoVO> searchNovel(String keyword, Integer page, Integer pageSize) throws IOException {
         var strlen = keyword.replaceAll("\\s", "").length();
         String minimumShouldMatch;
@@ -114,6 +121,7 @@ public class ElasticSearchService {
         );
     }
 
+    @Override
     public List<String> getSearchSuggestions(String keyword, Integer num) throws IOException {
         var response = esClient.search(s -> s
                 .index(ElasticSearchConstant.INDEX_NAME)

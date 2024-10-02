@@ -2,7 +2,7 @@ package com.abdecd.novelbackend.business.onstartup;
 
 import com.abdecd.novelbackend.business.pojo.entity.NovelTags;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
-import com.abdecd.novelbackend.business.service.ElasticSearchService;
+import com.abdecd.novelbackend.business.service.search.ElasticSearchService;
 import com.abdecd.novelbackend.business.service.NovelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
