@@ -1,0 +1,63 @@
+spring:
+  datasource:
+    url: ENC(Ol7fxyj59shebl2ebotmmuad39BVVtqfIjkllJU7QHk4VHtQ2cuqhky4cQUe1zrZN+glDkf8sl+iMXX7IOUfO2JojfxrPl+M/pbuQyWt4Zlp9ag1MbfVxLaQUUIb0RNrLKRzAOBFiPvwmFTn7WsoPw==)
+    username: ENC(zE2Sk/3LCQ13ZO5fvzM5h/xptCs1v5XfCXCJdwaCIwyGWAvfLmI1GKEk5N2l9SXZ)
+    password: ENC(xtzE9erS5EzBcp7USIj76tHvCzEL2tpfXJxNC94N0w1U5fmfhnh/awFlOZTyo9sr)
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ENC(KaIf1YzDfBjMEhkOHvvM7H+IkBWpFthL/Nwc8FcNcNJY0SS8+JXdUaOU82Y5n02h)
+      port: ENC(fespmRc8jacY5AZ34wq+I+Q3tdaTnncGK0fTBj7cLPz1kn0F9BzQQIsuwZcHpL5U)
+      database: ENC(jTT0J1gnUjvquXqyQLia86V3Js5DvhXrMtmjchI63sB7qJBHgz8LJrMkQwqrArt1)
+#    elasticsearch:
+#      url: ENC(lY7gqwUbc4/eT4jbzTPBrs0bguQxexgk3qkmVWV50/xFldhgaZXUue9WXLQoaxj2tu9LJMof8U5ywbEU+XrUTw==)
+  cache:
+    type: redis
+  mail:
+    host: ENC(sZDTvUlf0/vRmZ49Z3GwjwMaEhOON6UOj1rWuIfgw21xv+H4/S317rvRCI775Pj6)
+    port: ENC(RSYz6cIdo9KjdCSrtleWONmseJ6555/HRo50R2SVuFz5I8Ez2eBpegFbr2jXuZ0u)
+    protocol: smtps
+    default-encoding: UTF-8
+    username: ENC(glf4Axw0D/ra4f30jjB+1pDDwg8XKRkVBflmmxxriNhdPW59GrzTpnR21LAw6UEx)
+    password: ENC(VPpXN/e+ZW3wW+HRQ1RSIOwyZa8r8Iii4Ne7GiWMob9GmWwCY4BIImpeNf3JHkMDC5aCu+bQJXonANeWMjChfg==)
+    test-connection: false
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+# mybatis-plus配置控制台打印完整带参数SQL语句
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.abdecd.novelbackend.business.controller
+
+token-login:
+  encrypt-str-aes-key: ENC(QhA94PVW8J+CX3iS7bZZLMCsk1vauRNC4+uSG3Sqx9VzeH15GwT33phHwv8bvJQUmFZxRgF+u2/pEvSphJvNRQ==)
+  test: true
+
+novel:
+  local-file-service:
+    enable: true
+    file-base-path: ENC(XA4rGqUvRpicXXiUTzuMNeX6tqvhd57ESkQP0anwFle4X3vMbEmTmWvY0adStuuWqY10sj9w+ZZgXTDTj6Xd5srFRsYTqRdg5/iPPuEepZ/6BFEHMy434Y4A03xW7gxf)
+    url-prefix: /common/image
+
+ali:
+  oss:
+    access-key-id: ENC(A6kY2uOKco65AgElklUUcTdwUnuUX6zxCIGWTCWYH4C/7e98sryKlbrKZcMskiLQ7RZ7HeSVyAfWxLfpFmufbA==)
+    access-key-secret: ENC(HHtrSsj7JPe4kL/KJXVr1HYtORR9MfRK20XJnsRkpMTo7oRGSBF3o2b2sWuxzVX3OETgYfyyh/4w1PHHLz/Vdg==)
+    bucket-name: ENC(ePG/5RoTDZGiKIj70DsLV5DM/SDaCi8IFgF7+hPS7IWtLej2S0cLhmw1kAARdPSC)
+    endpoint: ENC(MaHYzrf46Ka/8Gs7GPTK8dJKGVvjAEzgYqCyqACpi6QrG1qhn67v/simVLxJtlTTEpT8eYw7A3pBOzk+NsxYaw==)
+    url-prefix: /common/image
