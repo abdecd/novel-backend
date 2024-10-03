@@ -2,7 +2,7 @@ package com.abdecd.novelbackend.business.controller;
 
 import com.abdecd.novelbackend.business.common.exception.BaseException;
 import com.abdecd.novelbackend.business.pojo.vo.novel.NovelInfoVO;
-import com.abdecd.novelbackend.business.service.ElasticSearchService;
+import com.abdecd.novelbackend.business.service.search.SearchService;
 import com.abdecd.novelbackend.business.service.NovelExtService;
 import com.abdecd.novelbackend.common.result.PageVO;
 import com.abdecd.novelbackend.common.result.Result;
@@ -28,7 +28,7 @@ public class SearchController {
     @Autowired
     private NovelExtService novelExtService;
     @Autowired
-    private ElasticSearchService elasticSearchService;
+    private SearchService searchService;
 
     @Operation(summary = "搜索", description = "聚合搜索")
     @GetMapping("")
@@ -38,7 +38,7 @@ public class SearchController {
             @NotNull @Schema(description = "每页数量") Integer pageSize
     ) {
         try {
-            return Result.success(elasticSearchService.searchNovel(q, page, pageSize));
+            return Result.success(searchService.searchNovel(q, page, pageSize));
         } catch (IOException e) {
             throw new BaseException("搜索失败");
         }
@@ -51,7 +51,7 @@ public class SearchController {
             @NotNull @Schema(description = "数量") @Min(1) @Max(16) Integer num
     ) {
         try {
-            return Result.success(elasticSearchService.getSearchSuggestions(q, num));
+            return Result.success(searchService.getSearchSuggestions(q, num));
         } catch (IOException e) {
             throw new BaseException("搜索失败");
         }
