@@ -2,7 +2,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - master
+      - dev
 
 jobs:
   deploy:
@@ -18,15 +18,15 @@ jobs:
         java-version: 21
         distribution: 'temurin'
 
+    - name: Build with Maven
+      run: mvn clean package -Pprod -DskipTests=true
+
     - name: Setup SSH Keys
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-
-    - name: Build with Maven
-      run: mvn clean package -Pprod -DskipTests=true
 
     - name: Copy to Server and Run
       run: |

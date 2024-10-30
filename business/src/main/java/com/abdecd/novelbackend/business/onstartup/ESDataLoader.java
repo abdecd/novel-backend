@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 
-@ConditionalOnProperty(prefix = "spring.data.elasticsearch", name = "url")
+@ConditionalOnProperty(prefix = "spring.data.elasticsearch", name = "enable", havingValue = "true")
 @Component
 public class ESDataLoader implements ApplicationRunner {
     @Autowired

@@ -13,6 +13,7 @@ spring:
       database: ENC(uU70zSXYXt4qdpBotlkXZ2DfFz1hQBR0FJygc2UMZyvWahxObkmxAXmpYjH4OK+S)
       password: ENC(krFMtNi1TpX87UkUiBjrhN5iGJEg71cDFAdigRh7WZCLPFZ7vdQVsODwC+xP5jvb)
     elasticsearch:
+      enable: true
       url: ENC(7PDcewZdpKu5jZdHQv3s5YDzj1Q6iwwhU1JjOSaMq6s6RafvZEDV5/FCPY//rIEveo0D7feTAdLkGu2ISuB02g==)
   cache:
     type: redis
