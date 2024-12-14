@@ -1,6 +1,6 @@
 package com.abdecd.novelbackend.business.service;
 
-import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.exceptionhandler.BaseException;
 import com.abdecd.novelbackend.business.mapper.NovelChapterMapper;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.AddNovelChapterDTO;
 import com.abdecd.novelbackend.business.pojo.dto.novel.chapter.DeleteNovelChapterDTO;

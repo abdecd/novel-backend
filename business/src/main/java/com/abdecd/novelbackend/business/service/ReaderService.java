@@ -1,7 +1,7 @@
 package com.abdecd.novelbackend.business.service;
 
 import com.abdecd.novelbackend.business.aspect.UseFileService;
-import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.exceptionhandler.BaseException;
 import com.abdecd.novelbackend.business.common.util.SpringContextUtil;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
 import com.abdecd.novelbackend.business.mapper.ReaderHistoryMapper;

@@ -1,5 +1,5 @@
 package com.abdecd.novelbackend.common.constant;
 
-public class ElasticSearchConstant {
-    public static final String INDEX_NAME = "novels";
+public interface ElasticSearchConstant {
+    String INDEX_NAME = "novels";
 }

@@ -1,6 +1,6 @@
 package com.abdecd.novelbackend.business.service;
 
-import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.exceptionhandler.BaseException;
 import com.abdecd.novelbackend.business.mapper.ReaderDetailMapper;
 import com.abdecd.novelbackend.business.pojo.dto.user.*;
 import com.abdecd.novelbackend.business.pojo.entity.ReaderDetail;

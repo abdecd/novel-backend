@@ -1,6 +1,6 @@
 package com.abdecd.novelbackend.business.interceptor;
 
-import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.exceptionhandler.BaseException;
 import com.abdecd.novelbackend.business.lib.RateLimiter;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.abdecd.novelbackend.common.constant.RedisConstant;

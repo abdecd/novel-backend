@@ -1,6 +1,6 @@
 package com.abdecd.novelbackend.business.service;
 
-import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.exceptionhandler.BaseException;
 import com.abdecd.novelbackend.business.common.property.TtlProperties;
 import com.abdecd.novelbackend.common.constant.MessageConstant;
 import com.google.code.kaptcha.impl.DefaultKaptcha;

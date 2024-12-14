@@ -1,6 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
-import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.exceptionhandler.BaseException;
 import com.abdecd.novelbackend.business.common.util.ImageChecker;
 import com.abdecd.novelbackend.business.pojo.dto.common.VerifyEmailDTO;
 import com.abdecd.novelbackend.business.pojo.vo.common.CaptchaVO;

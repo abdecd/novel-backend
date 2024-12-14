@@ -1,6 +1,6 @@
 package com.abdecd.novelbackend.business.controller;
 
-import com.abdecd.novelbackend.business.common.exception.BaseException;
+import com.abdecd.novelbackend.business.exceptionhandler.BaseException;
 import com.abdecd.novelbackend.business.common.util.HttpCacheUtils;
 import com.abdecd.novelbackend.business.pojo.dto.user.AddCommentDTO;
 import com.abdecd.novelbackend.business.pojo.dto.user.DeleteCommentDTO;
