@@ -89,7 +89,7 @@ public class UserService {
         commonService.verifyEmail(resetPwdDTO.getEmail(), resetPwdDTO.getVerifyCode());
         // 重置密码
         var user = userMapper.selectOne(new LambdaQueryWrapper<User>()
-                .eq(User::getEmail, resetPwdDTO.getEmail())
+                .eq(User::getEmail, EncryptStrHandler.encrypt(resetPwdDTO.getEmail()))
         );
         userBaseService.forgetPassword(user.getId(), resetPwdDTO.getNewPassword(), BaseException.class);
     }
