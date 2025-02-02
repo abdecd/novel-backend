@@ -28,22 +28,28 @@ jobs:
 
     - name: Make Docker Image
       run: |
-        docker build -t ${{ env.PROJ_NAME }}:latest -f Dockerfile .
-        docker save ${{ env.PROJ_NAME }}:latest > ${{ env.PROJ_NAME }}.tar
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        docker buildx build --platform linux/amd64 -t ${{ env.PROJ_NAME }}:latest -f Dockerfile .
+        docker save ${{ env.PROJ_NAME }}:latest > ${{ env.PROJ_NAME }}.amd64.tar
+        docker buildx build --platform linux/arm64 -t ${{ env.PROJ_NAME }}:latest -f Dockerfile .
+        docker save ${{ env.PROJ_NAME }}:latest > ${{ env.PROJ_NAME }}.arm64.tar
 
     - name: Upload Docker Image
       uses: actions/upload-artifact@v4
       with:
         name: docker-image
         path: |
-          ${{ env.PROJ_NAME }}.tar
+          ${{ env.PROJ_NAME }}.amd64.tar
+          ${{ env.PROJ_NAME }}.arm64.tar
 
     # - name: Copy to Server and Run
     #   run: |
-    #     docker run --name novel-backend \
+    #     docker run \
+    #       --name novel-backend \
     #       -p 8001:8081 \
     #       --restart unless-stopped \
     #       -v /home/${{ secrets.USER_NAME }}/novel-backend/log:/app/log \
     #       -v /home/${{ secrets.USER_NAME }}/novel-backend/config:/app/config \
     #       -v /home/${{ secrets.USER_NAME }}/novel-backend/local-file-service:/app/local-file-service \
     #       -d novel-backend:latest
+          
