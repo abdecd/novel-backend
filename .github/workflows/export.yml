@@ -1,0 +1,49 @@
+name: Export docker
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      PROJ_NAME: "novel-backend"
+      INTERNAL_PORT: "8081"
+      OUT_PORT: "8001"
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: 21
+        distribution: 'temurin'
+
+    - name: Build with Maven
+      run: mvn clean package -Pprod -DskipTests=true
+
+    - name: Make Docker Image
+      run: |
+        docker build -t ${{ env.PROJ_NAME }}:latest -f Dockerfile .
+        docker save ${{ env.PROJ_NAME }}:latest > ${{ env.PROJ_NAME }}.tar
+
+    - name: Upload Docker Image
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: |
+          ${{ env.PROJ_NAME }}.tar
+
+    # - name: Copy to Server and Run
+    #   run: |
+    #     docker run --name novel-backend \
+    #       -p 8001:8081 \
+    #       --restart unless-stopped \
+    #       -v /home/${{ secrets.USER_NAME }}/novel-backend/log:/app/log \
+    #       -v /home/${{ secrets.USER_NAME }}/novel-backend/config:/app/config \
+    #       -v /home/${{ secrets.USER_NAME }}/novel-backend/local-file-service:/app/local-file-service \
+    #       -d novel-backend:latest
