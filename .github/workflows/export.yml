@@ -52,4 +52,3 @@ jobs:
     #       -v /home/${{ secrets.USER_NAME }}/novel-backend/config:/app/config \
     #       -v /home/${{ secrets.USER_NAME }}/novel-backend/local-file-service:/app/local-file-service \
     #       -d novel-backend:latest
-          
