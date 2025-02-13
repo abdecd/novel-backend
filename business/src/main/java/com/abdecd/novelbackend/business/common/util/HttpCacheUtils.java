@@ -11,6 +11,7 @@ public class HttpCacheUtils {
      */
     public static boolean tryUseCache(HttpServletRequest request, HttpServletResponse response, LocalDateTime currentLocalDateTime) {
         if (currentLocalDateTime == null) return false;
+        response.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         if (request.getHeader("If-None-Match") != null) {
             var clientLastTime = request.getHeader("If-None-Match").substring("W/".length());
             var clientLocalDateTime = LocalDateTime.parse(clientLastTime);
@@ -19,7 +20,6 @@ public class HttpCacheUtils {
                 return true;
             }
         }
-        response.setHeader("Cache-Control", "no-cache");
         response.setHeader("ETag", "W/" + currentLocalDateTime);
         return false;
     }
@@ -29,6 +29,7 @@ public class HttpCacheUtils {
      */
     public static boolean tryUseCache(HttpServletRequest request, HttpServletResponse response, Object hash) {
         if (hash == null) return false;
+        response.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
         if (request.getHeader("If-None-Match") != null) {
             var oldHash = request.getHeader("If-None-Match").substring("W/".length());
             if (oldHash.equals(hash.toString())) {
@@ -36,7 +37,6 @@ public class HttpCacheUtils {
                 return true;
             }
         }
-        response.setHeader("Cache-Control", "no-cache");
         response.setHeader("ETag", "W/" + hash);
         return false;
     }
